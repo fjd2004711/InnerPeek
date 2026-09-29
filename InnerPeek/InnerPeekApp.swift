@@ -12,7 +12,11 @@ struct InnerPeekApp: App {
 }
 
 private struct SetupGuideView: View {
+    private static let permissionConfirmationKey = "fullDiskAccessConfirmed"
     private let isChinese = Locale.preferredLanguages.first?.hasPrefix("zh") == true
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var permissionGranted = UserDefaults.standard.bool(forKey: permissionConfirmationKey)
+    @State private var permissionChecked = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -36,6 +40,18 @@ private struct SetupGuideView: View {
                     NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
                 }
                 .controlSize(.large)
+                Button {
+                    checkFullDiskAccess()
+                } label: {
+                    Label(text("重新检查", "Check Again"), systemImage: "arrow.clockwise")
+                }
+                .controlSize(.large)
+                Button {
+                    confirmFullDiskAccess()
+                } label: {
+                    Label(text("我已开启", "I Enabled It"), systemImage: "checkmark.circle")
+                }
+                .controlSize(.large)
                 Spacer()
             }
             Text(text(
@@ -49,6 +65,12 @@ private struct SetupGuideView: View {
         .padding(28)
         .frame(width: 600)
         .background(Color(nsColor: .windowBackgroundColor))
+        .task {
+            checkFullDiskAccess()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { checkFullDiskAccess() }
+        }
     }
 
     private var header: some View {
@@ -65,6 +87,14 @@ private struct SetupGuideView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button {
+                openGitHub()
+            } label: {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.title3.weight(.semibold))
+            }
+            .buttonStyle(.plain)
+            .help(text("访问 GitHub 项目", "Open GitHub project"))
             Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
@@ -74,15 +104,18 @@ private struct SetupGuideView: View {
     private var permissionCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                Image(systemName: "lock.shield.fill")
-                    .foregroundStyle(.orange)
-                Text(text("建议开启：完全磁盘访问", "Recommended: Full Disk Access"))
+                Image(systemName: permissionGranted ? "checkmark.shield.fill" : "lock.shield.fill")
+                    .foregroundStyle(permissionGranted ? .green : .orange)
+                Text(permissionGranted
+                     ? text("完全磁盘访问：已获取", "Full Disk Access: Granted")
+                     : text("建议开启：完全磁盘访问", "Recommended: Full Disk Access"))
                     .font(.headline)
-                Text(text("可选", "Optional"))
+                Text(permissionGranted ? text("正常", "Ready") : text("可选", "Optional"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(.secondary.opacity(0.12), in: Capsule())
+                    .foregroundStyle(permissionGranted ? .green : .secondary)
+                    .background((permissionGranted ? Color.green : Color.secondary).opacity(0.12), in: Capsule())
             }
             Text(text(
                 "普通文件夹无需额外授权。若要预览桌面、文稿、下载、邮件资料或其他受 macOS 保护的位置，请为 InnerPeek 开启完全磁盘访问。macOS 要求用户亲自在系统设置中授权，应用不能静默获取。",
@@ -97,12 +130,21 @@ private struct SetupGuideView: View {
             ))
             .font(.callout.weight(.medium))
             .fixedSize(horizontal: false, vertical: true)
+            if permissionChecked && !permissionGranted {
+                Text(text(
+                    "尚未检测到授权。沙盒扩展有时不会向应用暴露 TCC 状态；确认系统设置中的开关已打开后，点击“我已开启”。",
+                    "Access was not detected. macOS may hide TCC state from a sandboxed extension; after confirming the switch is on, click “I Enabled It”."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(16)
-        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .background((permissionGranted ? Color.green : Color.orange).opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
-                .stroke(.orange.opacity(0.22), lineWidth: 1)
+                .stroke((permissionGranted ? Color.green : Color.orange).opacity(0.22), lineWidth: 1)
         }
     }
 
@@ -132,5 +174,30 @@ private struct SetupGuideView: View {
                 return
             }
         }
+    }
+
+    private func checkFullDiskAccess() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let protectedLocations = [
+            home.appendingPathComponent("Library/Mail"),
+            home.appendingPathComponent("Library/Safari"),
+            home.appendingPathComponent("Library/Messages")
+        ]
+        let canReadProtectedLocation = protectedLocations.contains {
+            FileManager.default.isReadableFile(atPath: $0.path)
+        }
+        permissionGranted = canReadProtectedLocation || UserDefaults.standard.bool(forKey: Self.permissionConfirmationKey)
+        permissionChecked = true
+    }
+
+    private func confirmFullDiskAccess() {
+        UserDefaults.standard.set(true, forKey: Self.permissionConfirmationKey)
+        permissionGranted = true
+        permissionChecked = true
+    }
+
+    private func openGitHub() {
+        guard let url = URL(string: "https://github.com/fjd2004711/InnerPeek") else { return }
+        NSWorkspace.shared.open(url)
     }
 }
