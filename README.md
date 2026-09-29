@@ -38,6 +38,16 @@ Finder 能预览图片、文档和视频，却不能快速回答最常见的问�
 
 InnerPeek 不会自动打开文件、解压文件或修改原始内容。
 
+## 实际预览效果
+
+仓库内附带了可复现的 [Demo 文件夹](docs/demo/InnerPeek-Demo)，二层目录覆盖 PDF、JSON、Swift、JavaScript、Python、HTML、CSS、XML、YAML、CSV、RTF、LOG、TXT、Markdown、PNG，以及 Word（DOCX）、Excel（XLSX）、PowerPoint（PPTX）三种 Office 格式。压缩包样例为 [InnerPeek-ZIP-Demo.zip](docs/demo/InnerPeek-Demo/InnerPeek-ZIP-Demo.zip)，包含同一组目录和文件，可直接对照文件夹与 ZIP 的预览效果。
+
+以下是当前版本在 Finder 按空格后的实拍，均展开了包含 Office 三件套和多种扩展名的二层目录：左侧为文件夹，右侧为 ZIP。
+
+| 文件夹预览 | ZIP 预览 |
+| --- | --- |
+| <img src="docs/demo/innerpeek-folder-light-preview.png" width="420" alt="文件夹预览：含 Office 与多种扩展名"> | <img src="docs/demo/innerpeek-zip-light-preview.png" width="420" alt="ZIP 预览：零解压展开 Office 与多种文件类型"> |
+
 ## macOS 权限说明
 
 普通文件夹和 Finder 主动交给 Quick Look 的项目无需完全磁盘访问。若要预览桌面、文稿、下载、邮件资料或其他受 macOS 保护的位置，请打开：
@@ -98,6 +108,8 @@ shasum -a 256 InnerPeek-1.0.5-adhoc.zip
 ```
 
 对应哈希见同一 Release 中的 `SHA256SUMS`。
+
+推送到 `main` 后，GitHub Actions 会自动构建 Ad-Hoc 版本并生成校验文件。构建完成后，可在仓库的 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载；自动构建产物保留 30 天，不会自动替换正式 Release。
 
 ## 常见问题
 

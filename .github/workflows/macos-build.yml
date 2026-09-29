@@ -1,0 +1,56 @@
+name: macOS Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Ad-Hoc macOS app
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build InnerPeek
+        run: |
+          xcodebuild \
+            -project InnerPeek.xcodeproj \
+            -target InnerPeek \
+            -configuration Release \
+            -sdk macosx \
+            -derivedDataPath "$RUNNER_TEMP/InnerPeekDerivedData" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES \
+            build
+
+      - name: Package app and checksum
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/InnerPeekDerivedData/Build/Products/Release/InnerPeek.app"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' InnerPeek/InnerPeek-Info.plist)
+          OUTPUT_DIR="$GITHUB_WORKSPACE/dist"
+          PACKAGE_PATH="$OUTPUT_DIR/InnerPeek-${VERSION}-adhoc.zip"
+
+          test -d "$APP_PATH"
+          codesign --verify --deep --strict "$APP_PATH"
+          mkdir -p "$OUTPUT_DIR"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$PACKAGE_PATH"
+          (cd "$OUTPUT_DIR" && shasum -a 256 "$(basename "$PACKAGE_PATH")" > SHA256SUMS)
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InnerPeek-macOS-AdHoc-${{ github.run_number }}
+          path: |
+            dist/InnerPeek-*-adhoc.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
