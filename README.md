@@ -4,6 +4,8 @@
 
 <h1 align="center">InnerPeek</h1>
 
+<p align="center"><a href="README.md">简体中文</a> · <a href="README_EN.md">English</a></p>
+
 <p align="center"><strong>让 Finder 的空格预览，真正看懂文件夹和 ZIP 压缩包。</strong></p>
 
 <p align="center">
@@ -30,8 +32,8 @@ Finder 能预览图片、文档和视频，却不能快速回答最常见的问�
 
 ## 快速开始
 
-1. 从 [Releases](../../releases) 下载适合当前 macOS 的 ZIP。
-2. 解压后把 `InnerPeek.app` 拖进「应用程序」。
+1. 从 [Releases](../../releases) 下载适合当前 macOS 的 DMG。
+2. 打开 DMG，把 `InnerPeek.app` 拖进「应用程序」。
 3. 首次打开时按提示完成权限设置（普通目录不需要额外权限）。
 4. 在 Finder 中选中文件夹或 ZIP，按空格键即可预览。
 5. 在预览中点击文件夹整行，或点击左侧箭头，展开 / 收起目录。
@@ -104,12 +106,12 @@ xattr -dr com.apple.quarantine /Applications/InnerPeek.app
 校验下载包：
 
 ```sh
-shasum -a 256 InnerPeek-1.0.5-adhoc.zip
+shasum -a 256 InnerPeek-1.0.6-macOS.dmg
 ```
 
 对应哈希见同一 Release 中的 `SHA256SUMS`。
 
-推送到 `main` 后，GitHub Actions 会自动构建 macOS DMG 测试包并生成校验文件。打开 DMG 后将 InnerPeek 拖到「应用程序」即可。构建完成后，可在仓库的 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载；自动构建产物保留 30 天，不会自动替换正式 Release。由于没有 Developer ID 证书，自动构建包未经过 Apple 公证；首次打开时可能需要在「隐私与安全性」中手动允许。
+推送到 `main` 后，GitHub Actions 会自动构建 macOS DMG 测试包并生成校验文件，可在 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载，保留 30 天。推送 `v*` 版本标签时，GitHub Actions 会从该标签对应的代码重新构建 DMG，并自动将 DMG 与 `SHA256SUMS` 发布到 GitHub Releases。打开 DMG 后将 InnerPeek 拖到「应用程序」即可。由于没有 Developer ID 证书，构建包未经过 Apple 公证；首次打开时可能需要在「隐私与安全性」中手动允许。
 
 ## 常见问题
 
