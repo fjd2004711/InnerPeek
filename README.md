@@ -1,161 +1,135 @@
 <p align="center">
-  <img src="InnerPeek/Assets.xcassets/AppIcon.appiconset/icon-256.png" width="104" alt="InnerPeek logo">
+  <img src="InnerPeek/Assets.xcassets/AppIcon.appiconset/icon-256.png" width="104" alt="InnerPeek 图标">
 </p>
 
 <h1 align="center">InnerPeek</h1>
 
-<p align="center"><a href="README.md">简体中文</a> · <a href="README_EN.md">English</a></p>
-
-<p align="center"><strong>让 Finder 的空格预览，真正看懂文件夹和 ZIP 压缩包。</strong></p>
+<p align="center"><strong>在 Finder 里按下空格，看清文件夹与 ZIP 的内容。</strong></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/macOS-Apple%20Silicon%20%7C%20Intel-151515?logo=apple&logoColor=white" alt="macOS Apple Silicon and Intel">
-  <img src="https://img.shields.io/badge/Quick%20Look-native-24C8DB" alt="Quick Look native extension">
-  <img src="https://img.shields.io/badge/ZIP-zero%20extraction-4C8DFF" alt="ZIP zero extraction">
-  <img src="https://img.shields.io/badge/License-MIT-60B932" alt="MIT license">
+  <a href="https://github.com/fjd2004711/InnerPeek/releases/latest">下载最新版</a> ·
+  <a href="#安装">安装</a> ·
+  <a href="#从源码构建">构建</a> ·
+  <a href="README_EN.md">English</a>
 </p>
 
-InnerPeek 是一个本地运行的 macOS Quick Look 扩展。它不改变 Finder 的工作方式，只把你按下空格后看到的文件夹或 ZIP，从一个普通图标变成可浏览的树形内容。
+<p align="center">
+  <a href="https://github.com/fjd2004711/InnerPeek/releases/latest"><img src="https://img.shields.io/github/v/release/fjd2004711/InnerPeek?display_name=tag&sort=semver" alt="最新版本"></a>
+  <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white" alt="推荐 macOS 26 及以上">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/fjd2004711/InnerPeek" alt="MIT 许可"></a>
+</p>
 
-## 它解决什么问题
+InnerPeek 是一个轻量的 macOS Quick Look 扩展。选中文件夹或 ZIP 压缩包，按下空格，即可在 Finder 的原生预览窗口中浏览目录树，无需打开新应用，也无需先解压。
 
-Finder 能预览图片、文档和视频，却不能快速回答最常见的问题：这个文件夹里有什么？这个压缩包里到底是哪一层目录？InnerPeek 专注解决这一件事。
+## 预览
 
-| 能力 | 说明 |
-| --- | --- |
-| 文件夹树形预览 | 原生 Quick Look 窗口中查看目录层级、文件大小和修改时间。 |
-| ZIP 零解压浏览 | 直接读取 ZIP central directory，不把压缩包解到磁盘，打开快、占用小。 |
-| 整行展开 / 收起 | 点击文件夹整行即可切换，保留 macOS 原生 disclosure triangle。 |
-| 真实文件图标 | 磁盘文件使用系统类型图标；ZIP 内部使用缓存的类型图标，避免阻塞首次点击。 |
-| 原生交互 | 使用 AppKit `NSOutlineView`，支持键盘、触控板和系统 Quick Look 动画。 |
-| 最小驻留 | 主 App 只负责设置说明，Quick Look 扩展按需运行，不后台常驻。 |
+| 文件夹 | ZIP 压缩包 |
+| :---: | :---: |
+| <img src="docs/demo/innerpeek-folder-light-preview.png" width="420" alt="InnerPeek 文件夹预览"> | <img src="docs/demo/innerpeek-zip-light-preview.png" width="420" alt="InnerPeek ZIP 预览"> |
 
-## 快速开始
+截图来自 Finder 中的实际预览。仓库还提供了可直接试用的[示例文件夹](docs/demo/InnerPeek-Demo)和[对应的 ZIP](docs/demo/InnerPeek-Demo/InnerPeek-ZIP-Demo.zip)。
 
-1. 从 [Releases](../../releases) 下载适合当前 macOS 的 DMG。
-2. 打开 DMG，把 `InnerPeek.app` 拖进「应用程序」。
-3. 首次打开时按提示完成权限设置（普通目录不需要额外权限）。
-4. 在 Finder 中选中文件夹或 ZIP，按空格键即可预览。
-5. 在预览中点击文件夹整行，或点击左侧箭头，展开 / 收起目录。
+## 功能
 
-InnerPeek 不会自动打开文件、解压文件或修改原始内容。
+- **树形浏览**：逐层展开或收起文件夹与 ZIP 内的目录。
+- **关键信息一目了然**：显示名称、文件大小、修改时间和文件类型图标。
+- **ZIP 无需解压**：只读取 ZIP 的目录索引，不读取文件正文，也不在磁盘上生成解压副本。
+- **按需加载**：文件夹仅在展开时读取，系统文件图标在后台获取并缓存。
+- **原生体验**：基于 Quick Look 和 AppKit `NSOutlineView`，保留 Finder 熟悉的列表交互。
+- **本地且只读**：预览过程不上传内容、不修改源文件，也没有常驻后台服务。
 
-## 实际预览效果
+## 系统要求
 
-仓库内附带了可复现的 [Demo 文件夹](docs/demo/InnerPeek-Demo)，二层目录覆盖 PDF、JSON、Swift、JavaScript、Python、HTML、CSS、XML、YAML、CSV、RTF、LOG、TXT、Markdown、PNG，以及 Word（DOCX）、Excel（XLSX）、PowerPoint（PPTX）三种 Office 格式。压缩包样例为 [InnerPeek-ZIP-Demo.zip](docs/demo/InnerPeek-Demo/InnerPeek-ZIP-Demo.zip)，包含同一组目录和文件，可直接对照文件夹与 ZIP 的预览效果。
+- 推荐 macOS 26 或更高版本
+- Apple Silicon 或 Intel Mac
 
-以下是当前版本在 Finder 按空格后的实拍，均展开了包含 Office 三件套和多种扩展名的二层目录：左侧为文件夹，右侧为 ZIP。
+## 安装
 
-| 文件夹预览 | ZIP 预览 |
-| --- | --- |
-| <img src="docs/demo/innerpeek-folder-light-preview.png" width="420" alt="文件夹预览：含 Office 与多种扩展名"> | <img src="docs/demo/innerpeek-zip-light-preview.png" width="420" alt="ZIP 预览：零解压展开 Office 与多种文件类型"> |
+1. 从 [GitHub Releases](https://github.com/fjd2004711/InnerPeek/releases/latest) 下载最新 DMG。
+2. 打开 DMG，将 `InnerPeek.app` 拖入「应用程序」。
+3. 打开一次 InnerPeek，让 macOS 注册 Quick Look 扩展。
+4. 在 Finder 中选中文件夹或 ZIP，按空格开始预览。
 
-## macOS 权限说明
+点击文件夹整行或左侧箭头可以展开、收起目录；再次按空格即可关闭预览。
 
-普通文件夹和 Finder 主动交给 Quick Look 的项目无需完全磁盘访问。若要预览桌面、文稿、下载、邮件资料或其他受 macOS 保护的位置，请打开：
+### 访问受保护的位置
+
+普通目录不需要额外授权。若要预览桌面、文稿、下载、邮件资料或其他受 macOS 保护的位置，请前往：
 
 **系统设置 → 隐私与安全性 → 完全磁盘访问权限 → “+” → 选择 `/Applications/InnerPeek.app` → 打开开关**
 
-回到 Finder 后重新按一次空格。InnerPeek 设置窗口会通过实际读取受保护目录自动刷新状态，不需要手动确认按钮。
+授权后重新打开 Finder 预览。完全磁盘访问并非日常使用的必需条件；InnerPeek 只用它读取你主动预览的内容。
 
-macOS 不允许应用静默把自己加入完全磁盘访问列表；授权必须由用户确认。权限只用于读取你主动预览的内容，InnerPeek 不上传文件，也不修改文件。
+## 工作原理
 
-## 为什么它快
+InnerPeek 的目标是缩短“按空格看一眼”的路径：
 
-- 文件夹读取只请求目录、大小和修改时间等必要元数据。
-- ZIP 只扫描 central directory，避免完整解压和临时文件。
-- 子目录按需加载，第一次展开和后续收起都使用原生 outline 动画。
-- 系统图标采用异步缓存，避免 Launch Services 查询卡住 Quick Look 主线程。
-- Release 使用 Swift whole-module optimization，并支持 Apple Silicon 与 Intel。
+| 场景 | 实现方式 |
+| --- | --- |
+| 文件夹 | 首次只读取当前层级；展开子目录时再按需读取，并跳过隐藏文件。 |
+| ZIP | 直接解析 central directory，在内存中建立目录树，不解压文件。 |
+| 文件图标 | 先显示轻量类型图标，再异步获取磁盘文件的 Finder 图标并缓存。 |
+| 界面 | Quick Look 扩展承载原生 `NSOutlineView`，负责选择、展开和滚动。 |
 
-## 性能对比
+这些设计避免了完整解压、一次性遍历整棵目录树以及在主线程同步查询大量图标。
 
-InnerPeek 的目标不是替代专业压缩工具，而是让“按空格看一眼”这件事足够快。下面是实现机制上的对比：
+## 当前限制
 
-| 场景 | InnerPeek | Finder 原生预览 | 先解压再查看 | 专业压缩工具 |
-| --- | --- | --- | --- | --- |
-| 查看文件夹层级 | 原生树形、子目录按需读取 | 通常只显示文件夹摘要 | 需要先生成副本 | 功能完整但启动路径更重 |
-| 查看 ZIP 目录 | 读取 central directory，零解压 | 通常无法展开目录 | 需要完整或部分解压 | 可能建立临时缓存 |
-| 首次交互 | 只加载当前层，图标异步解析 | 启动轻，但信息有限 | 受解压大小影响 | 取决于索引和缓存 |
-| 磁盘占用 | 不创建解压副本 | 无额外副本 | 可能接近压缩包大小 | 通常有缓存或临时目录 |
-| 适合任务 | 快速确认内容、找文件 | 看单个文件元数据 | 编辑或批量使用内容 | 解压、压缩、校验、转换 |
+- 目前只支持文件夹和普通单卷 ZIP 的目录预览。
+- ZIP64 与分卷 ZIP 暂不支持；旧编码 ZIP 中的非 UTF-8 文件名可能无法正确显示。
+- ZIP 内的单个文件不能在预览中打开或导出。
+- 文件夹预览默认不显示隐藏文件。
 
-InnerPeek 不承诺脱离硬件、磁盘和压缩包结构的固定毫秒数；它把最容易造成卡顿的完整解压、同步图标查询和一次性加载全部目录，从交互路径中移开。
-
-## 后续功能支持
-
-项目会优先保持 Quick Look 的轻量和稳定，再逐步增加以下能力：
-
-- **更深层的按需预览**：在不关闭当前 Quick Look 的情况下进入内部文件夹，并支持空格键返回上一级。
-- **更多压缩格式**：在系统安全边界允许的前提下增加 TAR、GZIP、7Z 等格式的目录索引预览。
-- **更强的类型图标缓存**：扩展名、UTI 和系统图标的分层缓存，减少大型目录首次滚动时的图标延迟。
-- **大目录虚拟化**：对数万文件的目录采用分页或可见区域加载，控制内存和首屏时间。
-- **可选的预览设置**：隐藏列、排序方式、显示隐藏文件等设置，默认保持 Finder 风格。
-- **更多可访问性支持**：完善 VoiceOver、键盘导航、动态字体和本地化文案。
-
-这些功能会以不后台驻留、不修改原文件、不把 ZIP 全量解压为前提；如果某项功能会明显增加 Quick Look 的启动成本，将保持为可选能力。
-
-## 下载与校验
-
-当前免费分发包是 Ad-Hoc 签名，不是 Developer ID 公证包。首次运行如被 macOS 阻止，可在「隐私与安全性」中允许，或确认来源后执行：
-
-```sh
-xattr -dr com.apple.quarantine /Applications/InnerPeek.app
-```
-
-校验下载包：
-
-```sh
-shasum -a 256 InnerPeek-1.0.6-macOS.dmg
-```
-
-对应哈希见同一 Release 中的 `SHA256SUMS`。
-
-推送到 `main` 后，GitHub Actions 会自动构建 macOS DMG 测试包并生成校验文件，可在 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载，保留 30 天。推送 `v*` 版本标签时，GitHub Actions 会从该标签对应的代码重新构建 DMG，并自动将 DMG 与 `SHA256SUMS` 发布到 GitHub Releases。打开 DMG 后将 InnerPeek 拖到「应用程序」即可。由于没有 Developer ID 证书，构建包未经过 Apple 公证；首次打开时可能需要在「隐私与安全性」中手动允许。
+InnerPeek 专注于快速确认内容结构，不替代完整的文件管理或压缩工具。
 
 ## 常见问题
 
 <details>
-<summary><strong>为什么看不到文件夹内部内容？</strong></summary>
+<summary><strong>安装后按空格仍然看不到目录树？</strong></summary>
 
-先确认 Finder 传给 Quick Look 的是文件夹本身，而不是别的文件。受 macOS 保护的目录需要在完全磁盘访问中添加 InnerPeek；授权后重新打开 Finder 预览。
-
-</details>
-
-<details>
-<summary><strong>ZIP 会不会被解压到磁盘？</strong></summary>
-
-不会。InnerPeek 只读取 ZIP 的目录索引；内部文件没有真实路径，因此只显示类型图标，不会启动外部解压进程。
+确认应用已经移动到「应用程序」并至少打开过一次，然后关闭当前 Quick Look 窗口再重新预览。若目标位于受保护目录，请检查完全磁盘访问权限。
 
 </details>
 
 <details>
-<summary><strong>为什么首次打开比第二次慢？</strong></summary>
+<summary><strong>预览 ZIP 会产生临时解压文件吗？</strong></summary>
 
-首次打开需要创建 Quick Look 扩展和目录数据；文件夹子目录和图标随后会按需缓存。重复打开会复用系统和应用缓存。
+不会。InnerPeek 只读取 ZIP central directory 中的名称、层级、大小和日期等元数据。
 
 </details>
 
 <details>
-<summary><strong>为什么 macOS 提示无法验证开发者？</strong></summary>
+<summary><strong>为什么 ZIP 中的文件图标和磁盘文件略有不同？</strong></summary>
 
-当前版本没有付费 Apple Developer 账号，因此使用免费 Ad-Hoc 签名，不能提供 Developer ID 公证。请只从本仓库 Release 下载，并按系统提示允许打开。
+ZIP 条目没有可交给 Finder 的真实文件路径。InnerPeek 会根据扩展名和文件类型显示并缓存系统类型图标，从而避免为图标创建临时文件。
 
 </details>
 
-## 隐私与安全
+## 从源码构建
 
-- 所有目录读取、ZIP 索引解析和图标处理都在本机完成。
-- 不联网、不上传、不修改原文件。
-- 不后台驻留，不创建登录项或常驻服务。
-- Quick Look 扩展保持 App Sandbox；主 App 只在设置窗口打开时运行，用真实读取结果检测权限，不后台驻留。
+项目没有第三方运行时依赖。
 
-## 项目与反馈
+1. 克隆仓库并使用 Xcode 15 或更高版本打开 [`InnerPeek.xcodeproj`](InnerPeek.xcodeproj)。
+2. 选择 `InnerPeek` scheme 和 `My Mac` 作为运行目标。
+3. 如果 Xcode 提示签名问题，在两个 target 中选择你自己的开发团队。
+4. 构建并运行主应用一次，然后在 Finder 中测试 Quick Look。
 
-- 项目主页：[github.com/fjd2004711/InnerPeek](https://github.com/fjd2004711/InnerPeek)
-- 发布下载：[GitHub Releases](../../releases)
-- 欢迎提交 Issue，附上 macOS 版本、文件类型和可复现步骤；不要上传私人文件或受保护目录内容。
+项目由三部分组成：
+
+| 路径 | 作用 |
+| --- | --- |
+| [`InnerPeek/`](InnerPeek) | SwiftUI 设置与权限引导应用。 |
+| [`InnerPeekQL/`](InnerPeekQL) | Quick Look 扩展及 AppKit 预览界面。 |
+| [`Shared/`](Shared) | 文件夹与 ZIP 的只读内容提供器和共享模型。 |
+
+推送 `v*` 标签后，[GitHub Actions](https://github.com/fjd2004711/InnerPeek/actions) 会构建 DMG、生成 `SHA256SUMS`，并发布到 Releases。
+
+## 参与贡献
+
+欢迎提交 [Issue](https://github.com/fjd2004711/InnerPeek/issues) 和 Pull Request。报告问题时，请附上 macOS 版本、InnerPeek 版本、文件类型和可复现步骤；请勿上传包含私人内容的文件。
+
+如果准备实现较大的功能，建议先开 Issue 讨论范围，尤其是新的归档格式或可能影响 Quick Look 启动速度的改动。
 
 ## 许可
 
-项目代码采用 [MIT License](LICENSE)。
+InnerPeek 采用 [MIT License](LICENSE)。
