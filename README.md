@@ -23,6 +23,11 @@ The Quick Look extension is on-demand; the main app does not stay resident.
 Compare the SHA-256 hash with `SHA256SUMS` from the same release:
 
 ```sh
-shasum -a 256 InnerPeek-1.0.0-adhoc.zip
+shasum -a 256 InnerPeek-1.0.1-adhoc.zip
 ```
 
+## Permission guide
+
+InnerPeek uses the standard macOS sandbox and only reads the item that Finder asks it to preview. Normal folders work without extra setup. macOS may protect Desktop, Documents, Downloads, Mail data, and other locations; for those locations, optionally enable **System Settings → Privacy & Security → Full Disk Access**, click **+**, choose `/Applications/InnerPeek.app`, and turn it on. Reopen Finder after changing the setting.
+
+macOS does not allow an app to grant itself Full Disk Access. InnerPeek never runs in the background and never uploads or modifies your files.
