@@ -21,7 +21,7 @@ jobs:
         run: |
           xcodebuild \
             -project InnerPeek.xcodeproj \
-            -target InnerPeek \
+            -scheme InnerPeek \
             -configuration Release \
             -sdk macosx \
             -derivedDataPath "$RUNNER_TEMP/InnerPeekDerivedData" \
