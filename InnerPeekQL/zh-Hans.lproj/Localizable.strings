@@ -1,0 +1,9 @@
+"folder" = "文件夹";
+"folder_accessibility_label" = "文件夹";
+"loading" = "正在载入…";
+"unable_to_read_folder" = "无法读取文件夹";
+"unable_to_preview_archive" = "无法预览压缩包";
+"item_count" = "%ld 个项目";
+"name_column" = "名称";
+"size_column" = "大小";
+"modified_column" = "修改日期";

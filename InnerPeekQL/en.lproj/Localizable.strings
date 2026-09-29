@@ -1,0 +1,9 @@
+"folder" = "Folder";
+"folder_accessibility_label" = "Folder";
+"loading" = "Loading…";
+"unable_to_read_folder" = "Unable to read folder";
+"unable_to_preview_archive" = "Unable to Preview Archive";
+"item_count" = "%ld items";
+"name_column" = "Name";
+"size_column" = "Size";
+"modified_column" = "Modified";
