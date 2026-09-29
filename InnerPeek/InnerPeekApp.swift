@@ -12,10 +12,9 @@ struct InnerPeekApp: App {
 }
 
 private struct SetupGuideView: View {
-    private static let permissionConfirmationKey = "fullDiskAccessConfirmed"
     private let isChinese = Locale.preferredLanguages.first?.hasPrefix("zh") == true
     @Environment(\.scenePhase) private var scenePhase
-    @State private var permissionGranted = UserDefaults.standard.bool(forKey: permissionConfirmationKey)
+    @State private var permissionGranted = false
     @State private var permissionChecked = false
 
     var body: some View {
@@ -44,12 +43,6 @@ private struct SetupGuideView: View {
                     checkFullDiskAccess()
                 } label: {
                     Label(text("重新检查", "Check Again"), systemImage: "arrow.clockwise")
-                }
-                .controlSize(.large)
-                Button {
-                    confirmFullDiskAccess()
-                } label: {
-                    Label(text("我已开启", "I Enabled It"), systemImage: "checkmark.circle")
                 }
                 .controlSize(.large)
                 Spacer()
@@ -132,8 +125,8 @@ private struct SetupGuideView: View {
             .fixedSize(horizontal: false, vertical: true)
             if permissionChecked && !permissionGranted {
                 Text(text(
-                    "尚未检测到授权。沙盒扩展有时不会向应用暴露 TCC 状态；确认系统设置中的开关已打开后，点击“我已开启”。",
-                    "Access was not detected. macOS may hide TCC state from a sandboxed extension; after confirming the switch is on, click “I Enabled It”."
+                    "尚未检测到授权。请在系统设置中确认开关已打开，然后重新打开此窗口或点击“重新检查”。",
+                    "Access was not detected. Confirm the switch in System Settings, then reopen this window or click “Check Again”."
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -183,16 +176,15 @@ private struct SetupGuideView: View {
             home.appendingPathComponent("Library/Safari"),
             home.appendingPathComponent("Library/Messages")
         ]
-        let canReadProtectedLocation = protectedLocations.contains {
-            FileManager.default.isReadableFile(atPath: $0.path)
+        let canReadProtectedLocation = protectedLocations.contains { location in
+            do {
+                _ = try FileManager.default.contentsOfDirectory(at: location, includingPropertiesForKeys: nil)
+                return true
+            } catch {
+                return false
+            }
         }
-        permissionGranted = canReadProtectedLocation || UserDefaults.standard.bool(forKey: Self.permissionConfirmationKey)
-        permissionChecked = true
-    }
-
-    private func confirmFullDiskAccess() {
-        UserDefaults.standard.set(true, forKey: Self.permissionConfirmationKey)
-        permissionGranted = true
+        permissionGranted = canReadProtectedLocation
         permissionChecked = true
     }
 

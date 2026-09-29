@@ -44,7 +44,7 @@ InnerPeek 不会自动打开文件、解压文件或修改原始内容。
 
 **系统设置 → 隐私与安全性 → 完全磁盘访问权限 → “+” → 选择 `/Applications/InnerPeek.app` → 打开开关**
 
-回到 Finder 后重新按一次空格。InnerPeek 设置窗口会显示权限状态和完整步骤。
+回到 Finder 后重新按一次空格。InnerPeek 设置窗口会通过实际读取受保护目录自动刷新状态，不需要手动确认按钮。
 
 macOS 不允许应用静默把自己加入完全磁盘访问列表；授权必须由用户确认。权限只用于读取你主动预览的内容，InnerPeek 不上传文件，也不修改文件。
 
@@ -94,7 +94,7 @@ xattr -dr com.apple.quarantine /Applications/InnerPeek.app
 校验下载包：
 
 ```sh
-shasum -a 256 InnerPeek-1.0.3-adhoc.zip
+shasum -a 256 InnerPeek-1.0.5-adhoc.zip
 ```
 
 对应哈希见同一 Release 中的 `SHA256SUMS`。
@@ -134,7 +134,7 @@ shasum -a 256 InnerPeek-1.0.3-adhoc.zip
 - 所有目录读取、ZIP 索引解析和图标处理都在本机完成。
 - 不联网、不上传、不修改原文件。
 - 不后台驻留，不创建登录项或常驻服务。
-- Quick Look 扩展保持 App Sandbox，权限遵循 macOS 的用户选择和安全范围。
+- Quick Look 扩展保持 App Sandbox；主 App 只在设置窗口打开时运行，用真实读取结果检测权限，不后台驻留。
 
 ## 项目与反馈
 
