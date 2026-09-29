@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Ad-Hoc macOS app
+    name: Build macOS app
     runs-on: macos-15
     steps:
       - name: Check out source
@@ -25,32 +25,43 @@ jobs:
             -configuration Release \
             -sdk macosx \
             -derivedDataPath "$RUNNER_TEMP/InnerPeekDerivedData" \
+            ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY=- \
             CODE_SIGNING_REQUIRED=YES \
             CODE_SIGNING_ALLOWED=YES \
             build
 
-      - name: Package app and checksum
+      - name: Create DMG and checksum
         run: |
           set -euo pipefail
           APP_PATH="$RUNNER_TEMP/InnerPeekDerivedData/Build/Products/Release/InnerPeek.app"
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' InnerPeek/InnerPeek-Info.plist)
           OUTPUT_DIR="$GITHUB_WORKSPACE/dist"
-          PACKAGE_PATH="$OUTPUT_DIR/InnerPeek-${VERSION}-adhoc.zip"
+          DMG_ROOT="$RUNNER_TEMP/InnerPeekDMG"
+          DMG_PATH="$OUTPUT_DIR/InnerPeek-${VERSION}-macOS.dmg"
 
           test -d "$APP_PATH"
+          test -f "$APP_PATH/Contents/Resources/Assets.car"
           codesign --verify --deep --strict "$APP_PATH"
           mkdir -p "$OUTPUT_DIR"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$PACKAGE_PATH"
-          (cd "$OUTPUT_DIR" && shasum -a 256 "$(basename "$PACKAGE_PATH")" > SHA256SUMS)
+          mkdir -p "$DMG_ROOT"
+          ditto "$APP_PATH" "$DMG_ROOT/InnerPeek.app"
+          ln -s /Applications "$DMG_ROOT/Applications"
+          hdiutil create \
+            -volname "InnerPeek ${VERSION}" \
+            -srcfolder "$DMG_ROOT" \
+            -ov \
+            -format UDZO \
+            "$DMG_PATH"
+          (cd "$OUTPUT_DIR" && shasum -a 256 "$(basename "$DMG_PATH")" > SHA256SUMS)
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: InnerPeek-macOS-AdHoc-${{ github.run_number }}
+          name: InnerPeek-macOS-${{ github.run_number }}
           path: |
-            dist/InnerPeek-*-adhoc.zip
+            dist/InnerPeek-*-macOS.dmg
             dist/SHA256SUMS
           if-no-files-found: error
           retention-days: 30

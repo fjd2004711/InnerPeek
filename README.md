@@ -109,7 +109,7 @@ shasum -a 256 InnerPeek-1.0.5-adhoc.zip
 
 对应哈希见同一 Release 中的 `SHA256SUMS`。
 
-推送到 `main` 后，GitHub Actions 会自动构建 Ad-Hoc 版本并生成校验文件。构建完成后，可在仓库的 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载；自动构建产物保留 30 天，不会自动替换正式 Release。
+推送到 `main` 后，GitHub Actions 会自动构建 macOS DMG 测试包并生成校验文件。打开 DMG 后将 InnerPeek 拖到「应用程序」即可。构建完成后，可在仓库的 [Actions](../../actions/workflows/macos-build.yml) → 对应运行记录 → **Artifacts** 下载；自动构建产物保留 30 天，不会自动替换正式 Release。由于没有 Developer ID 证书，自动构建包未经过 Apple 公证；首次打开时可能需要在「隐私与安全性」中手动允许。
 
 ## 常见问题
 
