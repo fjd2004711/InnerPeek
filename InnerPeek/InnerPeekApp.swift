@@ -53,9 +53,9 @@ private struct SetupGuideView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            Image(systemName: "folder.fill.badge.checkmark")
-                .font(.system(size: 42, weight: .medium))
-                .foregroundStyle(.blue)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .scaledToFit()
                 .frame(width: 58, height: 58)
                 .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 14))
             VStack(alignment: .leading, spacing: 4) {
@@ -65,7 +65,7 @@ private struct SetupGuideView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("1.0.1")
+            Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }

@@ -23,7 +23,7 @@ The Quick Look extension is on-demand; the main app does not stay resident.
 Compare the SHA-256 hash with `SHA256SUMS` from the same release:
 
 ```sh
-shasum -a 256 InnerPeek-1.0.1-adhoc.zip
+shasum -a 256 InnerPeek-1.0.2-adhoc.zip
 ```
 
 ## Permission guide

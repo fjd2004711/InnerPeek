@@ -82,6 +82,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             self.outlineView.delegate = source
             self.outlineView.target = self
             self.outlineView.action = #selector(PreviewViewController.handleOutlineRowClick(_:))
+            self.outlineView.doubleAction = nil
             self.outlineView.target = self
             return source
         }

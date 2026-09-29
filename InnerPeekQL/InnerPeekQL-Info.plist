@@ -5,8 +5,8 @@
     <key>CFBundleDisplayName</key><string>InnerPeek Quick Look</string>
     <key>CFBundleName</key><string>InnerPeekQL</string>
     <key>CFBundlePackageType</key><string>XPC!</string>
-    <key>CFBundleShortVersionString</key><string>1.0.1</string>
-    <key>CFBundleVersion</key><string>2</string>
+    <key>CFBundleShortVersionString</key><string>1.0.2</string>
+    <key>CFBundleVersion</key><string>3</string>
     <key>NSExtension</key><dict>
         <key>NSExtensionAttributes</key><dict>
             <key>QLSupportedContentTypes</key><array><string>public.folder</string><string>public.zip-archive</string></array>

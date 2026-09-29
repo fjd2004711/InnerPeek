@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 
 @MainActor
 final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
@@ -8,6 +9,7 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
     private var pendingExpansionIDs: Set<UUID> = []
     private var resolvedIcons: [UUID: NSImage] = [:]
     private var requestedIconIDs: Set<UUID> = []
+    private var lastToggleTime: [UUID: CFTimeInterval] = [:]
     private let provider: PreviewContentProvider
     var onChildrenRequested: ((PreviewItem) -> Void)?
     var onRealIconRequested: ((PreviewItem) -> Void)?
@@ -73,6 +75,12 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
 
     func toggleFolder(_ item: PreviewItem, in outlineView: NSOutlineView) {
         guard item.isFolder else { return }
+        // NSOutlineView can deliver both its row action and a follow-up
+        // selection/action event for one trackpad click. Ignore only that
+        // same-event duplicate; a deliberate second click remains responsive.
+        let now = CACurrentMediaTime()
+        if let previous = lastToggleTime[item.id], now - previous < 0.18 { return }
+        lastToggleTime[item.id] = now
         if outlineView.isItemExpanded(item) {
             outlineView.animator().collapseItem(item)
             return
