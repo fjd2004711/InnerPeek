@@ -7,6 +7,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var loadTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
     private var analysisWorker: Task<FolderAnalysis, Error>?
+    private var analysisRequestID: UUID?
     private var metadataTask: Task<Void, Never>?
     private var metadataRequestID: UUID?
     private var dataSource: PreviewDataSource?
@@ -16,8 +17,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var countLabel: NSTextField!
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
+    private var whatsInsideHeader: NSStackView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
+    private var verdictSection: NSStackView!
+    private var verdictRows: NSStackView!
     private var insightSection: NSStackView!
     private var insightRows: NSStackView!
     private var importantSection: NSStackView!
@@ -29,29 +33,16 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var contentTopToHeader: NSLayoutConstraint!
     private var analysisTopToHeader: NSLayoutConstraint!
     private var contentTopToAnalysis: NSLayoutConstraint!
-    private var contentReady = false
-    private var contentRevealed = false
-    private var hasPresentedContent = false
 
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
-        // Quick Look measures the extension at zero size during its source-file
-        // zoom. Keep our hierarchy invisible until the host has a real frame;
-        // otherwise Auto Layout can briefly paint from the leading edge.
-        view.alphaValue = 0
         buildInterface()
-    }
-
-    override func viewDidLayout() {
-        super.viewDidLayout()
-        revealContentIfReady()
     }
 
     override func viewDidDisappear() {
         super.viewDidDisappear()
         cancelLoading()
-        hasPresentedContent = false
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
@@ -72,10 +63,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         provider = contentProvider
         let source = await MainActor.run {
             self.loadViewIfNeeded()
-            let keepPreviewVisible = self.hasPresentedContent && self.view.window != nil
-            self.contentReady = false
-            self.contentRevealed = keepPreviewVisible
-            if !keepPreviewVisible { self.view.alphaValue = 0 }
             let source = PreviewDataSource(provider: contentProvider)
             source.onChildrenRequested = { [weak self] item in
                 self?.loadChildren(of: item)
@@ -110,9 +97,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
 
         if isDirectory {
-            beginFolderAnalysis(at: url, provider: contentProvider)
+            beginFolderAnalysis(at: url)
         } else {
-            beginArchiveAnalysis(at: url, provider: contentProvider)
+            beginArchiveAnalysis(at: url)
         }
 
         loadTask = Task { [weak self, contentProvider] in
@@ -125,8 +112,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                             source.setRootItems(partialItems)
                             controller.outlineView.reloadData()
                             controller.updateCountLabel()
-                            controller.contentReady = true
-                            controller.revealContentIfReady()
                         }
                     }
                 }.value
@@ -137,8 +122,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                     controller.updateCountLabel()
                     controller.spinner.stopAnimation(nil)
                     controller.spinner.isHidden = true
-                    controller.contentReady = true
-                    controller.revealContentIfReady()
                 }
             } catch is CancellationError {
                 // Preview was dismissed; no UI work is needed.
@@ -148,8 +131,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                     controller.countLabel.stringValue = NSLocalizedString(key, comment: "Preview read error")
                     controller.spinner.stopAnimation(nil)
                     controller.spinner.isHidden = true
-                    controller.contentReady = true
-                    controller.revealContentIfReady()
                 }
             }
         }
@@ -215,6 +196,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisTask = nil
         analysisWorker?.cancel()
         analysisWorker = nil
+        analysisRequestID = nil
         metadataTask?.cancel()
         metadataTask = nil
         metadataRequestID = nil
@@ -222,7 +204,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         provider = nil
     }
 
-    private func beginFolderAnalysis(at folderURL: URL, provider: any PreviewContentProvider) {
+    private func beginFolderAnalysis(at folderURL: URL) {
+        let requestID = UUID()
+        analysisRequestID = requestID
         let worker = Task.detached(priority: .utility) {
             try FolderAnalyzer().analyze(folderURL: folderURL)
         }
@@ -231,8 +215,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             do {
                 let analysis = try await worker.value
                 try Task.checkCancellation()
-                guard let self, self.provider === provider else { return }
-                self.presentFolderAnalysis(analysis)
+                await MainActor.run {
+                    guard let self, self.analysisRequestID == requestID else { return }
+                    self.presentFolderAnalysis(analysis)
+                }
             } catch is CancellationError {
                 // The Quick Look preview closed or was replaced.
             } catch {
@@ -241,7 +227,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
     }
 
-    private func beginArchiveAnalysis(at archiveURL: URL, provider: any PreviewContentProvider) {
+    private func beginArchiveAnalysis(at archiveURL: URL) {
+        let requestID = UUID()
+        analysisRequestID = requestID
         let worker = Task.detached(priority: .utility) {
             try ZIPContentProvider(archiveURL: archiveURL).semanticAnalysis()
         }
@@ -250,8 +238,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             do {
                 let analysis = try await worker.value
                 try Task.checkCancellation()
-                guard let self, self.provider === provider else { return }
-                self.presentFolderAnalysis(analysis)
+                await MainActor.run {
+                    guard let self, self.analysisRequestID == requestID else { return }
+                    self.presentFolderAnalysis(analysis)
+                }
             } catch is CancellationError {
                 // The Quick Look preview closed or was replaced.
             } catch {
@@ -265,30 +255,95 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
         let insights = InsightEngine().generate(for: analysis, relationships: relationships, importantFiles: importantFiles)
-        guard !statistics.isEmpty || !insights.isEmpty else { return }
+        let decision = SemanticVerdictEngine().decide(
+            analysis: analysis,
+            relationships: relationships,
+            insights: insights,
+            importantFiles: importantFiles
+        )
+        guard !statistics.isEmpty || decision.verdict != nil || !decision.insights.isEmpty || !decision.evidence.isEmpty else { return }
+        // When the decision layer has something concrete to say, keep the
+        // default scan order focused: Summary, Insights, Evidence, Browse.
+        // A quiet folder retains its compact category overview instead.
+        let showContents = decision.verdict == nil && decision.insights.isEmpty && decision.evidence.isEmpty
 
         whatsInsideRows.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
-        for statistic in statistics {
-            whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
+        if showContents {
+            for statistic in statistics {
+                whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
+            }
         }
-        presentInsights(insights)
+        presentVerdict(decision.verdict)
+        presentInsights(decision.insights)
+        presentEvidence(decision.evidence)
 
-        let summaryKey = analysis.scanState.isPartial
-            ? "analysis_summary_partial"
-            : "analysis_summary_complete"
-        analysisSummaryLabel.stringValue = String.localizedStringWithFormat(
-            NSLocalizedString(summaryKey, comment: "Bounded folder analysis summary"),
-            analysis.analyzedFileCount,
-            analysis.analyzedDirectoryCount,
-            Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize)
-        )
+        if showContents {
+            let summaryKey = analysis.scanState.isPartial
+                ? "analysis_summary_partial"
+                : "analysis_summary_complete"
+            analysisSummaryLabel.stringValue = String.localizedStringWithFormat(
+                NSLocalizedString(summaryKey, comment: "Bounded folder analysis summary"),
+                analysis.analyzedFileCount,
+                analysis.analyzedDirectoryCount,
+                Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize)
+            )
+        }
         contentTopToHeader.isActive = false
         analysisTopToHeader.isActive = true
         contentTopToAnalysis.isActive = true
+        // The section also hosts the verdict, insights, and evidence. Hiding
+        // the whole container here would hide the decision layer while its
+        // active top constraint still reserves blank space above the browser.
+        whatsInsideHeader.isHidden = !showContents
+        whatsInsideRows.isHidden = !showContents
         whatsInsideSection.isHidden = false
+    }
+
+    private func presentVerdict(_ verdict: SemanticVerdict?) {
+        verdictRows.arrangedSubviews.forEach {
+            verdictRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        guard let verdict else {
+            verdictSection.isHidden = true
+            return
+        }
+        let icon = NSImageView()
+        let symbol = verdict.status == .warning ? "exclamationmark.triangle" :
+            verdict.status == .complete ? "checkmark.seal" : "folder.badge.gearshape"
+        icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        icon.contentTintColor = verdict.status == .warning ? .systemOrange :
+            verdict.status == .complete ? .systemGreen : PreviewVisuals.secondaryLabelColor
+        icon.translatesAutoresizingMaskIntoConstraints = false
+
+        let title = NSTextField(labelWithString: verdict.localizedTitle())
+        title.font = PreviewVisuals.rowFont
+        title.lineBreakMode = .byTruncatingTail
+        let summary = NSTextField(labelWithString: verdict.localizedSummary())
+        summary.font = PreviewVisuals.metadataFont
+        summary.textColor = PreviewVisuals.secondaryLabelColor
+        summary.lineBreakMode = .byTruncatingTail
+        let text = NSStackView(views: [title, summary])
+        text.orientation = .vertical
+        text.alignment = .leading
+        text.spacing = 1
+        let row = NSStackView(views: [icon, text])
+        row.orientation = .horizontal
+        row.alignment = .top
+        row.spacing = PreviewVisuals.analysisRowSpacing
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
+            icon.heightAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize)
+        ])
+        verdictRows.addArrangedSubview(row)
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: verdictRows.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: verdictRows.trailingAnchor)
+        ])
+        verdictSection.isHidden = false
     }
 
     private func presentInsights(_ insights: [Insight]) {
@@ -391,15 +446,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             row.alignment = .width
             row.spacing = 1
             relationshipRows.addArrangedSubview(row)
-            NSLayoutConstraint.activate([
-                heading.leadingAnchor.constraint(equalTo: row.leadingAnchor),
-                heading.trailingAnchor.constraint(equalTo: row.trailingAnchor),
-                preview.leadingAnchor.constraint(equalTo: row.leadingAnchor),
-                preview.trailingAnchor.constraint(equalTo: row.trailingAnchor),
-                heading.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
-                heading.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
-                count.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
-            ])
         }
         relationshipSection.isHidden = false
     }
@@ -424,6 +470,32 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             subtitle.font = PreviewVisuals.metadataFont
             subtitle.textColor = PreviewVisuals.secondaryLabelColor
             subtitle.alignment = .left
+            let row = NSStackView(views: [title, subtitle])
+            row.orientation = .vertical
+            row.alignment = .leading
+            row.spacing = 1
+            importantRows.addArrangedSubview(row)
+        }
+        importantSection.isHidden = false
+    }
+
+    private func presentEvidence(_ evidence: [SemanticEvidence]) {
+        importantRows.arrangedSubviews.forEach {
+            importantRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        guard !evidence.isEmpty else {
+            importantSection.isHidden = true
+            return
+        }
+        for item in evidence {
+            let title = NSTextField(labelWithString: item.relativePath)
+            title.font = PreviewVisuals.rowFont
+            title.lineBreakMode = .byTruncatingMiddle
+            let subtitle = NSTextField(labelWithString: item.localizedReason())
+            subtitle.font = PreviewVisuals.metadataFont
+            subtitle.textColor = PreviewVisuals.secondaryLabelColor
+            subtitle.lineBreakMode = .byTruncatingTail
             let row = NSStackView(views: [title, subtitle])
             row.orientation = .vertical
             row.alignment = .leading
@@ -556,10 +628,16 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private func resetAnalysisPresentation() {
+        verdictRows?.arrangedSubviews.forEach {
+            verdictRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
         whatsInsideRows?.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
+        whatsInsideHeader?.isHidden = true
+        whatsInsideRows?.isHidden = true
         importantRows?.arrangedSubviews.forEach {
             importantRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -573,6 +651,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             $0.removeFromSuperview()
         }
         insightSection?.isHidden = true
+        verdictSection?.isHidden = true
         relationshipSection?.isHidden = true
         importantSection?.isHidden = true
         fileDetailSection?.isHidden = true
@@ -580,23 +659,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         contentTopToAnalysis?.isActive = false
         analysisTopToHeader?.isActive = false
         contentTopToHeader?.isActive = true
-    }
-
-    private func revealContentIfReady() {
-        guard contentReady, !contentRevealed,
-              view.bounds.width > 240, view.bounds.height > 160 else { return }
-        prewarmVisibleRows()
-        contentRevealed = true
-        if hasPresentedContent {
-            view.alphaValue = 1
-            return
-        }
-        hasPresentedContent = true
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.12
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            view.animator().alphaValue = 1
-        }
     }
 
     private func prewarmVisibleRows() {
@@ -715,6 +777,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisHeader.orientation = .horizontal
         analysisHeader.alignment = .centerY
         analysisHeader.spacing = PreviewVisuals.controlSpacing
+        whatsInsideHeader = analysisHeader
 
         whatsInsideRows = NSStackView()
         whatsInsideRows.orientation = .vertical
@@ -728,6 +791,20 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisStack.translatesAutoresizingMaskIntoConstraints = false
         analysisStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
         analysisStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let verdictTitle = NSTextField(labelWithString: NSLocalizedString("semantic_verdict", comment: "Semantic verdict section title"))
+        verdictTitle.font = PreviewVisuals.analysisTitleFont
+        verdictTitle.alignment = .left
+        verdictRows = NSStackView()
+        verdictRows.orientation = .vertical
+        verdictRows.alignment = .width
+        verdictRows.spacing = PreviewVisuals.analysisRowSpacing
+        verdictSection = NSStackView(views: [verdictTitle, verdictRows])
+        verdictSection.orientation = .vertical
+        verdictSection.alignment = .width
+        verdictSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        verdictSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        verdictSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let relationshipTitle = NSTextField(labelWithString: NSLocalizedString("detected_relationships", comment: "Detected relationships section"))
         relationshipTitle.font = PreviewVisuals.analysisTitleFont
@@ -745,7 +822,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         relationshipSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         relationshipSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_files", comment: "Important files section title"))
+        let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_and_evidence", comment: "Important files and evidence section title"))
         importantTitle.font = PreviewVisuals.analysisTitleFont
         importantTitle.alignment = .left
         importantRows = NSStackView()
@@ -788,7 +865,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         insightSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         insightSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        analysisStack.addArrangedSubview(insightSection)
+        analysisStack.insertArrangedSubview(verdictSection, at: 0)
+        analysisStack.insertArrangedSubview(insightSection, at: 1)
+        analysisStack.insertArrangedSubview(importantSection, at: 2)
         analysisStack.addArrangedSubview(fileDetailSection)
 
         // Keep the intelligence summary content-driven and unframed. The file
@@ -852,6 +931,18 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             insightTitle.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
             insightRows.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
             insightRows.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
+            verdictSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            verdictSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            verdictTitle.leadingAnchor.constraint(equalTo: verdictSection.leadingAnchor),
+            verdictTitle.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
+            verdictRows.leadingAnchor.constraint(equalTo: verdictSection.leadingAnchor),
+            verdictRows.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
+            importantSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            importantSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            importantTitle.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
+            importantTitle.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
+            importantRows.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
+            importantRows.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
             fileDetailSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
             fileDetailSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             detailTitle.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),

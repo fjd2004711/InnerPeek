@@ -8,6 +8,7 @@
 "size_column" = "大小";
 "modified_column" = "修改日期";
 "whats_inside" = "内容概览";
+"semantic_verdict" = "摘要";
 "insights" = "洞察";
 "analysis_file_count" = "%ld 个文件";
 "analysis_summary_complete" = "已分析 %1$ld 个文件 · %2$ld 个文件夹 · %3$@";
@@ -30,6 +31,7 @@
 "file_category_project" = "项目";
 "file_category_unknown" = "其他";
 "important_files" = "重要内容";
+"important_and_evidence" = "重要内容与依据";
 "selected_file" = "所选文件";
 "detail_type" = "类型";
 "detail_purpose" = "用途";

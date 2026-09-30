@@ -26,6 +26,7 @@ swiftc -parse-as-library \
   "$repo_root/Shared/FileIntelligence/RelationshipEngine.swift" \
   "$repo_root/Shared/FileIntelligence/DeclarativeRelationshipDetector.swift" \
   "$repo_root/Shared/FileIntelligence/InsightEngine.swift" \
+  "$repo_root/Shared/FileIntelligence/SemanticVerdictEngine.swift" \
   "$repo_root/Shared/PreviewItem.swift" \
   "$repo_root/Shared/PreviewContentProvider.swift" \
   "$repo_root/Shared/ZIPContentProvider.swift" \

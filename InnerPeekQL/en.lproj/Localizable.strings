@@ -8,6 +8,7 @@
 "size_column" = "Size";
 "modified_column" = "Modified";
 "whats_inside" = "What's Inside";
+"semantic_verdict" = "Summary";
 "insights" = "Insights";
 "analysis_file_count" = "%ld files";
 "analysis_summary_complete" = "%ld files · %ld folders · %@ analyzed";
@@ -30,6 +31,7 @@
 "file_category_project" = "Projects";
 "file_category_unknown" = "Other";
 "important_files" = "Important";
+"important_and_evidence" = "Important & Evidence";
 "selected_file" = "Selected File";
 "detail_type" = "Type";
 "detail_purpose" = "Purpose";

@@ -34,6 +34,8 @@ These are actual Finder previews. The repository also includes a [demo folder](d
 - **Tree browsing:** Expand and collapse folders and directories inside ZIP archives.
 - **Useful metadata:** See names, file sizes, modification dates, and file-type icons at a glance.
 - **No ZIP extraction:** Reads the ZIP directory index without reading file bodies or writing an extracted copy to disk.
+- **Structure at a glance:** Uses local rules and file knowledge to identify common projects, model packages, document sets, and photo companions with traceable file evidence.
+- **Notable observations:** Within a bounded scan, surfaces component completeness, unusually small or empty model weights, and obvious storage concentration.
 - **On-demand loading:** Reads folders only when expanded, while system file icons are resolved and cached in the background.
 - **Native experience:** Built on Quick Look and AppKit's `NSOutlineView` for familiar Finder-style interactions.
 - **Local and read-only:** Preview content is not uploaded or modified, and there is no persistent background service.
@@ -68,10 +70,13 @@ InnerPeek is designed to shorten the “press Space for a quick look” path:
 | --- | --- |
 | Folders | Reads only the current level, loads subfolders when expanded, and skips hidden files. |
 | ZIP archives | Parses the central directory and builds an in-memory tree without extracting files. |
+| Content decisions | Uses only analyzed names, file types, roles, and structure rules; conclusions include relative-path evidence from that bounded result. |
 | File icons | Shows lightweight type icons first, then resolves and caches Finder icons for on-disk files in the background. |
 | Interface | A Quick Look extension hosts a native `NSOutlineView` for selection, expansion, and scrolling. |
 
 This avoids full archive extraction, eager traversal of an entire directory tree, and large numbers of synchronous icon lookups on the main thread.
+
+All content analysis is local, rule/knowledge-driven, bounded, and read-only. It helps explain common structures, but does not claim to understand arbitrary folders or provide security, malware, or antivirus detection.
 
 ## Current limitations
 

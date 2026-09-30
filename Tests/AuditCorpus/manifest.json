@@ -1,16 +1,16 @@
 {
   "version": 1,
   "cases": [
-    {"id":"transformer-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-complete","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"]},
-    {"id":"transformer-abnormal","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-abnormal","requiredRelationships":["transformer"],"requiredInsights":["small-model-weights"]},
+    {"id":"transformer-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-complete","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"],"expectedVerdict":"transformerModelPackage","expectedVerdictStatus":"complete","requiredEvidence":["config.json","tokenizer.json","model.safetensors"]},
+    {"id":"transformer-abnormal","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-abnormal","requiredRelationships":["transformer"],"requiredInsights":["small-model-weights"],"expectedVerdict":"transformerModelPackage","expectedVerdictStatus":"warning","requiredEvidence":["config.json","tokenizer.json","model.safetensors"]},
     {"id":"shapefile-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/shapefile-complete","requiredRelationships":["shapefile"],"requiredInsights":["shapefile-completeness-complete"]},
     {"id":"shapefile-incomplete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/shapefile-incomplete","forbiddenRelationships":["shapefile"],"forbiddenInsights":["shapefile-completeness-missing-required"]},
-    {"id":"node-docker","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/node-docker","requiredRelationships":["node","docker"]},
-    {"id":"latex","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/latex","requiredRelationships":["latex"]},
-    {"id":"photo-raw","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/photo-raw","forbiddenRelationships":["transformer","node","docker"],"maxInsights":0},
-    {"id":"generic-mixed","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/generic-mixed","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0},
+    {"id":"node-docker","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/node-docker","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","requiredEvidence":["package.json","Dockerfile"]},
+    {"id":"latex","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/latex","requiredRelationships":["latex"],"expectedVerdict":"latexResearchProject","requiredEvidence":["main.tex","references.bib","figures"]},
+    {"id":"photo-raw","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/photo-raw","forbiddenRelationships":["transformer","node","docker"],"maxInsights":0,"expectedVerdict":"photoCollection","requiredEvidence":["001.CR3","001.JPG"]},
+    {"id":"generic-mixed","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/generic-mixed","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0,"forbiddenVerdicts":["transformerModelPackage","nodeProject","pythonProject","latexResearchProject","photoCollection"]},
     {"id":"storage-concentration","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/storage-concentration","requiredInsights":["largest-file-concentration"]},
-    {"id":"balanced","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/balanced","forbiddenInsights":["largest-file-concentration","top-three-concentration","category-concentration"],"maxInsights":0},
+    {"id":"balanced","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/balanced","forbiddenInsights":["largest-file-concentration","top-three-concentration","category-concentration"],"maxInsights":0,"forbiddenVerdicts":["transformerModelPackage","nodeProject","pythonProject","latexResearchProject","photoCollection"]},
     {"id":"messy-python","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-python","requiredRelationships":["python"]},
     {"id":"messy-node","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-node","requiredRelationships":["node"],"forbiddenInsights":["empty-model-weights"]},
     {"id":"research","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/research","requiredRelationships":["latex"]},
@@ -19,9 +19,9 @@
     {"id":"backup","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/backup","maxInsights":1},
     {"id":"messy-photos","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-photos","forbiddenRelationships":["transformer","node","docker"],"maxInsights":1},
     {"id":"random-zip","kind":"semi-realistic","sourceKind":"zip","path":"semi-realistic/random-zip.zip","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":1},
-    {"id":"node-docker-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/node-docker.zip","requiredRelationships":["node","docker"]},
-    {"id":"transformer-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/transformer-complete.zip","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"]},
-    {"id":"generic-mixed-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/generic-mixed.zip","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0}
+    {"id":"node-docker-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/node-docker.zip","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","requiredEvidence":["package.json","Dockerfile"],"parityWith":"node-docker"},
+    {"id":"transformer-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/transformer-complete.zip","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"],"expectedVerdict":"transformerModelPackage","expectedVerdictStatus":"complete","requiredEvidence":["config.json","tokenizer.json","model.safetensors"],"parityWith":"transformer-complete"},
+    {"id":"generic-mixed-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/generic-mixed.zip","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0,"forbiddenVerdicts":["transformerModelPackage","nodeProject","pythonProject","latexResearchProject","photoCollection"],"parityWith":"generic-mixed"}
     ,{"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"}
     ,{"id":"realworld-hello-gitworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-gitworld"}
     ,{"id":"realworld-click","kind":"real-world","sourceKind":"filesystem","path":"real-world/click"}

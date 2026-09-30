@@ -355,6 +355,15 @@ enum FileIntelligenceRegression {
         let completeInsights = engine.generate(for: completeAnalysis, relationships: completeRelationships)
         try expect(completeInsights.contains { $0.id == "transformer-model-completeness-complete" }, "complete transformer insight")
         try expect(!completeInsights.contains { $0.id == "small-model-weights" }, "normal model weight size")
+        let verdictEngine = SemanticVerdictEngine()
+        let completeDecision = verdictEngine.decide(
+            analysis: completeAnalysis, relationships: completeRelationships, insights: completeInsights,
+            importantFiles: ImportantFileDetector().detect(in: completeAnalysis)
+        )
+        try expect(completeDecision.verdict?.archetype == .transformerModelPackage, "transformer verdict archetype")
+        try expect(completeDecision.verdict?.status == .complete, "complete transformer verdict")
+        try expect(Set(completeDecision.evidence.map(\.relativePath)).isSuperset(of: ["config.json", "tokenizer.json", "model.safetensors"]), "transformer verdict evidence")
+        try expect(completeDecision.insights.count <= SemanticDecision.maximumVisibleInsights, "decision insight bound")
 
         let communityRuleURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -404,6 +413,19 @@ enum FileIntelligenceRegression {
         let smallInsights = engine.generate(for: smallAnalysis, relationships: [missingRecommended])
         try expect(smallInsights.contains { $0.id == "small-model-weights" }, "small model anomaly")
 
+        let abnormalRoot = root.appendingPathComponent("abnormal-transformer", isDirectory: true)
+        try makeDirectory(abnormalRoot)
+        try writeFile(abnormalRoot, "config.json", bytes: 1)
+        try writeFile(abnormalRoot, "tokenizer.json", bytes: 1)
+        try writeFile(abnormalRoot, "model.safetensors", bytes: 8)
+        let abnormalAnalysis = try analyzer.analyze(folderURL: abnormalRoot)
+        let abnormalRelationships = RelationshipEngine().detect(in: abnormalAnalysis)
+        let abnormalInsights = engine.generate(for: abnormalAnalysis, relationships: abnormalRelationships)
+        let abnormalDecision = verdictEngine.decide(analysis: abnormalAnalysis, relationships: abnormalRelationships,
+                                                    insights: abnormalInsights, importantFiles: ImportantFileDetector().detect(in: abnormalAnalysis))
+        try expect(abnormalDecision.verdict?.status == .warning, "abnormal transformer verdict priority")
+        try expect(abnormalDecision.insights.first?.severity == .warning, "warning insight appears first")
+
         let concentratedRoot = root.appendingPathComponent("concentrated", isDirectory: true)
         try makeDirectory(concentratedRoot)
         try writeFile(concentratedRoot, "large.dat", bytes: 800)
@@ -417,6 +439,9 @@ enum FileIntelligenceRegression {
         for index in 0..<4 { try writeFile(balancedRoot, "file-\(index).txt", bytes: 250) }
         let balancedInsights = engine.generate(for: try analyzer.analyze(folderURL: balancedRoot), relationships: [])
         try expect(!balancedInsights.contains { $0.kind == .storage }, "balanced storage has no hotspot")
+        let genericAnalysis = try analyzer.analyze(folderURL: balancedRoot)
+        let genericDecision = verdictEngine.decide(analysis: genericAnalysis, relationships: [], insights: balancedInsights, importantFiles: [])
+        try expect(genericDecision.verdict == nil && genericDecision.insights.isEmpty, "quiet generic folder")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {
@@ -462,6 +487,15 @@ enum FileIntelligenceRegression {
         try expect(relationships.contains { $0.type == .transformer }, "ZIP transformer relationship: \(relationships.map { $0.type.rawValue }) / \(analysis.analyzedEntries.compactMap { $0.intelligence?.roles })")
         let standardInsights = InsightEngine().generate(for: analysis, relationships: relationships)
         try expect(standardInsights.contains { $0.id == "transformer-model-completeness-complete" }, "ZIP standard insight")
+        let filesystemInsights = InsightEngine().generate(for: filesystemAnalysis, relationships: filesystemRelationships)
+        let zipDecision = SemanticVerdictEngine().decide(analysis: analysis, relationships: relationships, insights: standardInsights,
+                                                         importantFiles: ImportantFileDetector(registry: communityRegistry).detect(in: analysis))
+        let filesystemDecision = SemanticVerdictEngine().decide(analysis: filesystemAnalysis, relationships: filesystemRelationships, insights: filesystemInsights,
+                                                                importantFiles: ImportantFileDetector(registry: communityRegistry).detect(in: filesystemAnalysis))
+        try expect(zipDecision.verdict == filesystemDecision.verdict, "folder and ZIP verdict parity")
+        try expect(zipDecision.evidence.allSatisfy { evidence in
+            analysis.analyzedEntries.contains { $0.relativePath == evidence.relativePath }
+        }, "ZIP evidence stays within analyzed entries")
 
         let rootItems = try await provider.loadRoot()
         try expect(rootItems.contains { $0.relativePath == "model.fooai" }, "ZIP browse path preserved")
