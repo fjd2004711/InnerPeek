@@ -24,6 +24,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
     let extensions: [String]
     let filenames: [String]
     let category: FileCategory
+    let roles: [SemanticRole]
     let name: LocalizedText
     let description: LocalizedText
     let purposeText: LocalizedText?
@@ -36,6 +37,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
         case extensions
         case filenames
         case category
+        case roles
         case name
         case description
         case purposeText = "purpose"
@@ -50,6 +52,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
         extensions = try container.decodeIfPresent([String].self, forKey: .extensions) ?? []
         filenames = try container.decodeIfPresent([String].self, forKey: .filenames) ?? []
         category = try container.decode(FileCategory.self, forKey: .category)
+        roles = try container.decodeIfPresent([SemanticRole].self, forKey: .roles) ?? []
         name = try container.decode(LocalizedText.self, forKey: .name)
         description = try container.decode(LocalizedText.self, forKey: .description)
         purposeText = try container.decodeIfPresent(LocalizedText.self, forKey: .purposeText)

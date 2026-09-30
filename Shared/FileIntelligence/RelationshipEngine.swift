@@ -25,6 +25,11 @@ struct DetectedRelationship: Sendable, Hashable {
 /// parent directory so unrelated files in neighboring folders cannot match.
 struct RelationshipEngine: Sendable {
     static let maxDisplayedRelationships = 4
+    private let declarativeDetector: DeclarativeRelationshipDetector
+
+    init(declarativeDetector: DeclarativeRelationshipDetector = DeclarativeRelationshipDetector()) {
+        self.declarativeDetector = declarativeDetector
+    }
 
     func detect(in analysis: FolderAnalysis) -> [DetectedRelationship] {
         let directories = Dictionary(grouping: analysis.analyzedEntries) {
@@ -37,12 +42,8 @@ struct RelationshipEngine: Sendable {
             results += shapefiles(in: context)
             if let result = transformer(in: context) { results.append(result) }
             if let result = latex(in: context) { results.append(result) }
-            if let result = node(in: context) { results.append(result) }
-            if let result = python(in: context) { results.append(result) }
-            if let result = rust(in: context) { results.append(result) }
-            if let result = go(in: context) { results.append(result) }
+            results += declarativeDetector.detect(in: entries)
             if let result = xcode(in: context) { results.append(result) }
-            if let result = docker(in: context) { results.append(result) }
         }
         var seen = Set<String>()
         return results.filter { $0.confidence >= 0.85 }
@@ -129,57 +130,12 @@ struct RelationshipEngine: Sendable {
         return .init(type: .latex, members: members.sorted { $0.relativePath < $1.relativePath }, confidence: 0.93, priority: 82)
     }
 
-    private func node(in context: Context) -> DetectedRelationship? {
-        guard context.file("package.json") != nil,
-              context.firstFile(["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock", "tsconfig.json"]) != nil else { return nil }
-        return .init(type: .node, members: context.members([
-            "package.json": .manifest, "package-lock.json": .lockfile, "pnpm-lock.yaml": .lockfile,
-            "yarn.lock": .lockfile, "bun.lock": .lockfile, "tsconfig.json": .configuration
-        ]), confidence: 0.95, priority: 78)
-    }
-
-    private func python(in context: Context) -> DetectedRelationship? {
-        guard context.firstFile(["pyproject.toml", "requirements.txt", "Pipfile", "setup.py", "setup.cfg"]) != nil,
-              context.firstFile(["uv.lock", "poetry.lock", "Pipfile.lock", "requirements.txt", "setup.py", "setup.cfg"]) != nil || context.directory("src") != nil else { return nil }
-        var members = context.members([
-            "pyproject.toml": .manifest, "requirements.txt": .manifest, "pipfile": .manifest,
-            "setup.py": .manifest, "setup.cfg": .manifest, "uv.lock": .lockfile,
-            "poetry.lock": .lockfile, "pipfile.lock": .lockfile
-        ])
-        if let source = context.directory("src") { members.append(.init(relativePath: source.relativePath, role: .source)) }
-        guard members.count >= 2 else { return nil }
-        return .init(type: .python, members: members.sorted { $0.relativePath < $1.relativePath }, confidence: 0.93, priority: 77)
-    }
-
-    private func rust(in context: Context) -> DetectedRelationship? {
-        guard context.file("Cargo.toml") != nil,
-              context.file("Cargo.lock") != nil || context.directory("src") != nil else { return nil }
-        var members = context.members(["cargo.toml": .manifest, "cargo.lock": .lockfile])
-        if let source = context.directory("src") { members.append(.init(relativePath: source.relativePath, role: .source)) }
-        return .init(type: .rust, members: members.sorted { $0.relativePath < $1.relativePath }, confidence: 0.96, priority: 76)
-    }
-
-    private func go(in context: Context) -> DetectedRelationship? {
-        guard context.file("go.mod") != nil, context.file("go.sum") != nil else { return nil }
-        return .init(type: .go, members: context.members(["go.mod": .manifest, "go.sum": .lockfile]), confidence: 0.97, priority: 76)
-    }
-
     private func xcode(in context: Context) -> DetectedRelationship? {
         let projects = context.entries.filter { $0.isDirectory && $0.name.lowercased().hasSuffix(".xcodeproj") }
         guard !projects.isEmpty else { return nil }
         var members = projects.map { RelationshipMember(relativePath: $0.relativePath, role: .project) }
         members += context.members(["package.swift": .manifest, "package.resolved": .lockfile])
         return .init(type: .xcode, members: members.sorted { $0.relativePath < $1.relativePath }, confidence: 0.98, priority: 84)
-    }
-
-    private func docker(in context: Context) -> DetectedRelationship? {
-        guard context.file("Dockerfile") != nil,
-              context.firstFile(["compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml"]) != nil else { return nil }
-        return .init(type: .docker, members: context.members([
-            "dockerfile": .primary, "compose.yml": .configuration, "compose.yaml": .configuration,
-            "docker-compose.yml": .configuration, "docker-compose.yaml": .configuration,
-            ".dockerignore": .supporting
-        ]), confidence: 0.96, priority: 80)
     }
 
     private static func isHigherPriority(_ lhs: DetectedRelationship, _ rhs: DetectedRelationship) -> Bool {

@@ -1,0 +1,5 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"array",
+  "items":{"type":"object","required":["id","relationshipType","confidence","priority"],"additionalProperties":false,"properties":{"id":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]*$"},"relationshipType":{"type":"string","pattern":"^[a-z][a-z0-9-]*$"},"required":{"type":"array","items":{"type":"object","required":["filename"],"additionalProperties":false,"properties":{"filename":{"type":"string","minLength":1},"role":{"type":"string"}}}},"requiredRoles":{"type":"array","items":{"type":"string"},"uniqueItems":true},"requiredAnyFilenames":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"optionalRoles":{"type":"array","items":{"type":"string"},"uniqueItems":true},"optionalFilenames":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"optionalDirectories":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},"minimumOptionalMatches":{"type":"integer","minimum":0},"confidence":{"type":"number","minimum":0,"maximum":1},"priority":{"type":"integer"}}}
+}

@@ -7,7 +7,7 @@ enum FileIntelligenceRegression {
         let resourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("InnerPeekQL/Resources/FileTypes/file-types.json")
+            .appendingPathComponent("Knowledge/file-types.json")
         let registry = FileTypeRegistry(data: try Data(contentsOf: resourceURL))
         let recognizer = FileIntelligenceRecognizer(
             registry: registry,
@@ -56,6 +56,17 @@ enum FileIntelligenceRegression {
         try expect(unknown.typeName == "Unknown File", "unknown extension fallback")
         try expect(unknown.confidence == 0.2, "unknown extension confidence")
         try expect(unknown.systemTypeIdentifier == "public.data", "unknown type identifier")
+
+        let communityDefinition = """
+        [{"id":"fooai","extensions":["fooai"],"filenames":[],"category":"aiModel","roles":["modelWeights"],"name":{"en":"FooAI Model","zh-Hans":"FooAI 模型"},"description":{"en":"Community model format.","zh-Hans":"社区模型格式。"},"isText":false,"isBinary":true}]
+        """
+        let communityRecognizer = FileIntelligenceRecognizer(
+            registry: FileTypeRegistry(data: Data(communityDefinition.utf8)),
+            locale: Locale(identifier: "en_US")
+        )
+        let communityType = communityRecognizer.intelligence(for: URL(fileURLWithPath: "/tmp/model.fooai"))
+        try expect(communityType.category == .aiModel, "community type category")
+        try expect(communityType.roles == [.modelWeights], "community type role")
 
         for (fileName, typeName) in [
             ("README", "Project Documentation"),

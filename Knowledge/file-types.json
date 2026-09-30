@@ -1,0 +1,1628 @@
+[
+  {
+    "id": "pdf",
+    "extensions": [
+      "pdf"
+    ],
+    "category": "document",
+    "name": {
+      "en": "PDF Document",
+      "zh-Hans": "PDF 文档"
+    },
+    "description": {
+      "en": "Portable Document Format document.",
+      "zh-Hans": "便携式文档格式文件。"
+    },
+    "purpose": {
+      "en": "Used for fixed-layout documents.",
+      "zh-Hans": "用于保留固定版式的文档。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "word-document",
+    "extensions": [
+      "doc",
+      "docx",
+      "odt",
+      "pages"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Word Processing Document",
+      "zh-Hans": "文字处理文档"
+    },
+    "description": {
+      "en": "Editable rich-text document.",
+      "zh-Hans": "可编辑的富文本文件。"
+    },
+    "purpose": {
+      "en": "Used for letters, reports and other written documents.",
+      "zh-Hans": "常用于信件、报告和其他文字文档。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "plain-text",
+    "extensions": [
+      "markdown",
+      "md",
+      "org",
+      "rst",
+      "rtf",
+      "text",
+      "txt"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Text Document",
+      "zh-Hans": "文本文件"
+    },
+    "description": {
+      "en": "Human-readable text document.",
+      "zh-Hans": "可直接阅读的文本文件。"
+    },
+    "purpose": {
+      "en": "Used for notes, documentation or formatted text.",
+      "zh-Hans": "用于笔记、文档或带格式的文本。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "ebook",
+    "extensions": [
+      "azw",
+      "azw3",
+      "epub",
+      "fb2",
+      "mobi"
+    ],
+    "category": "document",
+    "name": {
+      "en": "eBook",
+      "zh-Hans": "电子书"
+    },
+    "description": {
+      "en": "Digital book file.",
+      "zh-Hans": "数字书籍文件。"
+    },
+    "purpose": {
+      "en": "Used by eBook readers.",
+      "zh-Hans": "用于电子书阅读器。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "presentation",
+    "extensions": [
+      "key",
+      "odp",
+      "ppt",
+      "pptx"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Presentation",
+      "zh-Hans": "演示文稿"
+    },
+    "description": {
+      "en": "Slide-based presentation document.",
+      "zh-Hans": "以幻灯片组织的演示文稿。"
+    },
+    "purpose": {
+      "en": "Used for talks and visual presentations.",
+      "zh-Hans": "用于演讲和视觉展示。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "excel-spreadsheet",
+    "extensions": [
+      "numbers",
+      "ods",
+      "xls",
+      "xlsb",
+      "xlsm",
+      "xlsx"
+    ],
+    "category": "spreadsheet",
+    "name": {
+      "en": "Spreadsheet",
+      "zh-Hans": "电子表格"
+    },
+    "description": {
+      "en": "Workbook containing tables, formulas or charts.",
+      "zh-Hans": "包含表格、公式或图表的工作簿。"
+    },
+    "purpose": {
+      "en": "Used to organize and calculate tabular data.",
+      "zh-Hans": "用于整理和计算表格数据。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "csv",
+    "extensions": [
+      "csv",
+      "tab",
+      "tsv"
+    ],
+    "category": "spreadsheet",
+    "name": {
+      "en": "Delimited Table",
+      "zh-Hans": "分隔表格数据"
+    },
+    "description": {
+      "en": "Plain-text table with delimiter-separated values.",
+      "zh-Hans": "以分隔符划分字段的纯文本表格。"
+    },
+    "purpose": {
+      "en": "Used to exchange tabular data between applications.",
+      "zh-Hans": "用于在应用间交换表格数据。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "jpeg",
+    "extensions": [
+      "jfif",
+      "jpe",
+      "jpeg",
+      "jpg"
+    ],
+    "category": "image",
+    "name": {
+      "en": "JPEG Image",
+      "zh-Hans": "JPEG 图像"
+    },
+    "description": {
+      "en": "Compressed photographic image.",
+      "zh-Hans": "压缩的照片图像。"
+    },
+    "purpose": {
+      "en": "Commonly used for photographs and web images.",
+      "zh-Hans": "常用于照片和网页图像。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "png",
+    "extensions": [
+      "apng",
+      "png"
+    ],
+    "category": "image",
+    "name": {
+      "en": "PNG Image",
+      "zh-Hans": "PNG 图像"
+    },
+    "description": {
+      "en": "Lossless raster image.",
+      "zh-Hans": "无损位图图像。"
+    },
+    "purpose": {
+      "en": "Commonly used for graphics and images with transparency.",
+      "zh-Hans": "常用于图形和带透明度的图像。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "web-image",
+    "extensions": [
+      "avif",
+      "bmp",
+      "gif",
+      "heic",
+      "heif",
+      "icns",
+      "ico",
+      "tif",
+      "tiff",
+      "webp"
+    ],
+    "category": "image",
+    "name": {
+      "en": "Raster Image",
+      "zh-Hans": "位图图像"
+    },
+    "description": {
+      "en": "Raster image in a common image format.",
+      "zh-Hans": "采用常见图像格式的位图。"
+    },
+    "purpose": {
+      "en": "Used for graphics, photography or application icons.",
+      "zh-Hans": "用于图形、摄影或应用图标。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "svg",
+    "extensions": [
+      "svg",
+      "svgz"
+    ],
+    "category": "image",
+    "name": {
+      "en": "SVG Vector Image",
+      "zh-Hans": "SVG 矢量图像"
+    },
+    "description": {
+      "en": "Scalable vector graphics image.",
+      "zh-Hans": "可缩放的矢量图形图像。"
+    },
+    "purpose": {
+      "en": "Used for resolution-independent illustrations and icons.",
+      "zh-Hans": "用于与分辨率无关的插图和图标。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "camera-raw",
+    "extensions": [
+      "3fr",
+      "arw",
+      "cr2",
+      "cr3",
+      "dng",
+      "iiq",
+      "nef",
+      "orf",
+      "pef",
+      "raf",
+      "rw2",
+      "srw"
+    ],
+    "category": "rawImage",
+    "name": {
+      "en": "Camera RAW Image",
+      "zh-Hans": "相机 RAW 图像"
+    },
+    "description": {
+      "en": "Raw sensor data captured by a digital camera.",
+      "zh-Hans": "由数码相机采集的原始传感器数据。"
+    },
+    "purpose": {
+      "en": "Used for non-destructive professional photo editing.",
+      "zh-Hans": "用于无损的专业照片编辑。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "rawImage",
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "mp3",
+    "extensions": [
+      "aac",
+      "aif",
+      "aiff",
+      "alac",
+      "flac",
+      "m4a",
+      "mp2",
+      "mp3",
+      "ogg",
+      "opus",
+      "wav",
+      "wma"
+    ],
+    "category": "audio",
+    "name": {
+      "en": "Audio File",
+      "zh-Hans": "音频文件"
+    },
+    "description": {
+      "en": "Digital audio recording or music file.",
+      "zh-Hans": "数字音频录制或音乐文件。"
+    },
+    "purpose": {
+      "en": "Used for music, speech and sound effects.",
+      "zh-Hans": "用于音乐、语音和音效。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "audio"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "video",
+    "extensions": [
+      "3gp",
+      "avi",
+      "flv",
+      "m4v",
+      "mkv",
+      "mov",
+      "mp4",
+      "mpeg",
+      "mpg",
+      "ts",
+      "webm",
+      "wmv"
+    ],
+    "category": "video",
+    "name": {
+      "en": "Video File",
+      "zh-Hans": "视频文件"
+    },
+    "description": {
+      "en": "Digital video container.",
+      "zh-Hans": "数字视频容器文件。"
+    },
+    "purpose": {
+      "en": "Used for recorded or streamed video.",
+      "zh-Hans": "用于录制或流式视频。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "video"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "zip",
+    "extensions": [
+      "ipa",
+      "jar",
+      "xpi",
+      "zip",
+      "zipx"
+    ],
+    "category": "archive",
+    "name": {
+      "en": "ZIP Archive",
+      "zh-Hans": "ZIP 压缩包"
+    },
+    "description": {
+      "en": "Archive containing one or more compressed files.",
+      "zh-Hans": "包含一个或多个压缩文件的归档。"
+    },
+    "purpose": {
+      "en": "Used to package and compress files.",
+      "zh-Hans": "用于打包和压缩文件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "archive"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "tar-archive",
+    "extensions": [
+      "bz2",
+      "gz",
+      "lz",
+      "lzma",
+      "tar",
+      "tbz",
+      "tbz2",
+      "tgz",
+      "txz",
+      "xz",
+      "zst"
+    ],
+    "category": "archive",
+    "name": {
+      "en": "Compressed Archive",
+      "zh-Hans": "压缩归档"
+    },
+    "description": {
+      "en": "Compressed archive or archive stream.",
+      "zh-Hans": "压缩归档或归档数据流。"
+    },
+    "purpose": {
+      "en": "Used to distribute or back up groups of files.",
+      "zh-Hans": "用于分发或备份一组文件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "archive"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "other-archive",
+    "extensions": [
+      "7z",
+      "arj",
+      "cab",
+      "iso",
+      "lzh",
+      "rar"
+    ],
+    "category": "archive",
+    "name": {
+      "en": "Archive Image",
+      "zh-Hans": "归档映像"
+    },
+    "description": {
+      "en": "Packaged archive or disk-image file.",
+      "zh-Hans": "打包的归档或磁盘映像文件。"
+    },
+    "purpose": {
+      "en": "Used to store or distribute collections of files.",
+      "zh-Hans": "用于存储或分发文件集合。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "archive"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "python",
+    "extensions": [
+      "py",
+      "pyi",
+      "pyw",
+      "pyx"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Python Source Code",
+      "zh-Hans": "Python 源代码"
+    },
+    "description": {
+      "en": "Program source written in Python.",
+      "zh-Hans": "使用 Python 编写的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used to implement Python programs and scripts.",
+      "zh-Hans": "用于实现 Python 程序和脚本。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "swift",
+    "extensions": [
+      "swift"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Swift Source Code",
+      "zh-Hans": "Swift 源代码"
+    },
+    "description": {
+      "en": "Program source written in Swift.",
+      "zh-Hans": "使用 Swift 编写的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used to build Apple-platform applications and tools.",
+      "zh-Hans": "用于构建 Apple 平台应用和工具。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "javascript",
+    "extensions": [
+      "cjs",
+      "js",
+      "jsx",
+      "mjs"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "JavaScript Source Code",
+      "zh-Hans": "JavaScript 源代码"
+    },
+    "description": {
+      "en": "Program source written in JavaScript.",
+      "zh-Hans": "使用 JavaScript 编写的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used for web, server and automation programs.",
+      "zh-Hans": "用于网页、服务器和自动化程序。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "typescript",
+    "extensions": [
+      "cts",
+      "mts",
+      "tsx"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "TypeScript Source Code",
+      "zh-Hans": "TypeScript 源代码"
+    },
+    "description": {
+      "en": "Typed JavaScript program source.",
+      "zh-Hans": "带类型的 JavaScript 程序源文件。"
+    },
+    "purpose": {
+      "en": "Used for web and server applications.",
+      "zh-Hans": "用于网页和服务器应用。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "c-family",
+    "extensions": [
+      "c",
+      "cc",
+      "cp",
+      "cpp",
+      "cxx",
+      "h",
+      "hpp",
+      "hxx",
+      "m",
+      "mm"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "C-family Source Code",
+      "zh-Hans": "C 系列源代码"
+    },
+    "description": {
+      "en": "Program source written in C, C++ or Objective-C.",
+      "zh-Hans": "使用 C、C++ 或 Objective-C 编写的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used to build native software.",
+      "zh-Hans": "用于构建原生软件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "java",
+    "extensions": [
+      "groovy",
+      "java",
+      "kt",
+      "kts",
+      "scala"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "JVM Source Code",
+      "zh-Hans": "JVM 源代码"
+    },
+    "description": {
+      "en": "Program source for the Java virtual machine.",
+      "zh-Hans": "面向 Java 虚拟机的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used to build Java, Kotlin and related applications.",
+      "zh-Hans": "用于构建 Java、Kotlin 及相关应用。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "dotnet",
+    "extensions": [
+      "cs",
+      "fs",
+      "fsx",
+      "vb"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": ".NET Source Code",
+      "zh-Hans": ".NET 源代码"
+    },
+    "description": {
+      "en": "Program source for the .NET platform.",
+      "zh-Hans": "面向 .NET 平台的程序源文件。"
+    },
+    "purpose": {
+      "en": "Used to build .NET applications.",
+      "zh-Hans": "用于构建 .NET 应用。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "systems-language",
+    "extensions": [
+      "dart",
+      "erl",
+      "ex",
+      "exs",
+      "go",
+      "hrl",
+      "nim",
+      "rs",
+      "zig"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Program Source Code",
+      "zh-Hans": "程序源代码"
+    },
+    "description": {
+      "en": "Source code for a compiled or interpreted program.",
+      "zh-Hans": "用于编译或解释执行程序的源代码。"
+    },
+    "purpose": {
+      "en": "Used to implement software.",
+      "zh-Hans": "用于实现软件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "scripting-language",
+    "extensions": [
+      "bash",
+      "fish",
+      "jl",
+      "lua",
+      "php",
+      "pl",
+      "pm",
+      "ps1",
+      "r",
+      "rb",
+      "sh",
+      "zsh"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Script Source Code",
+      "zh-Hans": "脚本源代码"
+    },
+    "description": {
+      "en": "Source code for a scripting language.",
+      "zh-Hans": "脚本语言的源代码。"
+    },
+    "purpose": {
+      "en": "Used for automation or application logic.",
+      "zh-Hans": "用于自动化或应用逻辑。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "web-markup",
+    "extensions": [
+      "css",
+      "htm",
+      "html",
+      "less",
+      "sass",
+      "scss",
+      "svelte",
+      "vue",
+      "xhtml"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Web Source File",
+      "zh-Hans": "网页源文件"
+    },
+    "description": {
+      "en": "Markup, style or component source for the web.",
+      "zh-Hans": "用于网页的标记、样式或组件源文件。"
+    },
+    "purpose": {
+      "en": "Used to build web pages and interfaces.",
+      "zh-Hans": "用于构建网页和界面。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "sql",
+    "extensions": [
+      "mysql",
+      "psql",
+      "sql"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "SQL Script",
+      "zh-Hans": "SQL 脚本"
+    },
+    "description": {
+      "en": "Structured Query Language source file.",
+      "zh-Hans": "结构化查询语言源文件。"
+    },
+    "purpose": {
+      "en": "Used to query or manage databases.",
+      "zh-Hans": "用于查询或管理数据库。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "data-configuration",
+    "extensions": [
+      "cfg",
+      "conf",
+      "ini",
+      "json",
+      "json5",
+      "jsonc",
+      "plist",
+      "properties",
+      "toml",
+      "xml",
+      "yaml",
+      "yml"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Configuration File",
+      "zh-Hans": "配置文件"
+    },
+    "description": {
+      "en": "Structured settings or application data.",
+      "zh-Hans": "结构化的设置或应用数据。"
+    },
+    "purpose": {
+      "en": "Used to configure software or store structured data.",
+      "zh-Hans": "用于配置软件或存储结构化数据。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "environment-config",
+    "extensions": [
+      "dotenv",
+      "env"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Environment Configuration",
+      "zh-Hans": "环境配置"
+    },
+    "description": {
+      "en": "Key-value environment settings.",
+      "zh-Hans": "键值形式的环境设置。"
+    },
+    "purpose": {
+      "en": "Used to provide application environment variables.",
+      "zh-Hans": "用于提供应用环境变量。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "database",
+    "extensions": [
+      "accdb",
+      "db",
+      "db3",
+      "mdb",
+      "realm",
+      "sdb",
+      "sqlite",
+      "sqlite3"
+    ],
+    "category": "database",
+    "name": {
+      "en": "Database File",
+      "zh-Hans": "数据库文件"
+    },
+    "description": {
+      "en": "Persistent structured database storage.",
+      "zh-Hans": "持久化的结构化数据库存储。"
+    },
+    "purpose": {
+      "en": "Used to store application or relational data.",
+      "zh-Hans": "用于存储应用数据或关系数据。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "database"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "numpy-array",
+    "extensions": [
+      "npy",
+      "npz"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "NumPy Array",
+      "zh-Hans": "NumPy 数组"
+    },
+    "description": {
+      "en": "Scientific array data stored in NumPy format.",
+      "zh-Hans": "以 NumPy 格式保存的科学数组数据。"
+    },
+    "purpose": {
+      "en": "Commonly used for numerical computing and machine learning.",
+      "zh-Hans": "常用于数值计算和机器学习。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "scientific-data",
+    "extensions": [
+      "arrow",
+      "cdf",
+      "dta",
+      "feather",
+      "fit",
+      "fits",
+      "h5",
+      "hdf",
+      "hdf5",
+      "mat",
+      "nc",
+      "parquet",
+      "rdata",
+      "rds",
+      "sas7bdat",
+      "sav"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "Scientific Data File",
+      "zh-Hans": "科学数据文件"
+    },
+    "description": {
+      "en": "Specialized file containing scientific or analytical data.",
+      "zh-Hans": "包含科学或分析数据的专业文件。"
+    },
+    "purpose": {
+      "en": "Used in research, analytics or numerical workflows.",
+      "zh-Hans": "用于研究、分析或数值计算工作流。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "onnx-model",
+    "extensions": [
+      "onnx"
+    ],
+    "category": "aiModel",
+    "name": {
+      "en": "ONNX Model",
+      "zh-Hans": "ONNX 模型"
+    },
+    "description": {
+      "en": "Machine-learning model stored in ONNX format.",
+      "zh-Hans": "使用 ONNX 格式保存的机器学习模型。"
+    },
+    "purpose": {
+      "en": "Commonly used for cross-platform model inference.",
+      "zh-Hans": "通常用于跨平台机器学习模型推理。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "modelWeights"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "safetensors-model",
+    "extensions": [
+      "safetensors"
+    ],
+    "category": "aiModel",
+    "name": {
+      "en": "SafeTensors Model",
+      "zh-Hans": "SafeTensors 模型"
+    },
+    "description": {
+      "en": "Neural-network weights stored in the SafeTensors format.",
+      "zh-Hans": "以 SafeTensors 格式保存的神经网络权重。"
+    },
+    "purpose": {
+      "en": "Commonly used to distribute machine-learning model weights safely.",
+      "zh-Hans": "常用于安全分发机器学习模型权重。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "modelWeights"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "ml-model",
+    "extensions": [
+      "bin",
+      "ckpt",
+      "ggml",
+      "gguf",
+      "mlmodel",
+      "mlpackage",
+      "model",
+      "pb",
+      "pt",
+      "pth",
+      "tflite"
+    ],
+    "category": "aiModel",
+    "name": {
+      "en": "Machine Learning Model",
+      "zh-Hans": "机器学习模型"
+    },
+    "description": {
+      "en": "Model weights or model graph for machine learning.",
+      "zh-Hans": "用于机器学习的模型权重或模型图。"
+    },
+    "purpose": {
+      "en": "Used for training or running machine-learning inference.",
+      "zh-Hans": "用于训练或运行机器学习推理。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "modelWeights"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "blender",
+    "extensions": [
+      "blend",
+      "blend1"
+    ],
+    "category": "threeD",
+    "name": {
+      "en": "Blender Project",
+      "zh-Hans": "Blender 项目"
+    },
+    "description": {
+      "en": "3D scene created with Blender.",
+      "zh-Hans": "使用 Blender 创建的三维场景。"
+    },
+    "purpose": {
+      "en": "Used for 3D modeling, animation and rendering.",
+      "zh-Hans": "用于三维建模、动画和渲染。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "3d-model",
+    "extensions": [
+      "3ds",
+      "3mf",
+      "abc",
+      "dae",
+      "fbx",
+      "glb",
+      "gltf",
+      "obj",
+      "ply",
+      "stl",
+      "usd",
+      "usda",
+      "usdc",
+      "usdz",
+      "x3d"
+    ],
+    "category": "threeD",
+    "name": {
+      "en": "3D Model",
+      "zh-Hans": "三维模型"
+    },
+    "description": {
+      "en": "Three-dimensional geometry or scene data.",
+      "zh-Hans": "三维几何体或场景数据。"
+    },
+    "purpose": {
+      "en": "Used for 3D design, visualization or printing.",
+      "zh-Hans": "用于三维设计、可视化或打印。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "cad",
+    "extensions": [
+      "dwg",
+      "dxf",
+      "iges",
+      "igs",
+      "rvt",
+      "skp",
+      "sldasm",
+      "sldprt",
+      "step",
+      "stp"
+    ],
+    "category": "threeD",
+    "name": {
+      "en": "CAD Design File",
+      "zh-Hans": "CAD 设计文件"
+    },
+    "description": {
+      "en": "Computer-aided design model or drawing.",
+      "zh-Hans": "计算机辅助设计模型或图纸。"
+    },
+    "purpose": {
+      "en": "Used in engineering, architecture and product design.",
+      "zh-Hans": "用于工程、建筑和产品设计。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "font",
+    "extensions": [
+      "eot",
+      "otf",
+      "ttc",
+      "ttf",
+      "woff",
+      "woff2"
+    ],
+    "category": "font",
+    "name": {
+      "en": "Font File",
+      "zh-Hans": "字体文件"
+    },
+    "description": {
+      "en": "Digital typeface or web font.",
+      "zh-Hans": "数字字体或网页字体。"
+    },
+    "purpose": {
+      "en": "Used to render text in a specific typeface.",
+      "zh-Hans": "用于以特定字样渲染文本。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "mac-application",
+    "extensions": [
+      "app",
+      "appex",
+      "bundle",
+      "framework",
+      "plugin"
+    ],
+    "category": "executable",
+    "name": {
+      "en": "macOS Application Bundle",
+      "zh-Hans": "macOS 应用程序包"
+    },
+    "description": {
+      "en": "Bundle containing an application or executable component.",
+      "zh-Hans": "包含应用或可执行组件的软件包。"
+    },
+    "purpose": {
+      "en": "Used to distribute macOS software.",
+      "zh-Hans": "用于分发 macOS 软件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "executable"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "executable",
+    "extensions": [
+      "apk",
+      "deb",
+      "dll",
+      "dylib",
+      "exe",
+      "msi",
+      "pkg",
+      "rpm",
+      "so"
+    ],
+    "category": "executable",
+    "name": {
+      "en": "Executable or Installer",
+      "zh-Hans": "可执行文件或安装包"
+    },
+    "description": {
+      "en": "Executable code, library or software installer.",
+      "zh-Hans": "可执行代码、程序库或软件安装包。"
+    },
+    "purpose": {
+      "en": "Used to run, install or support software.",
+      "zh-Hans": "用于运行、安装或支持软件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "executable",
+      "installer"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "xcode-project",
+    "extensions": [
+      "playground",
+      "xcconfig",
+      "xcodeproj",
+      "xcworkspace"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Apple Development Project",
+      "zh-Hans": "Apple 开发项目"
+    },
+    "description": {
+      "en": "Project metadata for Apple development tools.",
+      "zh-Hans": "Apple 开发工具使用的项目元数据。"
+    },
+    "purpose": {
+      "en": "Used to organize an Apple-platform software project.",
+      "zh-Hans": "用于组织 Apple 平台软件项目。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "developer-project",
+    "extensions": [
+      "cmake",
+      "csproj",
+      "fsproj",
+      "gradle",
+      "idea",
+      "iml",
+      "makefile",
+      "sln",
+      "vbproj",
+      "vcxproj"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Development Project File",
+      "zh-Hans": "开发项目文件"
+    },
+    "description": {
+      "en": "Project or build metadata for software development.",
+      "zh-Hans": "软件开发使用的项目或构建元数据。"
+    },
+    "purpose": {
+      "en": "Used to configure a software project or its build.",
+      "zh-Hans": "用于配置软件项目或其构建过程。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "notebook",
+    "extensions": [
+      "ipynb",
+      "qmd",
+      "rmd"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Computational Notebook",
+      "zh-Hans": "计算笔记本"
+    },
+    "description": {
+      "en": "Document combining code, text and outputs.",
+      "zh-Hans": "结合代码、文本和输出的文档。"
+    },
+    "purpose": {
+      "en": "Used for reproducible analysis and interactive computing.",
+      "zh-Hans": "用于可复现分析和交互式计算。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document",
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "gis-data",
+    "extensions": [
+      "dbf",
+      "gdb",
+      "geojson",
+      "gpkg",
+      "gpx",
+      "kml",
+      "kmz",
+      "prj",
+      "shp",
+      "shx"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "Geospatial Data",
+      "zh-Hans": "地理空间数据"
+    },
+    "description": {
+      "en": "Data describing geographic features or maps.",
+      "zh-Hans": "描述地理特征或地图的数据。"
+    },
+    "purpose": {
+      "en": "Used in GIS and mapping workflows.",
+      "zh-Hans": "用于 GIS 和地图工作流。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "log",
+    "extensions": [
+      "log",
+      "out",
+      "trace"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Log File",
+      "zh-Hans": "日志文件"
+    },
+    "description": {
+      "en": "Text record of application or system activity.",
+      "zh-Hans": "记录应用或系统活动的文本文件。"
+    },
+    "purpose": {
+      "en": "Used for diagnostics and auditing.",
+      "zh-Hans": "用于诊断和审计。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document",
+      "metadata"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "readme",
+    "extensions": [],
+    "filenames": [
+      "README",
+      "README.md",
+      "README.rst"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Project Documentation",
+      "zh-Hans": "项目说明"
+    },
+    "description": {
+      "en": "Documentation explaining a project or folder.",
+      "zh-Hans": "说明项目或文件夹的文档。"
+    },
+    "purpose": {
+      "en": "Usually the best starting point for understanding the contents.",
+      "zh-Hans": "通常是理解内容时最适合优先查看的文件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "documentation",
+      "priority": 100
+    },
+    "roles": [
+      "readme",
+      "document"
+    ]
+  },
+  {
+    "id": "license",
+    "extensions": [],
+    "filenames": [
+      "LICENSE",
+      "LICENSE.txt",
+      "COPYING"
+    ],
+    "category": "document",
+    "name": {
+      "en": "License File",
+      "zh-Hans": "许可证文件"
+    },
+    "description": {
+      "en": "Terms governing use and distribution.",
+      "zh-Hans": "规定使用和分发条件的文件。"
+    },
+    "purpose": {
+      "en": "Used to communicate software or content licensing.",
+      "zh-Hans": "用于说明软件或内容的许可条件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "license",
+      "priority": 60
+    },
+    "roles": [
+      "license",
+      "document"
+    ]
+  },
+  {
+    "id": "package-manifest",
+    "extensions": [],
+    "filenames": [
+      "package.json",
+      "pyproject.toml",
+      "requirements.txt",
+      "Pipfile",
+      "Cargo.toml",
+      "go.mod",
+      "Package.swift",
+      "pom.xml",
+      "build.gradle",
+      "build.gradle.kts"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Project Manifest",
+      "zh-Hans": "项目清单"
+    },
+    "description": {
+      "en": "Manifest describing a software project's dependencies or build settings.",
+      "zh-Hans": "描述软件项目依赖或构建设置的清单文件。"
+    },
+    "purpose": {
+      "en": "Used to configure a project's dependencies and build tools.",
+      "zh-Hans": "用于配置项目依赖和构建工具。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "projectManifest",
+      "priority": 90
+    },
+    "roles": [
+      "manifest",
+      "configuration"
+    ]
+  },
+  {
+    "id": "docker-build-file",
+    "extensions": [],
+    "filenames": [
+      "Dockerfile",
+      "compose.yml",
+      "docker-compose.yml"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Container Configuration",
+      "zh-Hans": "容器配置"
+    },
+    "description": {
+      "en": "Build or runtime configuration for containers.",
+      "zh-Hans": "用于容器构建或运行的配置。"
+    },
+    "purpose": {
+      "en": "Used to build or run containerized software.",
+      "zh-Hans": "用于构建或运行容器化软件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "projectConfiguration",
+      "priority": 80
+    },
+    "roles": [
+      "configuration",
+      "buildConfig"
+    ]
+  },
+  {
+    "id": "build-file",
+    "extensions": [],
+    "filenames": [
+      "CMakeLists.txt",
+      "Makefile"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Build Configuration",
+      "zh-Hans": "构建配置"
+    },
+    "description": {
+      "en": "Instructions for building software.",
+      "zh-Hans": "用于构建软件的指令文件。"
+    },
+    "purpose": {
+      "en": "Used by build tools to compile or package a project.",
+      "zh-Hans": "由构建工具用于编译或打包项目。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "projectConfiguration",
+      "priority": 80
+    },
+    "roles": [
+      "buildConfig"
+    ]
+  },
+  {
+    "id": "environment-example",
+    "extensions": [],
+    "filenames": [
+      ".env.example"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Environment Template",
+      "zh-Hans": "环境配置模板"
+    },
+    "description": {
+      "en": "Example environment-variable configuration.",
+      "zh-Hans": "环境变量配置示例。"
+    },
+    "purpose": {
+      "en": "Used to document the settings an application needs.",
+      "zh-Hans": "用于说明应用所需的设置。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "importance": {
+      "reason": "projectConfiguration",
+      "priority": 70
+    },
+    "roles": [
+      "configuration"
+    ]
+  }
+]

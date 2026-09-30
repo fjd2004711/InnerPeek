@@ -5,6 +5,7 @@ struct FileIntelligence: Sendable, Hashable {
     let fileName: String
     let fileExtension: String?
     let category: FileCategory
+    let roles: [SemanticRole]
     let typeName: String
     let purpose: String?
     /// The system UTType identifier when available; unknown formats retain a
