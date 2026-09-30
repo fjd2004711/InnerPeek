@@ -18,10 +18,10 @@ enum PreviewVisuals {
     static let controlSpacing: CGFloat = 8
     static let tableRowHeight: CGFloat = 24
     static let tableIntercellSpacing = NSSize(width: 8, height: 2)
-    static let analysisInset: CGFloat = 12
+    static let analysisInset: CGFloat = 8
     static let analysisIconSize: CGFloat = 14
-    static let analysisRowSpacing: CGFloat = 6
-    static let analysisHeaderToRowsSpacing: CGFloat = 8
+    static let analysisRowSpacing: CGFloat = 4
+    static let analysisHeaderToRowsSpacing: CGFloat = 5
     static let analysisCountWidth: CGFloat = 52
     static let analysisSizeWidth: CGFloat = 70
     static let maximumDisplayedCategories = 6

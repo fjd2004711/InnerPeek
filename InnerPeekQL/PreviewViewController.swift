@@ -15,7 +15,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
     private var spinner: NSProgressIndicator!
-    private var whatsInsideSection: NSVisualEffectView!
+    private var whatsInsideSection: NSView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
     private var importantSection: NSStackView!
@@ -282,6 +282,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 relationship.localizationKey, comment: "Detected file relationship"
             ))
             title.font = PreviewVisuals.rowFont
+            title.alignment = .left
             title.lineBreakMode = .byTruncatingTail
 
             let count = NSTextField(labelWithString: String.localizedStringWithFormat(
@@ -302,6 +303,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             let preview = NSTextField(labelWithString: (names + [overflow].compactMap { $0 }).joined(separator: " · "))
             preview.font = PreviewVisuals.metadataFont
             preview.textColor = PreviewVisuals.secondaryLabelColor
+            preview.alignment = .left
             preview.lineBreakMode = .byTruncatingMiddle
             preview.maximumNumberOfLines = 1
 
@@ -310,6 +312,15 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             row.alignment = .width
             row.spacing = 1
             relationshipRows.addArrangedSubview(row)
+            NSLayoutConstraint.activate([
+                heading.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+                heading.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+                preview.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+                preview.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+                heading.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
+                heading.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
+                count.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
+            ])
         }
         relationshipSection.isHidden = false
     }
@@ -326,12 +337,14 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         for importantFile in files {
             let title = NSTextField(labelWithString: importantFile.file.intelligence.fileName)
             title.font = PreviewVisuals.rowFont
+            title.alignment = .left
             let subtitle = NSTextField(labelWithString: [
                 importantFile.file.intelligence.typeName,
                 Self.byteCountFormatter.string(fromByteCount: importantFile.file.size)
             ].joined(separator: " · "))
             subtitle.font = PreviewVisuals.metadataFont
             subtitle.textColor = PreviewVisuals.secondaryLabelColor
+            subtitle.alignment = .left
             let row = NSStackView(views: [title, subtitle])
             row.orientation = .vertical
             row.alignment = .leading
@@ -608,6 +621,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
         let whatsInsideTitle = NSTextField(labelWithString: NSLocalizedString("whats_inside", comment: "Folder analysis section title"))
         whatsInsideTitle.font = PreviewVisuals.analysisTitleFont
+        whatsInsideTitle.alignment = .left
         analysisSummaryLabel = NSTextField(labelWithString: "")
         analysisSummaryLabel.font = PreviewVisuals.metadataFont
         analysisSummaryLabel.textColor = PreviewVisuals.secondaryLabelColor
@@ -625,23 +639,31 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
         let analysisStack = NSStackView(views: [analysisHeader, whatsInsideRows])
         analysisStack.orientation = .vertical
-        analysisStack.alignment = .width
+        analysisStack.alignment = .leading
         analysisStack.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
         analysisStack.translatesAutoresizingMaskIntoConstraints = false
+        analysisStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        analysisStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let relationshipTitle = NSTextField(labelWithString: NSLocalizedString("detected_relationships", comment: "Detected relationships section"))
         relationshipTitle.font = PreviewVisuals.analysisTitleFont
+        relationshipTitle.alignment = .left
         relationshipRows = NSStackView()
         relationshipRows.orientation = .vertical
         relationshipRows.alignment = .width
         relationshipRows.spacing = PreviewVisuals.analysisRowSpacing
+        relationshipRows.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        relationshipRows.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         relationshipSection = NSStackView(views: [relationshipTitle, relationshipRows])
         relationshipSection.orientation = .vertical
-        relationshipSection.alignment = .width
+        relationshipSection.alignment = .leading
         relationshipSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        relationshipSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        relationshipSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_files", comment: "Important files section title"))
         importantTitle.font = PreviewVisuals.analysisTitleFont
+        importantTitle.alignment = .left
         importantRows = NSStackView()
         importantRows.orientation = .vertical
         importantRows.alignment = .leading
@@ -650,9 +672,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         importantSection.orientation = .vertical
         importantSection.alignment = .leading
         importantSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        importantSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        importantSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let detailTitle = NSTextField(labelWithString: NSLocalizedString("selected_file", comment: "Selected file section title"))
         detailTitle.font = PreviewVisuals.analysisTitleFont
+        detailTitle.alignment = .left
         fileDetailText = NSTextField(labelWithString: "")
         fileDetailText.font = PreviewVisuals.metadataFont
         fileDetailText.textColor = PreviewVisuals.secondaryLabelColor
@@ -662,18 +687,17 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         fileDetailSection.orientation = .vertical
         fileDetailSection.alignment = .leading
         fileDetailSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        fileDetailSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        fileDetailSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         analysisStack.addArrangedSubview(relationshipSection)
         analysisStack.addArrangedSubview(importantSection)
         analysisStack.addArrangedSubview(fileDetailSection)
 
-        whatsInsideSection = NSVisualEffectView()
-        whatsInsideSection.material = .underWindowBackground
-        whatsInsideSection.blendingMode = .behindWindow
-        whatsInsideSection.state = .followsWindowActiveState
-        whatsInsideSection.wantsLayer = true
-        whatsInsideSection.layer?.cornerRadius = PreviewVisuals.contentPanelCornerRadius
-        whatsInsideSection.layer?.masksToBounds = true
+        // Keep the intelligence summary content-driven and unframed. The file
+        // browser below remains the single native rounded panel, so a two-row
+        // summary does not reserve a large empty card above it.
+        whatsInsideSection = NSView()
         whatsInsideSection.translatesAutoresizingMaskIntoConstraints = false
         whatsInsideSection.addSubview(analysisStack)
 
@@ -721,6 +745,28 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             analysisStack.leadingAnchor.constraint(equalTo: whatsInsideSection.leadingAnchor, constant: PreviewVisuals.analysisInset),
             analysisStack.trailingAnchor.constraint(equalTo: whatsInsideSection.trailingAnchor, constant: -PreviewVisuals.analysisInset),
             analysisStack.bottomAnchor.constraint(equalTo: whatsInsideSection.bottomAnchor, constant: -PreviewVisuals.analysisInset),
+            analysisHeader.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            analysisHeader.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            whatsInsideRows.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            whatsInsideRows.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            relationshipSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            relationshipSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            relationshipTitle.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
+            relationshipTitle.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
+            relationshipRows.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
+            relationshipRows.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
+            importantSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            importantSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            importantTitle.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
+            importantTitle.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
+            importantRows.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
+            importantRows.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
+            fileDetailSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            fileDetailSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            detailTitle.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),
+            detailTitle.trailingAnchor.constraint(equalTo: fileDetailSection.trailingAnchor),
+            fileDetailText.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),
+            fileDetailText.trailingAnchor.constraint(equalTo: fileDetailSection.trailingAnchor),
         ])
         resetAnalysisPresentation()
     }
