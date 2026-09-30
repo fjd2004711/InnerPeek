@@ -7,6 +7,7 @@ enum PreviewVisuals {
     static let headerSubtitleFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
     static let rowFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
     static let metadataFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+    static let analysisTitleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
 
     static let headerInset: CGFloat = 18
     static let headerIconSize: CGFloat = 24
@@ -17,6 +18,13 @@ enum PreviewVisuals {
     static let controlSpacing: CGFloat = 8
     static let tableRowHeight: CGFloat = 24
     static let tableIntercellSpacing = NSSize(width: 8, height: 2)
+    static let analysisInset: CGFloat = 12
+    static let analysisIconSize: CGFloat = 14
+    static let analysisRowSpacing: CGFloat = 6
+    static let analysisHeaderToRowsSpacing: CGFloat = 8
+    static let analysisCountWidth: CGFloat = 52
+    static let analysisSizeWidth: CGFloat = 70
+    static let maximumDisplayedCategories = 6
 
     static let nameColumnMinimumWidth: CGFloat = 180
     static let sizeColumnWidth: CGFloat = 96

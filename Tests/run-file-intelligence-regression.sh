@@ -12,6 +12,9 @@ swiftc \
   "$project_root/Shared/FileIntelligence/FileIntelligence.swift" \
   "$project_root/Shared/FileIntelligence/FileTypeRegistry.swift" \
   "$project_root/Shared/FileIntelligence/FileIntelligenceRecognizer.swift" \
+  "$project_root/Shared/FileIntelligence/FolderAnalysis.swift" \
+  "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
+  "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
   "$project_root/Tests/FileIntelligenceRegression.swift" \
   -o "$binary_path"
 

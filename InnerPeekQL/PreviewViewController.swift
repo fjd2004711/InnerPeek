@@ -5,12 +5,24 @@ import Quartz
 final class PreviewViewController: NSViewController, QLPreviewingController {
     private var provider: (any PreviewContentProvider)?
     private var loadTask: Task<Void, Never>?
+    private var analysisTask: Task<Void, Never>?
+    private var analysisWorker: Task<FolderAnalysis, Error>?
     private var dataSource: PreviewDataSource?
     private var outlineView: NSOutlineView!
     private var headerIconView: NSImageView!
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
     private var spinner: NSProgressIndicator!
+    private var whatsInsideSection: NSVisualEffectView!
+    private var whatsInsideRows: NSStackView!
+    private var analysisSummaryLabel: NSTextField!
+    private var importantSection: NSStackView!
+    private var importantRows: NSStackView!
+    private var fileDetailSection: NSStackView!
+    private var fileDetailText: NSTextField!
+    private var contentTopToHeader: NSLayoutConstraint!
+    private var analysisTopToHeader: NSLayoutConstraint!
+    private var contentTopToAnalysis: NSLayoutConstraint!
     private var contentReady = false
     private var contentRevealed = false
     private var hasPresentedContent = false
@@ -65,6 +77,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             source.onRealIconRequested = { [weak self, weak source] item in
                 self?.loadRealIcon(for: item, dataSource: source, rootURL: url, isDirectory: isDirectory)
             }
+            source.onItemSelected = { [weak self] item in
+                self?.presentFileDetails(for: item, rootURL: url, isFilesystemFolder: isDirectory)
+            }
             self.dataSource = source
             // Do not ask LaunchServices for a file icon during the preview
             // hand-off. That synchronous lookup can block the Quick Look
@@ -76,6 +91,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             )
             self.titleLabel.stringValue = url.lastPathComponent
             self.countLabel.stringValue = NSLocalizedString("loading", comment: "Preview loading status")
+            self.resetAnalysisPresentation()
             self.spinner.isHidden = false
             self.spinner.startAnimation(nil)
             self.outlineView.dataSource = source
@@ -85,6 +101,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             self.outlineView.doubleAction = nil
             self.outlineView.target = self
             return source
+        }
+
+        if isDirectory {
+            beginFolderAnalysis(at: url, provider: contentProvider)
         }
 
         loadTask = Task { [weak self, contentProvider] in
@@ -183,8 +203,206 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private func cancelLoading() {
         loadTask?.cancel()
         loadTask = nil
+        analysisTask?.cancel()
+        analysisTask = nil
+        analysisWorker?.cancel()
+        analysisWorker = nil
         provider?.cancel()
         provider = nil
+    }
+
+    private func beginFolderAnalysis(at folderURL: URL, provider: any PreviewContentProvider) {
+        let worker = Task.detached(priority: .utility) {
+            try FolderAnalyzer().analyze(folderURL: folderURL)
+        }
+        analysisWorker = worker
+        analysisTask = Task { [weak self, worker] in
+            do {
+                let analysis = try await worker.value
+                try Task.checkCancellation()
+                guard let self, self.provider === provider else { return }
+                self.presentFolderAnalysis(analysis)
+            } catch is CancellationError {
+                // The Quick Look preview closed or was replaced.
+            } catch {
+                // Folder intelligence is optional; retain the existing tree.
+            }
+        }
+    }
+
+    private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
+        let statistics = displayedCategoryStatistics(from: analysis)
+        let importantFiles = ImportantFileDetector().detect(in: analysis)
+        guard !statistics.isEmpty || !importantFiles.isEmpty else { return }
+
+        whatsInsideRows.arrangedSubviews.forEach {
+            whatsInsideRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        for statistic in statistics {
+            whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
+        }
+        presentImportantFiles(importantFiles)
+
+        let summaryKey = analysis.scanState.isPartial
+            ? "analysis_summary_partial"
+            : "analysis_summary_complete"
+        analysisSummaryLabel.stringValue = String.localizedStringWithFormat(
+            NSLocalizedString(summaryKey, comment: "Bounded folder analysis summary"),
+            analysis.analyzedFileCount,
+            analysis.analyzedDirectoryCount,
+            Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize)
+        )
+        contentTopToHeader.isActive = false
+        analysisTopToHeader.isActive = true
+        contentTopToAnalysis.isActive = true
+        whatsInsideSection.isHidden = false
+    }
+
+    private func presentImportantFiles(_ files: [ImportantFile]) {
+        importantRows.arrangedSubviews.forEach {
+            importantRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        guard !files.isEmpty else {
+            importantSection.isHidden = true
+            return
+        }
+        for importantFile in files {
+            let title = NSTextField(labelWithString: importantFile.file.intelligence.fileName)
+            title.font = PreviewVisuals.rowFont
+            let subtitle = NSTextField(labelWithString: [
+                importantFile.file.intelligence.typeName,
+                Self.byteCountFormatter.string(fromByteCount: importantFile.file.size)
+            ].joined(separator: " · "))
+            subtitle.font = PreviewVisuals.metadataFont
+            subtitle.textColor = PreviewVisuals.secondaryLabelColor
+            let row = NSStackView(views: [title, subtitle])
+            row.orientation = .vertical
+            row.alignment = .leading
+            row.spacing = 1
+            importantRows.addArrangedSubview(row)
+        }
+        importantSection.isHidden = false
+    }
+
+    private func presentFileDetails(for item: PreviewItem?, rootURL: URL, isFilesystemFolder: Bool) {
+        guard isFilesystemFolder, let item, !item.isFolder else {
+            fileDetailSection?.isHidden = true
+            return
+        }
+        let fileURL = rootURL.appendingPathComponent(item.relativePath)
+        let intelligence = FileIntelligenceRecognizer().intelligence(for: fileURL)
+        var lines = [
+            intelligence.fileName,
+            "\(NSLocalizedString("detail_type", comment: "File detail type")): \(intelligence.typeName)",
+            "\(NSLocalizedString("detail_category", comment: "File detail category")): \(NSLocalizedString(intelligence.category.localizationKey, comment: "File category"))",
+            "\(NSLocalizedString("detail_size", comment: "File detail size")): \(Self.byteCountFormatter.string(fromByteCount: item.size ?? 0))"
+        ]
+        if let purpose = intelligence.purpose {
+            lines.append("\(NSLocalizedString("detail_purpose", comment: "File detail purpose")): \(purpose)")
+        }
+        if intelligence.category == .unknown {
+            if let fileExtension = intelligence.fileExtension {
+                lines.append("\(NSLocalizedString("detail_extension", comment: "Unknown file extension")): .\(fileExtension)")
+            }
+            if let identifier = intelligence.systemTypeIdentifier {
+                lines.append("UTType: \(identifier)")
+            }
+        }
+        if let modifiedDate = item.modifiedDate {
+            lines.append("\(NSLocalizedString("detail_modified", comment: "File detail date")): \(Self.detailDateFormatter.string(from: modifiedDate))")
+        }
+        fileDetailText.stringValue = lines.joined(separator: "\n")
+        fileDetailSection.isHidden = false
+    }
+
+    /// Shows at most six rows. When necessary, five dominant categories are
+    /// retained and all remaining categories are accurately merged into Other.
+    private func displayedCategoryStatistics(from analysis: FolderAnalysis) -> [CategoryStatistic] {
+        let statistics = analysis.categoryStatistics
+        guard statistics.count > PreviewVisuals.maximumDisplayedCategories else { return statistics }
+
+        let primaryCount = PreviewVisuals.maximumDisplayedCategories - 1
+        var result = Array(statistics.prefix(primaryCount))
+        let remainder = statistics.dropFirst(primaryCount)
+        let otherCount = remainder.reduce(0) { $0 + $1.fileCount }
+        let otherSize = remainder.reduce(Int64(0)) { $0 + $1.totalKnownSize }
+
+        if let existingOther = result.firstIndex(where: { $0.category == .unknown }) {
+            let current = result[existingOther]
+            result[existingOther] = CategoryStatistic(
+                category: .unknown,
+                fileCount: current.fileCount + otherCount,
+                totalKnownSize: current.totalKnownSize + otherSize
+            )
+        } else {
+            result.append(CategoryStatistic(category: .unknown, fileCount: otherCount, totalKnownSize: otherSize))
+        }
+        return result.sorted(by: categoryStatisticSort)
+    }
+
+    private func categoryStatisticSort(_ lhs: CategoryStatistic, _ rhs: CategoryStatistic) -> Bool {
+        if lhs.totalKnownSize != rhs.totalKnownSize { return lhs.totalKnownSize > rhs.totalKnownSize }
+        if lhs.fileCount != rhs.fileCount { return lhs.fileCount > rhs.fileCount }
+        return lhs.category.stableSortOrder < rhs.category.stableSortOrder
+    }
+
+    private func makeAnalysisRow(for statistic: CategoryStatistic) -> NSView {
+        let icon = NSImageView()
+        icon.image = NSImage(systemSymbolName: statistic.category.systemSymbolName, accessibilityDescription: nil)
+        icon.contentTintColor = PreviewVisuals.secondaryLabelColor
+        icon.imageScaling = .scaleProportionallyUpOrDown
+        icon.translatesAutoresizingMaskIntoConstraints = false
+
+        let title = NSTextField(labelWithString: NSLocalizedString(
+            statistic.category.localizationKey,
+            comment: "Folder analysis category"
+        ))
+        title.font = PreviewVisuals.rowFont
+        title.lineBreakMode = .byTruncatingTail
+
+        let count = NSTextField(labelWithString: String.localizedStringWithFormat(
+            NSLocalizedString("analysis_file_count", comment: "Number of files in category"),
+            statistic.fileCount
+        ))
+        count.font = PreviewVisuals.metadataFont
+        count.textColor = PreviewVisuals.secondaryLabelColor
+        count.alignment = .right
+
+        let size = NSTextField(labelWithString: Self.byteCountFormatter.string(fromByteCount: statistic.totalKnownSize))
+        size.font = PreviewVisuals.metadataFont
+        size.textColor = PreviewVisuals.secondaryLabelColor
+        size.alignment = .right
+
+        let row = NSStackView(views: [icon, title, NSView(), count, size])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = PreviewVisuals.analysisRowSpacing
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
+            icon.heightAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
+            count.widthAnchor.constraint(greaterThanOrEqualToConstant: PreviewVisuals.analysisCountWidth),
+            size.widthAnchor.constraint(greaterThanOrEqualToConstant: PreviewVisuals.analysisSizeWidth)
+        ])
+        return row
+    }
+
+    private func resetAnalysisPresentation() {
+        whatsInsideRows?.arrangedSubviews.forEach {
+            whatsInsideRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        importantRows?.arrangedSubviews.forEach {
+            importantRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        importantSection?.isHidden = true
+        fileDetailSection?.isHidden = true
+        whatsInsideSection?.isHidden = true
+        contentTopToAnalysis?.isActive = false
+        analysisTopToHeader?.isActive = false
+        contentTopToHeader?.isActive = true
     }
 
     private func revealContentIfReady() {
@@ -308,7 +526,67 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         contentPanel.translatesAutoresizingMaskIntoConstraints = false
         contentPanel.addSubview(scrollView)
 
+        let whatsInsideTitle = NSTextField(labelWithString: NSLocalizedString("whats_inside", comment: "Folder analysis section title"))
+        whatsInsideTitle.font = PreviewVisuals.analysisTitleFont
+        analysisSummaryLabel = NSTextField(labelWithString: "")
+        analysisSummaryLabel.font = PreviewVisuals.metadataFont
+        analysisSummaryLabel.textColor = PreviewVisuals.secondaryLabelColor
+        analysisSummaryLabel.lineBreakMode = .byTruncatingTail
+        analysisSummaryLabel.maximumNumberOfLines = 1
+        let analysisHeader = NSStackView(views: [whatsInsideTitle, NSView(), analysisSummaryLabel])
+        analysisHeader.orientation = .horizontal
+        analysisHeader.alignment = .centerY
+        analysisHeader.spacing = PreviewVisuals.controlSpacing
+
+        whatsInsideRows = NSStackView()
+        whatsInsideRows.orientation = .vertical
+        whatsInsideRows.alignment = .width
+        whatsInsideRows.spacing = PreviewVisuals.analysisRowSpacing
+
+        let analysisStack = NSStackView(views: [analysisHeader, whatsInsideRows])
+        analysisStack.orientation = .vertical
+        analysisStack.alignment = .width
+        analysisStack.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        analysisStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_files", comment: "Important files section title"))
+        importantTitle.font = PreviewVisuals.analysisTitleFont
+        importantRows = NSStackView()
+        importantRows.orientation = .vertical
+        importantRows.alignment = .leading
+        importantRows.spacing = PreviewVisuals.analysisRowSpacing
+        importantSection = NSStackView(views: [importantTitle, importantRows])
+        importantSection.orientation = .vertical
+        importantSection.alignment = .leading
+        importantSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+
+        let detailTitle = NSTextField(labelWithString: NSLocalizedString("selected_file", comment: "Selected file section title"))
+        detailTitle.font = PreviewVisuals.analysisTitleFont
+        fileDetailText = NSTextField(labelWithString: "")
+        fileDetailText.font = PreviewVisuals.metadataFont
+        fileDetailText.textColor = PreviewVisuals.secondaryLabelColor
+        fileDetailText.maximumNumberOfLines = 0
+        fileDetailText.lineBreakMode = .byWordWrapping
+        fileDetailSection = NSStackView(views: [detailTitle, fileDetailText])
+        fileDetailSection.orientation = .vertical
+        fileDetailSection.alignment = .leading
+        fileDetailSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+
+        analysisStack.addArrangedSubview(importantSection)
+        analysisStack.addArrangedSubview(fileDetailSection)
+
+        whatsInsideSection = NSVisualEffectView()
+        whatsInsideSection.material = .underWindowBackground
+        whatsInsideSection.blendingMode = .behindWindow
+        whatsInsideSection.state = .followsWindowActiveState
+        whatsInsideSection.wantsLayer = true
+        whatsInsideSection.layer?.cornerRadius = PreviewVisuals.contentPanelCornerRadius
+        whatsInsideSection.layer?.masksToBounds = true
+        whatsInsideSection.translatesAutoresizingMaskIntoConstraints = false
+        whatsInsideSection.addSubview(analysisStack)
+
         view.addSubview(header)
+        view.addSubview(whatsInsideSection)
         view.addSubview(contentPanel)
         let headerTrailing = header.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -PreviewVisuals.headerInset)
         headerTrailing.priority = .defaultLow
@@ -319,13 +597,25 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         // transition is measured. Let the bottom edge yield during that frame;
         // otherwise AppKit logs a required-constraint conflict and visibly snaps.
         contentBottom.priority = .defaultLow
+        contentTopToHeader = contentPanel.topAnchor.constraint(
+            equalTo: header.bottomAnchor,
+            constant: PreviewVisuals.headerToContentSpacing
+        )
+        analysisTopToHeader = whatsInsideSection.topAnchor.constraint(
+            equalTo: header.bottomAnchor,
+            constant: PreviewVisuals.headerToContentSpacing
+        )
+        contentTopToAnalysis = contentPanel.topAnchor.constraint(
+            equalTo: whatsInsideSection.bottomAnchor,
+            constant: PreviewVisuals.headerToContentSpacing
+        )
         NSLayoutConstraint.activate([
             header.topAnchor.constraint(equalTo: view.topAnchor, constant: PreviewVisuals.headerInset),
             header.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: PreviewVisuals.headerInset),
             headerTrailing,
             headerIconView.widthAnchor.constraint(equalToConstant: PreviewVisuals.headerIconSize),
             headerIconView.heightAnchor.constraint(equalToConstant: PreviewVisuals.headerIconSize),
-            contentPanel.topAnchor.constraint(equalTo: header.bottomAnchor, constant: PreviewVisuals.headerToContentSpacing),
+            contentTopToHeader,
             contentPanel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: PreviewVisuals.contentInset),
             panelTrailing,
             contentBottom,
@@ -333,7 +623,14 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             scrollView.leadingAnchor.constraint(equalTo: contentPanel.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: contentPanel.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: contentPanel.bottomAnchor),
+            whatsInsideSection.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: PreviewVisuals.contentInset),
+            whatsInsideSection.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -PreviewVisuals.contentInset),
+            analysisStack.topAnchor.constraint(equalTo: whatsInsideSection.topAnchor, constant: PreviewVisuals.analysisInset),
+            analysisStack.leadingAnchor.constraint(equalTo: whatsInsideSection.leadingAnchor, constant: PreviewVisuals.analysisInset),
+            analysisStack.trailingAnchor.constraint(equalTo: whatsInsideSection.trailingAnchor, constant: -PreviewVisuals.analysisInset),
+            analysisStack.bottomAnchor.constraint(equalTo: whatsInsideSection.bottomAnchor, constant: -PreviewVisuals.analysisInset),
         ])
+        resetAnalysisPresentation()
     }
 
     private func updateCountLabel() {
@@ -344,5 +641,18 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             total
         )
     }
+
+    private static let byteCountFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter
+    }()
+
+    private static let detailDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }()
 
 }

@@ -13,6 +13,7 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
     private let provider: PreviewContentProvider
     var onChildrenRequested: ((PreviewItem) -> Void)?
     var onRealIconRequested: ((PreviewItem) -> Void)?
+    var onItemSelected: ((PreviewItem?) -> Void)?
 
     static func prewarmPresentationResources() {
         _ = dateFormatter.string(from: Date())
@@ -119,6 +120,11 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
 
     func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
         item is PreviewItem
+    }
+
+    func outlineViewSelectionDidChange(_ notification: Notification) {
+        guard let outlineView = notification.object as? NSOutlineView else { return }
+        onItemSelected?(item(at: outlineView.selectedRow, in: outlineView))
     }
 
     @objc func handleRowClick(_ sender: NSOutlineView) {

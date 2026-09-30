@@ -6,6 +6,7 @@ final class FileTypeRegistry: @unchecked Sendable {
 
     let definitions: [FileTypeDefinition]
     private let definitionsByExtension: [String: FileTypeDefinition]
+    private let definitionsByFilename: [String: FileTypeDefinition]
 
     convenience init() {
         let bundle = Bundle(for: FileTypeRegistry.self)
@@ -22,6 +23,7 @@ final class FileTypeRegistry: @unchecked Sendable {
         definitions = decoded
 
         var index: [String: FileTypeDefinition] = [:]
+        var filenameIndex: [String: FileTypeDefinition] = [:]
         for definition in decoded {
             for fileExtension in definition.extensions {
                 let normalized = Self.normalize(fileExtension)
@@ -31,8 +33,20 @@ final class FileTypeRegistry: @unchecked Sendable {
                     index[normalized] = definition
                 }
             }
+            for filename in definition.filenames {
+                let normalized = Self.normalizeFilename(filename)
+                guard !normalized.isEmpty else { continue }
+                if filenameIndex[normalized] == nil {
+                    filenameIndex[normalized] = definition
+                }
+            }
         }
         definitionsByExtension = index
+        definitionsByFilename = filenameIndex
+    }
+
+    func definition(forFileName fileName: String) -> FileTypeDefinition? {
+        definitionsByFilename[Self.normalizeFilename(fileName)]
     }
 
     func definition(forExtension fileExtension: String?) -> FileTypeDefinition? {
@@ -44,5 +58,9 @@ final class FileTypeRegistry: @unchecked Sendable {
         fileExtension.trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "."))
             .lowercased()
+    }
+
+    static func normalizeFilename(_ filename: String) -> String {
+        filename.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }

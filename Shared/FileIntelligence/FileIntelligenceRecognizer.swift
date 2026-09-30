@@ -21,13 +21,15 @@ struct FileIntelligenceRecognizer: Sendable {
             UTType(filenameExtension: $0, conformingTo: .data)
         }
 
-        if let definition = registry.definition(forExtension: fileExtension) {
+        if let definition = registry.definition(forFileName: url.lastPathComponent)
+            ?? registry.definition(forExtension: fileExtension) {
             return FileIntelligence(
                 fileName: url.lastPathComponent,
                 fileExtension: fileExtension,
                 category: definition.category,
                 typeName: definition.displayName(for: locale),
                 purpose: definition.purpose(for: locale),
+                systemTypeIdentifier: systemType?.isDynamic == false ? systemType?.identifier : "public.data",
                 confidence: 1.0
             )
         }
@@ -42,6 +44,7 @@ struct FileIntelligenceRecognizer: Sendable {
                 category: category(for: systemType),
                 typeName: systemType.localizedDescription ?? systemType.identifier,
                 purpose: nil,
+                systemTypeIdentifier: systemType.identifier,
                 confidence: 0.72
             )
         }
@@ -52,6 +55,7 @@ struct FileIntelligenceRecognizer: Sendable {
             category: .unknown,
             typeName: localized("Unknown File", "未知文件"),
             purpose: nil,
+            systemTypeIdentifier: "public.data",
             confidence: 0.2
         )
     }
