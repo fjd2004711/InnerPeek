@@ -32,6 +32,8 @@
 "file_category_unknown" = "其他";
 "important_files" = "重要内容";
 "important_and_evidence" = "重要内容与依据";
+"more_evidence" = "+ %ld 个更多依据";
+"evidence_abnormal_model_weight" = "异常模型权重 · %@";
 "selected_file" = "所选文件";
 "detail_type" = "类型";
 "detail_purpose" = "用途";

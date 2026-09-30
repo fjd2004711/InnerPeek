@@ -32,6 +32,8 @@
 "file_category_unknown" = "Other";
 "important_files" = "Important";
 "important_and_evidence" = "Important & Evidence";
+"more_evidence" = "+ %ld more evidence";
+"evidence_abnormal_model_weight" = "Abnormal model weights · %@";
 "selected_file" = "Selected File";
 "detail_type" = "Type";
 "detail_purpose" = "Purpose";

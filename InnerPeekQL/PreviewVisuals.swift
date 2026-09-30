@@ -22,6 +22,12 @@ enum PreviewVisuals {
     static let analysisIconSize: CGFloat = 14
     static let analysisRowSpacing: CGFloat = 4
     static let analysisHeaderToRowsSpacing: CGFloat = 5
+    static let semanticSectionSpacing: CGFloat = 10
+    static let semanticColumnSpacing: CGFloat = 18
+    static let semanticColumnWidthRatio: CGFloat = 1.63
+    static let semanticWideBreakpoint: CGFloat = 720
+    static let compactEvidenceSpacing: CGFloat = 6
+    static let maximumCompactEvidenceItems = 3
     static let analysisCountWidth: CGFloat = 52
     static let analysisSizeWidth: CGFloat = 70
     static let maximumDisplayedCategories = 6

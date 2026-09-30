@@ -3,6 +3,12 @@ import Quartz
 
 @objc(PreviewViewController)
 final class PreviewViewController: NSViewController, QLPreviewingController {
+    private enum SemanticHeaderLayout: Equatable {
+        case singleColumn
+        case narrowColumns
+        case wideColumns
+    }
+
     private var provider: (any PreviewContentProvider)?
     private var loadTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
@@ -17,6 +23,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var countLabel: NSTextField!
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
+    private var semanticColumns: NSView!
+    private var semanticLeftColumn: NSStackView!
+    private var semanticRightColumn: NSStackView!
+    private var wideSemanticConstraints: [NSLayoutConstraint] = []
+    private var narrowSemanticConstraints: [NSLayoutConstraint] = []
+    private var singleColumnSemanticConstraints: [NSLayoutConstraint] = []
+    private var semanticHeaderLayout: SemanticHeaderLayout?
     private var whatsInsideHeader: NSStackView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
@@ -43,6 +56,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     override func viewDidDisappear() {
         super.viewDidDisappear()
         cancelLoading()
+    }
+
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        updateSemanticHeaderLayoutIfNeeded()
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
@@ -278,7 +296,16 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
         presentVerdict(decision.verdict)
         presentInsights(decision.insights)
-        presentEvidence(decision.evidence)
+        // The evidence model remains unchanged. Presentation is deliberately
+        // compact so it cannot compete with the verdict and insights for the
+        // vertical space that belongs to the file browser.
+        let visibleEvidenceLimit = decision.insights.isEmpty ? 1 : PreviewVisuals.maximumCompactEvidenceItems
+        presentEvidence(
+            decision.evidence,
+            analysis: analysis,
+            insights: decision.insights,
+            visibleLimit: visibleEvidenceLimit
+        )
 
         if showContents {
             let summaryKey = analysis.scanState.isPartial
@@ -300,6 +327,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         whatsInsideHeader.isHidden = !showContents
         whatsInsideRows.isHidden = !showContents
         whatsInsideSection.isHidden = false
+        view.needsLayout = true
     }
 
     private func presentVerdict(_ verdict: SemanticVerdict?) {
@@ -479,30 +507,83 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         importantSection.isHidden = false
     }
 
-    private func presentEvidence(_ evidence: [SemanticEvidence]) {
+    private func presentEvidence(
+        _ evidence: [SemanticEvidence],
+        analysis: FolderAnalysis,
+        insights: [Insight],
+        visibleLimit: Int
+    ) {
         importantRows.arrangedSubviews.forEach {
             importantRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
         guard !evidence.isEmpty else {
             importantSection.isHidden = true
+            semanticRightColumn.isHidden = true
             return
         }
-        for item in evidence {
-            let title = NSTextField(labelWithString: item.relativePath)
+        let visibleEvidence = Array(evidence.prefix(visibleLimit))
+        let names = Dictionary(grouping: evidence) { ($0.relativePath as NSString).lastPathComponent }
+        for item in visibleEvidence {
+            let filename = (item.relativePath as NSString).lastPathComponent
+            let title = NSTextField(labelWithString: filename)
             title.font = PreviewVisuals.rowFont
-            title.lineBreakMode = .byTruncatingMiddle
-            let subtitle = NSTextField(labelWithString: item.localizedReason())
+            title.lineBreakMode = .byTruncatingTail
+            title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+            let entry = analysis.analyzedEntries.first { $0.relativePath == item.relativePath }
+            let size = entry.flatMap { entry in
+                analysis.analyzedFiles.first(where: { $0.url == entry.url })?.size
+            }
+            let abnormalWeight = insights.contains { $0.id == "small-model-weights" } &&
+                item.relativePath.caseInsensitiveCompare("model.safetensors") == .orderedSame
+            var detail = compactEvidenceDetail(for: item, fileSize: size, isAbnormalModelWeight: abnormalWeight)
+            if names[filename, default: []].count > 1 {
+                let parent = (item.relativePath as NSString).deletingLastPathComponent
+                if !parent.isEmpty { detail = "\(parent)/ · \(detail)" }
+            }
+            if visibleEvidence.count == 1, evidence.count > visibleEvidence.count {
+                let remainder = evidence.count - visibleEvidence.count
+                detail += " · " + String.localizedStringWithFormat(
+                    NSLocalizedString("more_evidence", comment: "Additional compact evidence"), remainder
+                )
+            }
+            let subtitle = NSTextField(labelWithString: detail)
             subtitle.font = PreviewVisuals.metadataFont
             subtitle.textColor = PreviewVisuals.secondaryLabelColor
             subtitle.lineBreakMode = .byTruncatingTail
+            subtitle.setContentHuggingPriority(.defaultLow, for: .horizontal)
             let row = NSStackView(views: [title, subtitle])
-            row.orientation = .vertical
-            row.alignment = .leading
-            row.spacing = 1
+            row.orientation = .horizontal
+            row.alignment = .firstBaseline
+            row.spacing = PreviewVisuals.compactEvidenceSpacing
             importantRows.addArrangedSubview(row)
         }
+        let remaining = evidence.count - visibleEvidence.count
+        if remaining > 0, visibleEvidence.count > 1 {
+            let more = NSTextField(labelWithString: String.localizedStringWithFormat(
+                NSLocalizedString("more_evidence", comment: "Additional compact evidence"), remaining
+            ))
+            more.font = PreviewVisuals.metadataFont
+            more.textColor = PreviewVisuals.secondaryLabelColor
+            importantRows.addArrangedSubview(more)
+        }
         importantSection.isHidden = false
+        semanticRightColumn.isHidden = false
+    }
+
+    private func compactEvidenceDetail(
+        for evidence: SemanticEvidence,
+        fileSize: Int64?,
+        isAbnormalModelWeight: Bool
+    ) -> String {
+        if (evidence.sourceID == "small-model-weights" || isAbnormalModelWeight), let fileSize {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("evidence_abnormal_model_weight", comment: "Abnormal model-weight evidence"),
+                Self.byteCountFormatter.string(fromByteCount: fileSize)
+            )
+        }
+        return evidence.localizedReason()
     }
 
     private func presentFileDetails(for item: PreviewItem?, rootURL: URL, isFilesystemFolder: Bool) {
@@ -654,6 +735,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         verdictSection?.isHidden = true
         relationshipSection?.isHidden = true
         importantSection?.isHidden = true
+        semanticRightColumn?.isHidden = true
         fileDetailSection?.isHidden = true
         whatsInsideSection?.isHidden = true
         contentTopToAnalysis?.isActive = false
@@ -669,6 +751,32 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         for row in visibleRows.location..<end {
             _ = outlineView.rowView(atRow: row, makeIfNecessary: true)
         }
+    }
+
+    private func updateSemanticHeaderLayoutIfNeeded() {
+        guard semanticColumns != nil else { return }
+        let layout: SemanticHeaderLayout
+        if semanticRightColumn.isHidden {
+            layout = .singleColumn
+        } else if view.bounds.width >= PreviewVisuals.semanticWideBreakpoint {
+            layout = .wideColumns
+        } else {
+            layout = .narrowColumns
+        }
+        guard layout != semanticHeaderLayout else { return }
+
+        NSLayoutConstraint.deactivate(wideSemanticConstraints)
+        NSLayoutConstraint.deactivate(narrowSemanticConstraints)
+        NSLayoutConstraint.deactivate(singleColumnSemanticConstraints)
+        switch layout {
+        case .singleColumn:
+            NSLayoutConstraint.activate(singleColumnSemanticConstraints)
+        case .narrowColumns:
+            NSLayoutConstraint.activate(narrowSemanticConstraints)
+        case .wideColumns:
+            NSLayoutConstraint.activate(wideSemanticConstraints)
+        }
+        semanticHeaderLayout = layout
     }
 
     private func buildInterface() {
@@ -784,14 +892,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         whatsInsideRows.alignment = .width
         whatsInsideRows.spacing = PreviewVisuals.analysisRowSpacing
 
-        let analysisStack = NSStackView(views: [analysisHeader, whatsInsideRows])
-        analysisStack.orientation = .vertical
-        analysisStack.alignment = .leading
-        analysisStack.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
-        analysisStack.translatesAutoresizingMaskIntoConstraints = false
-        analysisStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        analysisStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
         let verdictTitle = NSTextField(labelWithString: NSLocalizedString("semantic_verdict", comment: "Semantic verdict section title"))
         verdictTitle.font = PreviewVisuals.analysisTitleFont
         verdictTitle.alignment = .left
@@ -865,9 +965,33 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         insightSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         insightSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        analysisStack.insertArrangedSubview(verdictSection, at: 0)
-        analysisStack.insertArrangedSubview(insightSection, at: 1)
-        analysisStack.insertArrangedSubview(importantSection, at: 2)
+        semanticLeftColumn = NSStackView(views: [analysisHeader, whatsInsideRows, verdictSection, insightSection])
+        semanticLeftColumn.orientation = .vertical
+        semanticLeftColumn.alignment = .width
+        semanticLeftColumn.spacing = PreviewVisuals.semanticSectionSpacing
+        semanticLeftColumn.translatesAutoresizingMaskIntoConstraints = false
+        semanticLeftColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        semanticLeftColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        semanticRightColumn = NSStackView(views: [importantSection])
+        semanticRightColumn.orientation = .vertical
+        semanticRightColumn.alignment = .width
+        semanticRightColumn.translatesAutoresizingMaskIntoConstraints = false
+        semanticRightColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        semanticRightColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        semanticColumns = NSView()
+        semanticColumns.translatesAutoresizingMaskIntoConstraints = false
+        semanticColumns.addSubview(semanticLeftColumn)
+        semanticColumns.addSubview(semanticRightColumn)
+
+        let analysisStack = NSStackView(views: [semanticColumns])
+        analysisStack.orientation = .vertical
+        analysisStack.alignment = .width
+        analysisStack.spacing = PreviewVisuals.semanticSectionSpacing
+        analysisStack.translatesAutoresizingMaskIntoConstraints = false
+        analysisStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        analysisStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         analysisStack.addArrangedSubview(fileDetailSection)
 
         // Keep the intelligence summary content-driven and unframed. The file
@@ -921,24 +1045,26 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             analysisStack.leadingAnchor.constraint(equalTo: whatsInsideSection.leadingAnchor, constant: PreviewVisuals.analysisInset),
             analysisStack.trailingAnchor.constraint(equalTo: whatsInsideSection.trailingAnchor, constant: -PreviewVisuals.analysisInset),
             analysisStack.bottomAnchor.constraint(equalTo: whatsInsideSection.bottomAnchor, constant: -PreviewVisuals.analysisInset),
-            analysisHeader.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            analysisHeader.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
-            whatsInsideRows.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            whatsInsideRows.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
-            insightSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            insightSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            semanticColumns.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            semanticColumns.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            analysisHeader.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
+            analysisHeader.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
+            whatsInsideRows.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
+            whatsInsideRows.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
+            insightSection.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
+            insightSection.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
             insightTitle.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
             insightTitle.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
             insightRows.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
             insightRows.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
-            verdictSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            verdictSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            verdictSection.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
+            verdictSection.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
             verdictTitle.leadingAnchor.constraint(equalTo: verdictSection.leadingAnchor),
             verdictTitle.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
             verdictRows.leadingAnchor.constraint(equalTo: verdictSection.leadingAnchor),
             verdictRows.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
-            importantSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            importantSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            importantSection.leadingAnchor.constraint(equalTo: semanticRightColumn.leadingAnchor),
+            importantSection.trailingAnchor.constraint(equalTo: semanticRightColumn.trailingAnchor),
             importantTitle.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
             importantTitle.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
             importantRows.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
@@ -950,7 +1076,33 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             fileDetailText.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),
             fileDetailText.trailingAnchor.constraint(equalTo: fileDetailSection.trailingAnchor),
         ])
+        narrowSemanticConstraints = [
+            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
+            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticLeftColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
+            semanticRightColumn.topAnchor.constraint(equalTo: semanticLeftColumn.bottomAnchor, constant: PreviewVisuals.semanticSectionSpacing),
+            semanticRightColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticRightColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
+            semanticRightColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
+        ]
+        singleColumnSemanticConstraints = [
+            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
+            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticLeftColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
+            semanticLeftColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
+        ]
+        wideSemanticConstraints = [
+            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
+            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticLeftColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
+            semanticRightColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
+            semanticRightColumn.leadingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor, constant: PreviewVisuals.semanticColumnSpacing),
+            semanticRightColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
+            semanticRightColumn.bottomAnchor.constraint(lessThanOrEqualTo: semanticLeftColumn.bottomAnchor),
+            semanticLeftColumn.widthAnchor.constraint(equalTo: semanticRightColumn.widthAnchor, multiplier: PreviewVisuals.semanticColumnWidthRatio),
+        ]
         resetAnalysisPresentation()
+        updateSemanticHeaderLayoutIfNeeded()
     }
 
     private func updateCountLabel() {
