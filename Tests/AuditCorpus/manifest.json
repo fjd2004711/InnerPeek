@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "cases": [
+    {"id":"transformer-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-complete","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"]},
+    {"id":"transformer-abnormal","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/transformer-abnormal","requiredRelationships":["transformer"],"requiredInsights":["small-model-weights"]},
+    {"id":"shapefile-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/shapefile-complete","requiredRelationships":["shapefile"],"requiredInsights":["shapefile-completeness-complete"]},
+    {"id":"shapefile-incomplete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/shapefile-incomplete","forbiddenRelationships":["shapefile"],"forbiddenInsights":["shapefile-completeness-missing-required"]},
+    {"id":"node-docker","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/node-docker","requiredRelationships":["node","docker"]},
+    {"id":"latex","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/latex","requiredRelationships":["latex"]},
+    {"id":"photo-raw","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/photo-raw","forbiddenRelationships":["transformer","node","docker"],"maxInsights":0},
+    {"id":"generic-mixed","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/generic-mixed","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0},
+    {"id":"storage-concentration","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/storage-concentration","requiredInsights":["largest-file-concentration"]},
+    {"id":"balanced","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/balanced","forbiddenInsights":["largest-file-concentration","top-three-concentration","category-concentration"],"maxInsights":0},
+    {"id":"messy-python","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-python","requiredRelationships":["python"]},
+    {"id":"messy-node","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-node","requiredRelationships":["node"],"forbiddenInsights":["empty-model-weights"]},
+    {"id":"research","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/research","requiredRelationships":["latex"]},
+    {"id":"ai-experiment","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/ai-experiment","requiredRelationships":["transformer"],"requiredInsights":["small-model-weights"]},
+    {"id":"downloads","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/downloads","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":1},
+    {"id":"backup","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/backup","maxInsights":1},
+    {"id":"messy-photos","kind":"semi-realistic","sourceKind":"filesystem","path":"semi-realistic/messy-photos","forbiddenRelationships":["transformer","node","docker"],"maxInsights":1},
+    {"id":"random-zip","kind":"semi-realistic","sourceKind":"zip","path":"semi-realistic/random-zip.zip","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":1},
+    {"id":"node-docker-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/node-docker.zip","requiredRelationships":["node","docker"]},
+    {"id":"transformer-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/transformer-complete.zip","requiredRelationships":["transformer"],"requiredInsights":["transformer-model-completeness-complete"]},
+    {"id":"generic-mixed-zip","kind":"synthetic","sourceKind":"zip","path":"synthetic/generic-mixed.zip","forbiddenRelationships":["transformer","node","docker","latex"],"maxInsights":0}
+    ,{"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"}
+    ,{"id":"realworld-hello-gitworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-gitworld"}
+    ,{"id":"realworld-click","kind":"real-world","sourceKind":"filesystem","path":"real-world/click"}
+    ,{"id":"realworld-ripgrep","kind":"real-world","sourceKind":"filesystem","path":"real-world/ripgrep"}
+    ,{"id":"realworld-pyproject","kind":"real-world","sourceKind":"filesystem","path":"real-world/pyproject"}
+    ,{"id":"realworld-markdown","kind":"real-world","sourceKind":"filesystem","path":"real-world/markdown"}
+  ]
+}

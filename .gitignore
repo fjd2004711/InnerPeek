@@ -3,3 +3,4 @@ build/
 DerivedData/
 dist/
 *.xcarchive
+/Tests/.audit-cache/

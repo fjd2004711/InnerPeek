@@ -1,0 +1,8 @@
+[
+  {"id":"realworld-hello-world","url":"https://github.com/octocat/Hello-World/archive/refs/heads/master.zip","revision":"master","license":"public GitHub repository"},
+  {"id":"realworld-hello-gitworld","url":"https://github.com/githubtraining/hellogitworld/archive/refs/heads/master.zip","revision":"master","license":"public GitHub repository"},
+  {"id":"realworld-click","url":"https://github.com/pallets/click/archive/refs/tags/8.1.7.zip","revision":"8.1.7","license":"BSD-3-Clause"},
+  {"id":"realworld-ripgrep","url":"https://github.com/BurntSushi/ripgrep/archive/refs/tags/14.1.0.zip","revision":"14.1.0","license":"MIT/Unlicense"},
+  {"id":"realworld-pyproject","url":"https://github.com/pypa/sampleproject/archive/refs/heads/main.zip","revision":"main","license":"MIT"},
+  {"id":"realworld-markdown","url":"https://github.com/adam-p/markdown-here/archive/refs/heads/master.zip","revision":"master","license":"MIT"}
+]

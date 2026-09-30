@@ -13,11 +13,23 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
         var isSorted: Bool
     }
 
+    private struct ArchiveEntry: Sendable, Hashable {
+        let path: String
+        let isDirectory: Bool
+        let logicalSize: Int64?
+        let compressedSize: Int64?
+        let modifiedDate: Date?
+    }
+
     private let archiveURL: URL
     private let lock = NSLock()
     private var cancelled = false
     private var parsed = false
     private var nodes: [Node] = []
+    private var archiveEntries: [ArchiveEntry] = []
+
+    static let semanticMaximumDepth = 2
+    static let semanticMaximumEntries = 2_000
 
     init(archiveURL: URL) { self.archiveURL = archiveURL }
 
@@ -40,6 +52,59 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
 
     func cancel() {
         lock.withLock { cancelled = true }
+    }
+
+    /// Produces the same bounded FolderAnalysis consumed by relationship and insight engines.
+    /// Only central-directory metadata is read; no archive entry is extracted or decompressed.
+    func semanticAnalysis(
+        recognizer: FileIntelligenceRecognizer = FileIntelligenceRecognizer(),
+        maximumDepth: Int = ZIPContentProvider.semanticMaximumDepth,
+        maximumEntries: Int = ZIPContentProvider.semanticMaximumEntries
+    ) throws -> FolderAnalysis {
+        try parseIfNeeded(onRootUpdate: nil)
+        let entries = lock.withLock { archiveEntries }
+        var selected: [ContentEntry] = []
+        var selectedPaths = Set<String>()
+        var reachedLimits = Set<FolderAnalysisLimit>()
+
+        func isHidden(_ component: String) -> Bool {
+            component.hasPrefix(".") && component != ".dockerignore"
+        }
+        func isIgnored(_ component: String) -> Bool {
+            [".git", "node_modules", "DerivedData", "build", "dist", "target", ".venv", "venv", "__pycache__", ".cache"].contains(component)
+        }
+        func addDirectory(_ path: String) {
+            guard !path.isEmpty, selectedPaths.insert(path).inserted else { return }
+            let name = (path as NSString).lastPathComponent
+            selected.append(ContentEntry(url: URL(fileURLWithPath: path), relativePath: path, name: name,
+                                         fileExtension: nil, isDirectory: true, logicalSize: nil,
+                                         compressedSize: nil, modifiedDate: nil, sourceKind: .zip))
+        }
+
+        for entry in entries.sorted(by: { $0.path < $1.path }) {
+            try Task.checkCancellation()
+            let path = entry.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            guard !path.isEmpty else { continue }
+            let components = path.split(separator: "/").map(String.init)
+            guard components.count <= maximumDepth else {
+                reachedLimits.insert(.maximumDepth)
+                continue
+            }
+            guard !components.contains(where: isHidden), !components.dropLast().contains(where: isIgnored) else { continue }
+            if selected.count >= maximumEntries {
+                reachedLimits.insert(.maximumEntries)
+                break
+            }
+            for index in 1..<components.count { addDirectory(components.prefix(index).joined(separator: "/")) }
+            guard selectedPaths.insert(path).inserted else { continue }
+            let url = URL(fileURLWithPath: path)
+            selected.append(ContentEntry(url: url, relativePath: path, name: components.last ?? path,
+                                         fileExtension: FileTypeRegistry.normalize(url.pathExtension).isEmpty ? nil : FileTypeRegistry.normalize(url.pathExtension),
+                                         isDirectory: entry.isDirectory, logicalSize: entry.logicalSize,
+                                         compressedSize: entry.compressedSize, modifiedDate: entry.modifiedDate, sourceKind: .zip))
+        }
+        let state: FolderAnalysisScanState = reachedLimits.isEmpty ? .complete : .partial(reachedLimits)
+        return FolderAnalysis(snapshot: ContentSnapshot(entries: selected, scanState: state, sourceKind: .zip), recognizer: recognizer)
     }
 
 
@@ -73,6 +138,7 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
         try handle.seek(toOffset: directoryOffset)
         let central = try handle.read(upToCount: Int(directorySize)) ?? Data()
         var parsedNodes: [Node] = [Node(id: UUID(), name: "", parent: -1, kind: .folder, size: nil, date: nil, children: [], isSorted: true)]
+        var parsedArchiveEntries: [ArchiveEntry] = []
         var parsedIndexByPath: [String: Int] = ["": 0]
         var cursor = 0
         var processedEntries = 0
@@ -80,6 +146,7 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
             try Task.checkCancellation(); guard !isCancelled else { return }
             guard readUInt32(central, cursor) == 0x02014b50 else { throw PreviewContentError.invalidArchive }
             let size = UInt64(readUInt32(central, cursor + 24))
+            let compressedSize = UInt64(readUInt32(central, cursor + 20))
             let nameLength = Int(readUInt16(central, cursor + 28))
             let extraLength = Int(readUInt16(central, cursor + 30))
             let commentLength = Int(readUInt16(central, cursor + 32))
@@ -93,6 +160,13 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
             // temporary allocation for archives with many entries.
             let clean = name.last == "/" ? String(name.dropLast()) : name
             if !clean.isEmpty {
+                parsedArchiveEntries.append(ArchiveEntry(
+                    path: clean,
+                    isDirectory: isDirectory,
+                    logicalSize: isDirectory ? nil : (size <= UInt64(Int64.max) ? Int64(size) : nil),
+                    compressedSize: isDirectory ? nil : (compressedSize <= UInt64(Int64.max) ? Int64(compressedSize) : nil),
+                    modifiedDate: dosDate(date: readUInt16(central, cursor + 14), time: readUInt16(central, cursor + 12))
+                ))
                 insertNode(path: clean, isDirectory: isDirectory,
                            size: isDirectory ? nil : (size <= UInt64(Int64.max) ? Int64(size) : nil),
                            date: dosDate(date: readUInt16(central, cursor + 14), time: readUInt16(central, cursor + 12)),
@@ -107,6 +181,7 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
         guard processedEntries == count else { throw PreviewContentError.invalidArchive }
         lock.withLock {
             nodes = parsedNodes
+            archiveEntries = parsedArchiveEntries
             parsed = true
         }
     }
@@ -148,8 +223,19 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
     private func makeItem(from index: Int, in nodes: [Node]) -> PreviewItem {
         let node = nodes[index]
         // ZIP children are resolved by the compact node ID; no path string is needed.
-        return PreviewItem(id: node.id, name: node.name, relativePath: "", kind: node.kind,
+        let path = nodePath(from: index, in: nodes)
+        return PreviewItem(id: node.id, name: node.name, relativePath: path, kind: node.kind,
                            size: node.size, modifiedDate: node.date, contentTypeIdentifier: nil)
+    }
+
+    private func nodePath(from index: Int, in nodes: [Node]) -> String {
+        var components: [String] = []
+        var current = index
+        while current > 0 {
+            components.append(nodes[current].name)
+            current = nodes[current].parent
+        }
+        return components.reversed().joined(separator: "/")
     }
 
     private func insertNode(path: String, isDirectory: Bool, size: Int64?, date: Date?,

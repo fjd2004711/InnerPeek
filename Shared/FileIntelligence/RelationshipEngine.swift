@@ -108,7 +108,8 @@ struct RelationshipEngine: Sendable {
         guard context.file("config.json") != nil,
               context.firstFile(["tokenizer.json", "tokenizer_config.json"]) != nil else { return nil }
         let weights = context.entries.filter { entry in
-            !entry.isDirectory && (entry.url.pathExtension.lowercased() == "safetensors" ||
+            !entry.isDirectory && ((entry.intelligence?.roles.contains(.modelWeights) == true) ||
+                entry.url.pathExtension.lowercased() == "safetensors" ||
                 ["pytorch_model.bin", "model.onnx"].contains(entry.name.lowercased()))
         }
         guard !weights.isEmpty else { return nil }

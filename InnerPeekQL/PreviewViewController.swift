@@ -111,6 +111,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
         if isDirectory {
             beginFolderAnalysis(at: url, provider: contentProvider)
+        } else {
+            beginArchiveAnalysis(at: url, provider: contentProvider)
         }
 
         loadTask = Task { [weak self, contentProvider] in
@@ -235,6 +237,25 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 // The Quick Look preview closed or was replaced.
             } catch {
                 // Folder intelligence is optional; retain the existing tree.
+            }
+        }
+    }
+
+    private func beginArchiveAnalysis(at archiveURL: URL, provider: any PreviewContentProvider) {
+        let worker = Task.detached(priority: .utility) {
+            try ZIPContentProvider(archiveURL: archiveURL).semanticAnalysis()
+        }
+        analysisWorker = worker
+        analysisTask = Task { [weak self, worker] in
+            do {
+                let analysis = try await worker.value
+                try Task.checkCancellation()
+                guard let self, self.provider === provider else { return }
+                self.presentFolderAnalysis(analysis)
+            } catch is CancellationError {
+                // The Quick Look preview closed or was replaced.
+            } catch {
+                // ZIP intelligence is optional; retain the existing tree.
             }
         }
     }

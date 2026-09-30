@@ -81,6 +81,7 @@ enum FileIntelligenceRegression {
         try runFolderAnalysisRegression(using: registry)
         try runRelationshipRegression(using: recognizer)
         try runInsightRegression(using: recognizer)
+        try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
         print("Stage 1–5 regression checks passed.")
@@ -103,7 +104,15 @@ enum FileIntelligenceRegression {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let recognizer = FileIntelligenceRecognizer(registry: registry, locale: Locale(identifier: "en_US"))
+        var definitions = try JSONSerialization.jsonObject(with: registryData(registry), options: []) as! [[String: Any]]
+        definitions.append([
+            "id": "fooai", "extensions": ["fooai"], "filenames": [], "category": "aiModel",
+            "roles": ["modelWeights"], "name": ["en": "FooAI Model", "zh-Hans": "FooAI 模型"],
+            "description": ["en": "Community model format.", "zh-Hans": "社区模型格式。"],
+            "isText": false, "isBinary": true
+        ])
+        let communityRegistry = FileTypeRegistry(data: try JSONSerialization.data(withJSONObject: definitions))
+        let recognizer = FileIntelligenceRecognizer(registry: communityRegistry, locale: Locale(identifier: "en_US"))
         let analyzer = FolderAnalyzer(recognizer: recognizer)
 
         // Fixture A + B + F: mixed content, exact logical sizes and unknown files.
@@ -408,6 +417,66 @@ enum FileIntelligenceRegression {
         for index in 0..<4 { try writeFile(balancedRoot, "file-\(index).txt", bytes: 250) }
         let balancedInsights = engine.generate(for: try analyzer.analyze(folderURL: balancedRoot), relationships: [])
         try expect(!balancedInsights.contains { $0.kind == .storage }, "balanced storage has no hotspot")
+    }
+
+    private static func runZIPRegression(using registry: FileTypeRegistry) async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-ZIP-(UUID().uuidString)", isDirectory: true)
+        let source = root.appendingPathComponent("source", isDirectory: true)
+        try makeDirectory(source)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try writeFile(source, "config.json", bytes: 3)
+        try writeFile(source, "tokenizer.json", bytes: 3)
+        try writeFile(source, "model.fooai", bytes: 2_048)
+        let archive = root.appendingPathComponent("model-package.zip")
+        let zip = Process()
+        zip.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        zip.currentDirectoryURL = source
+        zip.arguments = ["-q", "-r", archive.path, "."]
+        try zip.run()
+        zip.waitUntilExit()
+        try expect(zip.terminationStatus == 0, "ZIP fixture creation")
+
+        var definitions = try JSONSerialization.jsonObject(with: registryData(registry), options: []) as! [[String: Any]]
+        definitions.append([
+            "id": "fooai", "extensions": ["fooai"], "filenames": [], "category": "aiModel",
+            "roles": ["modelWeights"], "name": ["en": "FooAI Model", "zh-Hans": "FooAI 模型"],
+            "description": ["en": "Community model format.", "zh-Hans": "社区模型格式。"],
+            "isText": false, "isBinary": true
+        ])
+        let communityRegistry = FileTypeRegistry(data: try JSONSerialization.data(withJSONObject: definitions))
+        let recognizer = FileIntelligenceRecognizer(registry: communityRegistry, locale: Locale(identifier: "en_US"))
+        let filesystemAnalysis = try FolderAnalyzer(recognizer: recognizer).analyze(folderURL: source)
+        let provider = ZIPContentProvider(archiveURL: archive)
+        let analysis = try provider.semanticAnalysis(recognizer: recognizer)
+        try expect(analysis.sourceKind == .zip, "ZIP source kind")
+        try expect(analysis.analyzedFileCount == 3, "ZIP semantic file count")
+        try expect(analysis.totalKnownFileSize == 2_054, "ZIP logical uncompressed size")
+        try expect(analysis.analyzedEntries.contains { $0.relativePath == "model.fooai" }, "ZIP community entry")
+        try expect(analysis.analyzedEntries.allSatisfy { !$0.relativePath.isEmpty }, "ZIP stable relative paths")
+
+        let relationships = RelationshipEngine().detect(in: analysis)
+        let filesystemRelationships = RelationshipEngine().detect(in: filesystemAnalysis)
+        try expect(Set(relationships.map(\.type)) == Set(filesystemRelationships.map(\.type)), "folder and ZIP relationship parity")
+        try expect(analysis.categoryStatistics == filesystemAnalysis.categoryStatistics, "folder and ZIP category parity")
+        try expect(relationships.contains { $0.type == .transformer }, "ZIP transformer relationship: \(relationships.map { $0.type.rawValue }) / \(analysis.analyzedEntries.compactMap { $0.intelligence?.roles })")
+        let standardInsights = InsightEngine().generate(for: analysis, relationships: relationships)
+        try expect(standardInsights.contains { $0.id == "transformer-model-completeness-complete" }, "ZIP standard insight")
+
+        let rootItems = try await provider.loadRoot()
+        try expect(rootItems.contains { $0.relativePath == "model.fooai" }, "ZIP browse path preserved")
+        let extractionMarker = root.appendingPathComponent("model.fooai")
+        try expect(!FileManager.default.fileExists(atPath: extractionMarker.path), "ZIP semantic analysis does not extract")
+    }
+
+    private static func registryData(_ registry: FileTypeRegistry) throws -> Data {
+        try JSONSerialization.data(withJSONObject: registry.definitions.map { definition in
+            ["id": definition.id, "extensions": definition.extensions, "filenames": definition.filenames,
+             "category": definition.category.rawValue, "roles": definition.roles.map(\.rawValue),
+             "name": ["en": definition.name.english, "zh-Hans": definition.name.simplifiedChinese],
+             "description": ["en": definition.description.english, "zh-Hans": definition.description.simplifiedChinese],
+             "isText": definition.isText, "isBinary": definition.isBinary]
+        })
     }
 
     private static func metadata(_ extractor: MetadataExtractorRegistry, _ recognizer: FileIntelligenceRecognizer, _ root: URL, _ name: String) async -> [MetadataItem.Key: String] {

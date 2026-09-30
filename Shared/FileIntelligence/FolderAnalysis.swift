@@ -1,5 +1,31 @@
 import Foundation
 
+enum ContentSourceKind: String, Codable, Sendable, Hashable {
+    case filesystem
+    case zip
+}
+
+/// A normalized entry shared by filesystem and archive intelligence.
+/// `url` is the source URL for filesystem entries and a synthetic path for ZIP entries;
+/// downstream analyzers use the stable relative path and never open archive data.
+struct ContentEntry: Sendable, Hashable {
+    let url: URL
+    let relativePath: String
+    let name: String
+    let fileExtension: String?
+    let isDirectory: Bool
+    let logicalSize: Int64?
+    let compressedSize: Int64?
+    let modifiedDate: Date?
+    let sourceKind: ContentSourceKind
+}
+
+struct ContentSnapshot: Sendable, Hashable {
+    let entries: [ContentEntry]
+    let scanState: FolderAnalysisScanState
+    let sourceKind: ContentSourceKind
+}
+
 struct CategoryStatistic: Sendable, Hashable {
     let category: FileCategory
     let fileCount: Int
@@ -60,4 +86,82 @@ struct FolderAnalysis: Sendable, Hashable {
     let analyzedFiles: [AnalyzedFile]
     let analyzedEntries: [AnalyzedEntry]
     let scanState: FolderAnalysisScanState
+    let sourceKind: ContentSourceKind
+
+    init(
+        analyzedFileCount: Int,
+        analyzedDirectoryCount: Int,
+        analyzedEntryCount: Int,
+        totalKnownFileSize: Int64,
+        categoryStatistics: [CategoryStatistic],
+        extensionStatistics: [ExtensionStatistic],
+        analyzedFiles: [AnalyzedFile],
+        analyzedEntries: [AnalyzedEntry],
+        scanState: FolderAnalysisScanState,
+        sourceKind: ContentSourceKind = .filesystem
+    ) {
+        self.analyzedFileCount = analyzedFileCount
+        self.analyzedDirectoryCount = analyzedDirectoryCount
+        self.analyzedEntryCount = analyzedEntryCount
+        self.totalKnownFileSize = totalKnownFileSize
+        self.categoryStatistics = categoryStatistics
+        self.extensionStatistics = extensionStatistics
+        self.analyzedFiles = analyzedFiles
+        self.analyzedEntries = analyzedEntries
+        self.scanState = scanState
+        self.sourceKind = sourceKind
+    }
+
+    /// Builds the existing analysis contract from a provider-neutral snapshot.
+    /// ZIP entries are classified from names and central-directory sizes only.
+    init(snapshot: ContentSnapshot, recognizer: FileIntelligenceRecognizer) {
+        var categories: [FileCategory: (count: Int, size: Int64)] = [:]
+        var extensions: [String?: (count: Int, size: Int64)] = [:]
+        var files: [AnalyzedFile] = []
+        var analyzedEntries: [AnalyzedEntry] = []
+        var total: Int64 = 0
+
+        for entry in snapshot.entries {
+            if entry.isDirectory {
+                analyzedEntries.append(AnalyzedEntry(url: entry.url, relativePath: entry.relativePath,
+                                                      name: entry.name, isDirectory: true, intelligence: nil))
+                continue
+            }
+            let intelligence = recognizer.intelligence(for: entry.url)
+            let size = entry.logicalSize ?? 0
+            analyzedEntries.append(AnalyzedEntry(url: entry.url, relativePath: entry.relativePath,
+                                                  name: entry.name, isDirectory: false, intelligence: intelligence))
+            files.append(AnalyzedFile(url: entry.url, size: size, modifiedDate: entry.modifiedDate,
+                                      intelligence: intelligence))
+            total += size
+            categories[intelligence.category, default: (0, 0)].count += 1
+            categories[intelligence.category, default: (0, 0)].size += size
+            extensions[intelligence.fileExtension, default: (0, 0)].count += 1
+            extensions[intelligence.fileExtension, default: (0, 0)].size += size
+        }
+
+        let categoryStatistics = categories.map { CategoryStatistic(category: $0.key, fileCount: $0.value.count, totalKnownSize: $0.value.size) }
+            .sorted { lhs, rhs in
+                if lhs.totalKnownSize != rhs.totalKnownSize { return lhs.totalKnownSize > rhs.totalKnownSize }
+                if lhs.fileCount != rhs.fileCount { return lhs.fileCount > rhs.fileCount }
+                return lhs.category.stableSortOrder < rhs.category.stableSortOrder
+            }
+        let extensionStatistics = extensions.map { ExtensionStatistic(fileExtension: $0.key, fileCount: $0.value.count, totalKnownSize: $0.value.size) }
+            .sorted { lhs, rhs in
+                if lhs.totalKnownSize != rhs.totalKnownSize { return lhs.totalKnownSize > rhs.totalKnownSize }
+                if lhs.fileCount != rhs.fileCount { return lhs.fileCount > rhs.fileCount }
+                return (lhs.fileExtension ?? "") < (rhs.fileExtension ?? "")
+            }
+
+        self.init(analyzedFileCount: files.count,
+                  analyzedDirectoryCount: analyzedEntries.filter(\.isDirectory).count,
+                  analyzedEntryCount: analyzedEntries.count,
+                  totalKnownFileSize: total,
+                  categoryStatistics: categoryStatistics,
+                  extensionStatistics: extensionStatistics,
+                  analyzedFiles: files,
+                  analyzedEntries: analyzedEntries,
+                  scanState: snapshot.scanState,
+                  sourceKind: snapshot.sourceKind)
+    }
 }
