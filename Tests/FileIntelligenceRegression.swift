@@ -1,8 +1,9 @@
 import Foundation
+import CoreGraphics
 
 @main
 enum FileIntelligenceRegression {
-    static func main() throws {
+    static func main() async throws {
         let resourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -67,6 +68,7 @@ enum FileIntelligenceRegression {
         }
 
         try runFolderAnalysisRegression(using: registry)
+        try await runMetadataRegression(using: recognizer)
 
         print("File intelligence and folder analysis regression checks passed.")
     }
@@ -159,6 +161,75 @@ enum FileIntelligenceRegression {
         try expect(important.contains(where: { $0.file.intelligence.fileName == "package.json" }), "manifest is important")
     }
 
+    private static func runMetadataRegression(using recognizer: FileIntelligenceRecognizer) async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("InnerPeek-Metadata-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let extractor = MetadataExtractorRegistry()
+
+        try writeData(root, "table.csv", Data("a,b,c,d\n1,2,3,4\n".utf8))
+        var values = await metadata(extractor, recognizer, root, "table.csv")
+        try expect(values[.columns] == "4", "CSV columns")
+        try expect(values[.delimiter] == "Comma", "CSV delimiter")
+
+        try writeData(root, "object.json", Data("{\"one\":1}".utf8))
+        values = await metadata(extractor, recognizer, root, "object.json")
+        try expect(values[.jsonShape] == "Object", "JSON top-level shape")
+
+        let notebook = "{\"cells\":[{\"cell_type\":\"code\"},{\"cell_type\":\"code\"},{\"cell_type\":\"markdown\"}],\"metadata\":{\"kernelspec\":{\"display_name\":\"Python 3\"}}}"
+        try writeData(root, "sample.ipynb", Data(notebook.utf8))
+        values = await metadata(extractor, recognizer, root, "sample.ipynb")
+        try expect(values[.codeCells] == "2", "notebook code cells")
+        try expect(values[.markdownCells] == "1", "notebook markdown cells")
+
+        try writeData(root, "references.bib", Data("@article{a,}\n@book{b,}\n@misc{c,}\n".utf8))
+        values = await metadata(extractor, recognizer, root, "references.bib")
+        try expect(values[.references] == "3", "BibTeX entries")
+
+        let header = "{'descr': '<f4', 'fortran_order': False, 'shape': (3, 4), }\n"
+        var npy = Data([0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 1, 0])
+        let headerLength = UInt16(header.utf8.count)
+        npy.append(UInt8(headerLength & 0xff)); npy.append(UInt8(headerLength >> 8)); npy.append(Data(header.utf8))
+        try writeData(root, "array.npy", npy)
+        values = await metadata(extractor, recognizer, root, "array.npy")
+        try expect(values[.shape] == "3 × 4", "NumPy shape")
+        try expect(values[.dataType] == "<f4", "NumPy dtype")
+
+        let tensorHeader = Data("{\"tensor\":{\"dtype\":\"F32\"},\"__metadata__\":{\"format\":\"pt\"}}".utf8)
+        var safe = Data(); let length = UInt64(tensorHeader.count)
+        for index in 0..<8 { safe.append(UInt8((length >> UInt64(index * 8)) & 0xff)) }; safe.append(tensorHeader)
+        try writeData(root, "model.safetensors", safe)
+        values = await metadata(extractor, recognizer, root, "model.safetensors")
+        try expect(values[.tensors] == "1", "SafeTensors count")
+
+        var npz = Data(repeating: 0, count: 22); npz.replaceSubrange(0..<4, with: [0x50, 0x4b, 0x05, 0x06]); npz[10] = 2
+        try writeData(root, "arrays.npz", npz)
+        values = await metadata(extractor, recognizer, root, "arrays.npz")
+        try expect(values[.arrays] == "2", "NPZ central-directory count")
+
+        let image = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8LwAAAABJRU5ErkJggg==")!
+        try writeData(root, "pixel.png", image)
+        values = await metadata(extractor, recognizer, root, "pixel.png")
+        try expect(values[.dimensions] == "1 × 1", "image dimensions")
+
+        let pdfURL = root.appendingPathComponent("two-pages.pdf")
+        var mediaBox = CGRect(x: 0, y: 0, width: 10, height: 10)
+        let context = CGContext(pdfURL as CFURL, mediaBox: &mediaBox, nil)!
+        context.beginPDFPage(nil); context.endPDFPage(); context.beginPDFPage(nil); context.endPDFPage(); context.closePDF()
+        values = await metadata(extractor, recognizer, root, "two-pages.pdf")
+        try expect(values[.pages] == "2", "PDF page count")
+
+        try writeData(root, "unhandled.xyzunknown", Data([0x00, 0x01]))
+        values = await metadata(extractor, recognizer, root, "unhandled.xyzunknown")
+        try expect(values.isEmpty, "unsupported metadata is unavailable")
+    }
+
+    private static func metadata(_ extractor: MetadataExtractorRegistry, _ recognizer: FileIntelligenceRecognizer, _ root: URL, _ name: String) async -> [MetadataItem.Key: String] {
+        let url = root.appendingPathComponent(name)
+        let values = (try? await extractor.extract(from: url, intelligence: recognizer.intelligence(for: url))) ?? []
+        return Dictionary(uniqueKeysWithValues: values.map { ($0.key, $0.value) })
+    }
+
     private static func statistic(_ category: FileCategory, in analysis: FolderAnalysis) -> CategoryStatistic? {
         analysis.categoryStatistics.first(where: { $0.category == category })
     }
@@ -171,5 +242,11 @@ enum FileIntelligenceRegression {
         let url = root.appendingPathComponent(relativePath)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data(repeating: 0x61, count: bytes).write(to: url)
+    }
+
+    private static func writeData(_ root: URL, _ relativePath: String, _ data: Data) throws {
+        let url = root.appendingPathComponent(relativePath)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: url)
     }
 }

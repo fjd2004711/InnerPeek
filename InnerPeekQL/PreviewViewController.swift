@@ -7,6 +7,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var loadTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
     private var analysisWorker: Task<FolderAnalysis, Error>?
+    private var metadataTask: Task<Void, Never>?
+    private var metadataRequestID: UUID?
     private var dataSource: PreviewDataSource?
     private var outlineView: NSOutlineView!
     private var headerIconView: NSImageView!
@@ -207,6 +209,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisTask = nil
         analysisWorker?.cancel()
         analysisWorker = nil
+        metadataTask?.cancel()
+        metadataTask = nil
+        metadataRequestID = nil
         provider?.cancel()
         provider = nil
     }
@@ -287,6 +292,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private func presentFileDetails(for item: PreviewItem?, rootURL: URL, isFilesystemFolder: Bool) {
+        metadataTask?.cancel()
+        metadataTask = nil
+        metadataRequestID = nil
         guard isFilesystemFolder, let item, !item.isFolder else {
             fileDetailSection?.isHidden = true
             return
@@ -313,8 +321,25 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         if let modifiedDate = item.modifiedDate {
             lines.append("\(NSLocalizedString("detail_modified", comment: "File detail date")): \(Self.detailDateFormatter.string(from: modifiedDate))")
         }
-        fileDetailText.stringValue = lines.joined(separator: "\n")
+        let baseDetails = lines.joined(separator: "\n")
+        fileDetailText.stringValue = baseDetails
         fileDetailSection.isHidden = false
+        let requestID = UUID()
+        metadataRequestID = requestID
+        metadataTask = Task { [weak self] in
+            let worker = Task.detached(priority: .utility) {
+                try await MetadataExtractorRegistry().extract(from: fileURL, intelligence: intelligence)
+            }
+            let metadata = (try? await worker.value) ?? []
+            guard !Task.isCancelled, !metadata.isEmpty else { return }
+            await MainActor.run {
+                guard let self, self.metadataRequestID == requestID else { return }
+                let detailRows = metadata.prefix(5).map {
+                    "\(NSLocalizedString($0.key.localizationKey, comment: "File metadata label")): \($0.value)"
+                }
+                self.fileDetailText.stringValue = baseDetails + "\n\n" + NSLocalizedString("metadata", comment: "Metadata section title") + "\n" + detailRows.joined(separator: "\n")
+            }
+        }
     }
 
     /// Shows at most six rows. When necessary, five dominant categories are

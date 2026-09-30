@@ -15,7 +15,10 @@ swiftc \
   "$project_root/Shared/FileIntelligence/FolderAnalysis.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
+  "$project_root/Shared/FileIntelligence/MetadataItem.swift" \
+  "$project_root/Shared/FileIntelligence/MetadataExtractorRegistry.swift" \
   "$project_root/Tests/FileIntelligenceRegression.swift" \
+  -framework AppKit -framework ImageIO -framework AVFoundation -framework PDFKit \
   -o "$binary_path"
 
 "$binary_path"
