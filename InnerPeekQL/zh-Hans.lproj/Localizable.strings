@@ -8,6 +8,7 @@
 "size_column" = "大小";
 "modified_column" = "修改日期";
 "whats_inside" = "内容概览";
+"insights" = "洞察";
 "analysis_file_count" = "%ld 个文件";
 "analysis_summary_complete" = "已分析 %1$ld 个文件 · %2$ld 个文件夹 · %3$@";
 "analysis_summary_partial" = "已分析 %1$ld 个文件 · %2$ld 个文件夹 · %3$@（部分）";

@@ -8,6 +8,7 @@
 "size_column" = "Size";
 "modified_column" = "Modified";
 "whats_inside" = "What's Inside";
+"insights" = "Insights";
 "analysis_file_count" = "%ld files";
 "analysis_summary_complete" = "%ld files · %ld folders · %@ analyzed";
 "analysis_summary_partial" = "%ld files · %ld folders · %@ analyzed (partial)";

@@ -1,0 +1,45 @@
+[
+  {
+    "id":"transformer-model-completeness",
+    "relationshipType":"transformer",
+    "requiredRoles":["modelWeights","configuration"],
+    "recommendedRoles":["tokenizer"],
+    "positiveWhenComplete":true,
+    "completeSeverity":"positive",
+    "missingRequiredSeverity":"warning",
+    "missingRecommendedSeverity":"notice",
+    "messages":{
+      "complete":{"title":{"en":"Core model components found","zh-Hans":"核心模型组件已找到"},"detail":{"en":"Weights, configuration and tokenizer are present.","zh-Hans":"权重、配置与 tokenizer 均存在。"}},
+      "missingRequired":{"title":{"en":"Model package may be incomplete","zh-Hans":"模型包可能不完整"},"detail":{"en":"Required components not found: %@.","zh-Hans":"未找到必需组件：%@。"}},
+      "missingRecommended":{"title":{"en":"Model package is missing a recommended component","zh-Hans":"模型包缺少建议组件"},"detail":{"en":"Recommended components not found: %@.","zh-Hans":"未找到建议组件：%@。"}}
+    }
+  },
+  {
+    "id":"shapefile-completeness",
+    "relationshipType":"shapefile",
+    "requiredRoles":["geometry","index","attributeTable"],
+    "recommendedRoles":["projection"],
+    "positiveWhenComplete":true,
+    "completeSeverity":"positive",
+    "missingRequiredSeverity":"warning",
+    "missingRecommendedSeverity":"notice",
+    "messages":{
+      "complete":{"title":{"en":"Shapefile core components are complete","zh-Hans":"Shapefile 核心组件完整"},"detail":{"en":"Geometry, index and attribute table are present.","zh-Hans":"几何文件、索引与属性表均存在。"}},
+      "missingRequired":{"title":{"en":"Shapefile may be incomplete","zh-Hans":"Shapefile 可能不完整"},"detail":{"en":"Required components not found: %@.","zh-Hans":"未找到必需组件：%@。"}},
+      "missingRecommended":{"title":{"en":"Shapefile has no projection sidecar","zh-Hans":"Shapefile 缺少投影伴随文件"},"detail":{"en":"Projection information was not found in the detected set.","zh-Hans":"检测到的文件集合中没有投影信息。"}}
+    }
+  },
+  {
+    "id":"node-lockfile-recommendation",
+    "relationshipType":"node",
+    "requiredRoles":["manifest"],
+    "recommendedRoles":["lockfile"],
+    "positiveWhenComplete":false,
+    "completeSeverity":"positive",
+    "missingRequiredSeverity":"warning",
+    "missingRecommendedSeverity":"notice",
+    "messages":{
+      "missingRecommended":{"title":{"en":"Node package has no lockfile","zh-Hans":"Node 软件包没有锁定文件"},"detail":{"en":"A lockfile was not found; this is informational, not an error.","zh-Hans":"未找到锁定文件；这只是提示，不代表错误。"}}
+    }
+  }
+]

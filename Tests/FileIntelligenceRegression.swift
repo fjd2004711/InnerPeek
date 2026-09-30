@@ -80,6 +80,7 @@ enum FileIntelligenceRegression {
 
         try runFolderAnalysisRegression(using: registry)
         try runRelationshipRegression(using: recognizer)
+        try runInsightRegression(using: recognizer)
         try await runMetadataRegression(using: recognizer)
 
         print("Stage 1–5 regression checks passed.")
@@ -328,6 +329,85 @@ enum FileIntelligenceRegression {
         try writeData(root, "unhandled.xyzunknown", Data([0x00, 0x01]))
         values = await metadata(extractor, recognizer, root, "unhandled.xyzunknown")
         try expect(values.isEmpty, "unsupported metadata is unavailable")
+    }
+
+    private static func runInsightRegression(using recognizer: FileIntelligenceRecognizer) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("InnerPeek-Insights-\(UUID().uuidString)", isDirectory: true)
+        try makeDirectory(root)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let analyzer = FolderAnalyzer(recognizer: recognizer)
+        let engine = InsightEngine()
+
+        try writeFile(root, "config.json", bytes: 1)
+        try writeFile(root, "tokenizer.json", bytes: 1)
+        try writeFile(root, "model.safetensors", bytes: 2_048)
+        let completeAnalysis = try analyzer.analyze(folderURL: root)
+        let completeRelationships = RelationshipEngine().detect(in: completeAnalysis)
+        let completeInsights = engine.generate(for: completeAnalysis, relationships: completeRelationships)
+        try expect(completeInsights.contains { $0.id == "transformer-model-completeness-complete" }, "complete transformer insight")
+        try expect(!completeInsights.contains { $0.id == "small-model-weights" }, "normal model weight size")
+
+        let communityRuleURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/community-insight.json")
+        let communityEngine = InsightEngine(data: try Data(contentsOf: communityRuleURL))
+        try expect(communityEngine.generate(for: completeAnalysis, relationships: completeRelationships).contains { $0.id == "foo-model-package-complete" }, "knowledge-only insight rule")
+
+        let missingRequired = DetectedRelationship(type: .transformer, members: [
+            RelationshipMember(relativePath: "model.safetensors", role: .weights),
+            RelationshipMember(relativePath: "tokenizer.json", role: .tokenizer)
+        ], confidence: 0.96, priority: 95)
+        let missingRequiredInsights = engine.generate(for: completeAnalysis, relationships: [missingRequired])
+        try expect(missingRequiredInsights.first?.severity == .warning, "missing required role warning")
+
+        let missingRecommended = DetectedRelationship(type: .transformer, members: [
+            RelationshipMember(relativePath: "model.safetensors", role: .weights),
+            RelationshipMember(relativePath: "config.json", role: .configuration)
+        ], confidence: 0.96, priority: 95)
+        let missingRecommendedInsights = engine.generate(for: completeAnalysis, relationships: [missingRecommended])
+        try expect(missingRecommendedInsights.first?.severity == .notice, "missing recommended role notice")
+
+        let partialAnalysis = FolderAnalysis(
+            analyzedFileCount: completeAnalysis.analyzedFileCount,
+            analyzedDirectoryCount: completeAnalysis.analyzedDirectoryCount,
+            analyzedEntryCount: completeAnalysis.analyzedEntryCount,
+            totalKnownFileSize: completeAnalysis.totalKnownFileSize,
+            categoryStatistics: completeAnalysis.categoryStatistics,
+            extensionStatistics: completeAnalysis.extensionStatistics,
+            analyzedFiles: completeAnalysis.analyzedFiles,
+            analyzedEntries: completeAnalysis.analyzedEntries,
+            scanState: .partial([.maximumEntries])
+        )
+        let partialInsights = engine.generate(for: partialAnalysis, relationships: [missingRequired])
+        try expect(!partialInsights.contains { $0.id == "transformer-model-completeness-missing-required" }, "partial scan suppresses missing role")
+
+        let emptyRoot = root.appendingPathComponent("empty-files", isDirectory: true)
+        try makeDirectory(emptyRoot)
+        try writeFile(emptyRoot, "empty.txt", bytes: 0)
+        let emptyInsights = engine.generate(for: try analyzer.analyze(folderURL: emptyRoot), relationships: [])
+        try expect(emptyInsights.contains { $0.id == "empty-files" }, "empty file anomaly")
+
+        let smallRoot = root.appendingPathComponent("small-model", isDirectory: true)
+        try makeDirectory(smallRoot)
+        try writeFile(smallRoot, "config.json", bytes: 1)
+        try writeFile(smallRoot, "model.safetensors", bytes: 8)
+        let smallAnalysis = try analyzer.analyze(folderURL: smallRoot)
+        let smallInsights = engine.generate(for: smallAnalysis, relationships: [missingRecommended])
+        try expect(smallInsights.contains { $0.id == "small-model-weights" }, "small model anomaly")
+
+        let concentratedRoot = root.appendingPathComponent("concentrated", isDirectory: true)
+        try makeDirectory(concentratedRoot)
+        try writeFile(concentratedRoot, "large.dat", bytes: 800)
+        try writeFile(concentratedRoot, "a.txt", bytes: 100)
+        try writeFile(concentratedRoot, "b.txt", bytes: 100)
+        let concentratedInsights = engine.generate(for: try analyzer.analyze(folderURL: concentratedRoot), relationships: [])
+        try expect(concentratedInsights.contains { $0.id == "largest-file-concentration" }, "storage concentration")
+
+        let balancedRoot = root.appendingPathComponent("balanced", isDirectory: true)
+        try makeDirectory(balancedRoot)
+        for index in 0..<4 { try writeFile(balancedRoot, "file-\(index).txt", bytes: 250) }
+        let balancedInsights = engine.generate(for: try analyzer.analyze(folderURL: balancedRoot), relationships: [])
+        try expect(!balancedInsights.contains { $0.kind == .storage }, "balanced storage has no hotspot")
     }
 
     private static func metadata(_ extractor: MetadataExtractorRegistry, _ recognizer: FileIntelligenceRecognizer, _ root: URL, _ name: String) async -> [MetadataItem.Key: String] {

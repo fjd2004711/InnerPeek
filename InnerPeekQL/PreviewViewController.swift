@@ -18,6 +18,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var whatsInsideSection: NSView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
+    private var insightSection: NSStackView!
+    private var insightRows: NSStackView!
     private var importantSection: NSStackView!
     private var importantRows: NSStackView!
     private var relationshipSection: NSStackView!
@@ -241,7 +243,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
-        guard !statistics.isEmpty || !importantFiles.isEmpty || !relationships.isEmpty else { return }
+        let insights = InsightEngine().generate(for: analysis, relationships: relationships, importantFiles: importantFiles)
+        guard !statistics.isEmpty || !insights.isEmpty else { return }
 
         whatsInsideRows.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
@@ -250,8 +253,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         for statistic in statistics {
             whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
         }
-        presentRelationships(relationships)
-        presentImportantFiles(importantFiles)
+        presentInsights(insights)
 
         let summaryKey = analysis.scanState.isPartial
             ? "analysis_summary_partial"
@@ -266,6 +268,62 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisTopToHeader.isActive = true
         contentTopToAnalysis.isActive = true
         whatsInsideSection.isHidden = false
+    }
+
+    private func presentInsights(_ insights: [Insight]) {
+        insightRows.arrangedSubviews.forEach {
+            insightRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        guard !insights.isEmpty else {
+            insightSection.isHidden = true
+            return
+        }
+        for insight in insights.prefix(InsightEngine.maximumVisibleInsights) {
+            insightRows.addArrangedSubview(makeInsightRow(for: insight))
+        }
+        insightSection.isHidden = false
+    }
+
+    private func makeInsightRow(for insight: Insight) -> NSView {
+        let icon = NSImageView()
+        let symbol: String
+        switch insight.severity {
+        case .warning: symbol = "exclamationmark.triangle"
+        case .positive: symbol = "checkmark.circle"
+        case .notice: symbol = "info.circle"
+        case .info: symbol = "internaldrive"
+        }
+        icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        icon.contentTintColor = insight.severity == .warning ? .systemOrange :
+            insight.severity == .positive ? .systemGreen : PreviewVisuals.secondaryLabelColor
+        icon.translatesAutoresizingMaskIntoConstraints = false
+
+        let title = NSTextField(labelWithString: insight.localizedTitle())
+        title.font = PreviewVisuals.rowFont
+        title.alignment = .left
+        title.lineBreakMode = .byTruncatingTail
+        let detail = NSTextField(labelWithString: insight.localizedDetail() ?? "")
+        detail.font = PreviewVisuals.metadataFont
+        detail.textColor = PreviewVisuals.secondaryLabelColor
+        detail.alignment = .left
+        detail.lineBreakMode = .byTruncatingTail
+        detail.maximumNumberOfLines = 2
+
+        let textStack = NSStackView(views: [title, detail])
+        textStack.orientation = .vertical
+        textStack.alignment = .leading
+        textStack.spacing = 1
+        let row = NSStackView(views: [icon, textStack])
+        row.orientation = .horizontal
+        row.alignment = .top
+        row.spacing = PreviewVisuals.analysisRowSpacing
+        NSLayoutConstraint.activate([
+            icon.widthAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
+            icon.heightAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
+            textStack.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: PreviewVisuals.analysisIconSize + PreviewVisuals.analysisRowSpacing)
+        ])
+        return row
     }
 
     private func presentRelationships(_ relationships: [DetectedRelationship]) {
@@ -489,6 +547,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             relationshipRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
+        insightRows?.arrangedSubviews.forEach {
+            insightRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        insightSection?.isHidden = true
         relationshipSection?.isHidden = true
         importantSection?.isHidden = true
         fileDetailSection?.isHidden = true
@@ -690,8 +753,21 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         fileDetailSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         fileDetailSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        analysisStack.addArrangedSubview(relationshipSection)
-        analysisStack.addArrangedSubview(importantSection)
+        let insightTitle = NSTextField(labelWithString: NSLocalizedString("insights", comment: "Actionable insights section title"))
+        insightTitle.font = PreviewVisuals.analysisTitleFont
+        insightTitle.alignment = .left
+        insightRows = NSStackView()
+        insightRows.orientation = .vertical
+        insightRows.alignment = .width
+        insightRows.spacing = PreviewVisuals.analysisRowSpacing
+        insightSection = NSStackView(views: [insightTitle, insightRows])
+        insightSection.orientation = .vertical
+        insightSection.alignment = .leading
+        insightSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+        insightSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        insightSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        analysisStack.addArrangedSubview(insightSection)
         analysisStack.addArrangedSubview(fileDetailSection)
 
         // Keep the intelligence summary content-driven and unframed. The file
@@ -749,18 +825,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             analysisHeader.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             whatsInsideRows.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
             whatsInsideRows.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
-            relationshipSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            relationshipSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
-            relationshipTitle.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
-            relationshipTitle.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
-            relationshipRows.leadingAnchor.constraint(equalTo: relationshipSection.leadingAnchor),
-            relationshipRows.trailingAnchor.constraint(equalTo: relationshipSection.trailingAnchor),
-            importantSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            importantSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
-            importantTitle.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
-            importantTitle.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
-            importantRows.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
-            importantRows.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
+            insightSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            insightSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            insightTitle.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
+            insightTitle.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
+            insightRows.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
+            insightRows.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
             fileDetailSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
             fileDetailSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             detailTitle.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),

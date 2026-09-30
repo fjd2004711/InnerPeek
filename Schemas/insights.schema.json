@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"array",
+  "items":{
+    "type":"object",
+    "required":["id","relationshipType","requiredRoles","recommendedRoles","positiveWhenComplete","completeSeverity","missingRequiredSeverity","missingRecommendedSeverity","messages"],
+    "additionalProperties":false,
+    "properties":{
+      "id":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]*$"},
+      "relationshipType":{"type":"string","pattern":"^[a-z][a-z0-9-]*$"},
+      "requiredRoles":{"type":"array","minItems":1,"items":{"type":"string"},"uniqueItems":true},
+      "recommendedRoles":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+      "positiveWhenComplete":{"type":"boolean"},
+      "completeSeverity":{"enum":["info","positive","notice","warning"]},
+      "missingRequiredSeverity":{"enum":["info","positive","notice","warning"]},
+      "missingRecommendedSeverity":{"enum":["info","positive","notice","warning"]},
+      "messages":{"type":"object","minProperties":1,"additionalProperties":false,"properties":{"complete":{"$ref":"#/$defs/message"},"missingRequired":{"$ref":"#/$defs/message"},"missingRecommended":{"$ref":"#/$defs/message"}}}
+    }
+  },
+  "$defs":{"message":{"type":"object","required":["title"],"additionalProperties":false,"properties":{"title":{"$ref":"../Schemas/roles.schema.json#/$defs/localized"},"detail":{"$ref":"../Schemas/roles.schema.json#/$defs/localized"}}}}
+}

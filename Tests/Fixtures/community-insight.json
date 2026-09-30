@@ -1,0 +1,15 @@
+[
+  {
+    "id":"foo-model-package",
+    "relationshipType":"transformer",
+    "requiredRoles":["modelWeights","configuration"],
+    "recommendedRoles":[],
+    "positiveWhenComplete":true,
+    "completeSeverity":"positive",
+    "missingRequiredSeverity":"warning",
+    "missingRecommendedSeverity":"notice",
+    "messages":{
+      "complete":{"title":{"en":"FooAI package is ready","zh-Hans":"FooAI 软件包已准备就绪"},"detail":{"en":"The community rule matched the package.","zh-Hans":"社区规则已匹配此软件包。"}}
+    }
+  }
+]

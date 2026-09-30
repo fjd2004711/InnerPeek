@@ -17,6 +17,9 @@ enum SemanticRole: String, CaseIterable, Codable, Sendable, Hashable {
     case dataset
     case database
     case index
+    case geometry
+    case attributeTable
+    case projection
     case metadata
     case sidecar
     case image

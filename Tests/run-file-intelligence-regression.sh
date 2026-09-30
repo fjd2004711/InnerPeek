@@ -20,6 +20,7 @@ swiftc \
   "$project_root/Shared/FileIntelligence/MetadataExtractorRegistry.swift" \
   "$project_root/Shared/FileIntelligence/RelationshipEngine.swift" \
   "$project_root/Shared/FileIntelligence/DeclarativeRelationshipDetector.swift" \
+  "$project_root/Shared/FileIntelligence/InsightEngine.swift" \
   "$project_root/Tests/FileIntelligenceRegression.swift" \
   -framework AppKit -framework ImageIO -framework AVFoundation -framework PDFKit \
   -o "$binary_path"
