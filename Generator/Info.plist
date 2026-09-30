@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleExecutable</key><string>InnerPeek</string>
+    <key>CFBundleIdentifier</key><string>com.innerpeek.InnerPeek.Generator</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>InnerPeek</string>
+    <key>CFBundleShortVersionString</key><string>1.0.6</string>
+    <key>CFBundleVersion</key><string>7</string>
+    <key>CFPlugInDynamicRegistration</key><string>NO</string>
+    <key>CFPlugInFactories</key><dict>
+        <key>7C1D3F52-6B0E-4D0A-9B8A-1F4E2A5C9D31</key><string>InnerPeekGeneratorFactory</string>
+    </dict>
+    <key>CFPlugInTypes</key><dict>
+        <key>5E2D9680-5022-40FA-B806-43349C1B6A0E</key><array>
+            <string>7C1D3F52-6B0E-4D0A-9B8A-1F4E2A5C9D31</string>
+        </array>
+    </dict>
+    <key>QLNeedsToBeRunInMainThread</key><false/>
+    <key>QLPreviewHeight</key><real>720</real>
+    <key>QLPreviewWidth</key><real>760</real>
+    <key>QLSupportsConcurrentRequests</key><true/>
+    <key>QLThumbnailMinimumSize</key><real>17</real>
+    <key>CFBundleDocumentTypes</key><array><dict>
+        <key>CFBundleTypeRole</key><string>QLGenerator</string>
+        <key>LSItemContentTypes</key><array>
+            <string>public.folder</string>
+            <string>public.directory</string>
+        </array>
+    </dict></array>
+</dict></plist>

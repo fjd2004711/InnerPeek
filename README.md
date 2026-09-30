@@ -138,3 +138,12 @@ ZIP 条目没有可交给 Finder 的真实文件路径。InnerPeek 会根据扩�
 ## 许可
 
 InnerPeek 采用 [MIT License](LICENSE)。
+
+## 普通文件夹预览（legacy Quick Look generator）
+
+macOS 不会把 `public.folder` 分派给 App Extension，因此普通文件夹的预览由 `Generator/` 下的 legacy generator 提供（输出 HTML，复用同一套分析引擎）。
+
+```sh
+scripts/build-generator.sh --install   # 构建、签名（ad-hoc）、安装到 ~/Library/QuickLook 并重置 Quick Look
+qlmanage -p /path/to/folder            # 或在 Finder 选中文件夹后按空格
+```
