@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "hosts", "metadataPaths"],
+  "properties": {
+    "version": {"const": 1},
+    "hosts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["host", "provider"],
+        "properties": {
+          "host": {"type": "string", "pattern": "^[A-Za-z0-9.-]+$"},
+          "provider": {"enum": ["github", "gitlab", "bitbucket"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "metadataPaths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.)[^\\u0000]+$"},
+          "kind": {"enum": ["file", "directory", "any"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

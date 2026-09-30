@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "hosts": [
+    {"host": "github.com", "provider": "github"},
+    {"host": "gitlab.com", "provider": "gitlab"},
+    {"host": "bitbucket.org", "provider": "bitbucket"}
+  ],
+  "metadataPaths": [
+    {"path": ".github", "kind": "directory"},
+    {"path": ".github/workflows", "kind": "directory"},
+    {"path": ".github/ISSUE_TEMPLATE", "kind": "any"},
+    {"path": ".github/PULL_REQUEST_TEMPLATE", "kind": "any"},
+    {"path": ".github/PULL_REQUEST_TEMPLATE.md", "kind": "file"},
+    {"path": ".github/dependabot.yml", "kind": "file"},
+    {"path": ".github/CODEOWNERS", "kind": "file"},
+    {"path": "CODEOWNERS", "kind": "file"},
+    {"path": "README", "kind": "file"},
+    {"path": "README.md", "kind": "file"},
+    {"path": "README.rst", "kind": "file"},
+    {"path": "LICENSE", "kind": "file"},
+    {"path": "LICENSE.md", "kind": "file"},
+    {"path": "COPYING", "kind": "file"},
+    {"path": "CONTRIBUTING", "kind": "file"},
+    {"path": "CONTRIBUTING.md", "kind": "file"},
+    {"path": "SECURITY.md", "kind": "file"},
+    {"path": "CODE_OF_CONDUCT.md", "kind": "file"}
+  ]
+}

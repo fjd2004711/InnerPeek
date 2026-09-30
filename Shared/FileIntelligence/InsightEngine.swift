@@ -139,6 +139,7 @@ struct InsightEngine: Sendable {
         var findings = completenessInsights(analysis: analysis, relationships: relationships)
         findings += anomalyInsights(analysis: analysis, importantFiles: importantFiles)
         findings += storageInsights(analysis: analysis, existing: findings)
+        findings += repositoryInsights(analysis.repositoryContext)
 
         var seen = Set<String>()
         return findings
@@ -150,6 +151,53 @@ struct InsightEngine: Sendable {
             }
             .prefix(Self.maximumVisibleInsights)
             .map { $0 }
+    }
+
+    private func repositoryInsights(_ context: GitRepositoryContext?) -> [Insight] {
+        guard let context, context.isRepository else { return [] }
+        var findings: [Insight] = []
+        if case .detached? = context.head {
+            findings.append(Insight(
+                id: "git-detached-head", kind: .anomaly, severity: .notice,
+                title: text("Detached HEAD detected", "检测到 HEAD 分离状态"),
+                detail: text("No branch name is inferred from the local HEAD.", "不会从本地 HEAD 推断分支名称。"),
+                detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
+                confidence: 1.0, priority: 760
+            ))
+        }
+        if context.remote == nil {
+            findings.append(Insight(
+                id: "git-no-remote", kind: .completeness, severity: .info,
+                title: text("Git metadata exists but no remote is configured", "存在 Git 元数据，但未配置远程仓库"),
+                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
+                confidence: 1.0, priority: 650
+            ))
+        }
+        if context.hasGitHubActions {
+            findings.append(Insight(
+                id: "github-actions-workflow", kind: .completeness, severity: .positive,
+                title: text("GitHub Actions workflow detected", "检测到 GitHub Actions 工作流"),
+                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".github/workflows")],
+                confidence: 1.0, priority: 630
+            ))
+        }
+        if !context.hasReadme {
+            findings.append(Insight(
+                id: "git-missing-readme", kind: .completeness, severity: .notice,
+                title: text("Repository does not contain a README", "仓库不包含 README"),
+                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
+                confidence: 1.0, priority: 600
+            ))
+        }
+        if !context.hasLicense {
+            findings.append(Insight(
+                id: "git-missing-license", kind: .completeness, severity: .notice,
+                title: text("Repository does not contain a license", "仓库不包含许可证"),
+                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
+                confidence: 1.0, priority: 590
+            ))
+        }
+        return findings
     }
 
     private func completenessInsights(analysis: FolderAnalysis, relationships: [DetectedRelationship]) -> [Insight] {

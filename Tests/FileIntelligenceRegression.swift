@@ -81,6 +81,7 @@ enum FileIntelligenceRegression {
         try runFolderAnalysisRegression(using: registry)
         try runRelationshipRegression(using: recognizer)
         try runInsightRegression(using: recognizer)
+        try runGitRepositoryRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -442,6 +443,21 @@ enum FileIntelligenceRegression {
         let genericAnalysis = try analyzer.analyze(folderURL: balancedRoot)
         let genericDecision = verdictEngine.decide(analysis: genericAnalysis, relationships: [], insights: balancedInsights, importantFiles: [])
         try expect(genericDecision.verdict == nil && genericDecision.insights.isEmpty, "quiet generic folder")
+    }
+
+    /// A read-only smoke test against this checkout complements the synthetic
+    /// corpus and confirms normal repository metadata is accepted in practice.
+    private static func runGitRepositoryRegression() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let context = GitRepositoryInspector().inspect(folderURL: repositoryRoot)
+        try expect(context?.state == .repository, "real local Git repository")
+        if case let .branch(branch)? = context?.head {
+            try expect(!branch.isEmpty, "real local Git branch")
+        } else {
+            try expect(context?.head == .detached, "real local Git detached HEAD")
+        }
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {

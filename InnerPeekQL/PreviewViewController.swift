@@ -294,7 +294,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
             }
         }
-        presentVerdict(decision.verdict)
+        presentVerdict(decision.verdict, repositoryContext: decision.repositoryContext)
         presentInsights(decision.insights)
         // The evidence model remains unchanged. Presentation is deliberately
         // compact so it cannot compete with the verdict and insights for the
@@ -330,7 +330,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         view.needsLayout = true
     }
 
-    private func presentVerdict(_ verdict: SemanticVerdict?) {
+    private func presentVerdict(_ verdict: SemanticVerdict?, repositoryContext: GitRepositoryContext?) {
         verdictRows.arrangedSubviews.forEach {
             verdictRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -339,18 +339,28 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             verdictSection.isHidden = true
             return
         }
+        addVerdictRow(title: verdict.localizedTitle(), summary: verdict.localizedSummary(), status: verdict.status)
+        if let repositoryContext {
+            // Repository context is intentionally subordinate to the primary
+            // domain verdict, retaining the compact Stage 9A summary layout.
+            addVerdictRow(title: repositoryContext.title.value(), summary: repositoryContext.summary.value(), status: .detected)
+        }
+        verdictSection.isHidden = false
+    }
+
+    private func addVerdictRow(title titleText: String, summary summaryText: String, status: SemanticVerdictStatus) {
         let icon = NSImageView()
-        let symbol = verdict.status == .warning ? "exclamationmark.triangle" :
-            verdict.status == .complete ? "checkmark.seal" : "folder.badge.gearshape"
+        let symbol = status == .warning ? "exclamationmark.triangle" :
+            status == .complete ? "checkmark.seal" : "folder.badge.gearshape"
         icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
-        icon.contentTintColor = verdict.status == .warning ? .systemOrange :
-            verdict.status == .complete ? .systemGreen : PreviewVisuals.secondaryLabelColor
+        icon.contentTintColor = status == .warning ? .systemOrange :
+            status == .complete ? .systemGreen : PreviewVisuals.secondaryLabelColor
         icon.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = NSTextField(labelWithString: verdict.localizedTitle())
+        let title = NSTextField(labelWithString: titleText)
         title.font = PreviewVisuals.rowFont
         title.lineBreakMode = .byTruncatingTail
-        let summary = NSTextField(labelWithString: verdict.localizedSummary())
+        let summary = NSTextField(labelWithString: summaryText)
         summary.font = PreviewVisuals.metadataFont
         summary.textColor = PreviewVisuals.secondaryLabelColor
         summary.lineBreakMode = .byTruncatingTail
@@ -371,7 +381,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             row.leadingAnchor.constraint(equalTo: verdictRows.leadingAnchor),
             row.trailingAnchor.constraint(equalTo: verdictRows.trailingAnchor)
         ])
-        verdictSection.isHidden = false
     }
 
     private func presentInsights(_ insights: [Insight]) {

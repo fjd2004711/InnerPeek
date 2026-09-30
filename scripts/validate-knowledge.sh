@@ -7,13 +7,14 @@ file_types="$knowledge_dir/file-types.json"
 roles="$knowledge_dir/roles.json"
 relationships="$knowledge_dir/relationships.json"
 insights="$knowledge_dir/insights.json"
+git_recognition="$knowledge_dir/git-recognition.json"
 
 fail() { print -u2 "Knowledge validation failed: $1"; exit 1; }
-for file in "$file_types" "$roles" "$relationships" "$insights"; do
+for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition"; do
   [[ -f "$file" ]] || fail "missing $file"
   jq empty "$file" >/dev/null 2>&1 || fail "invalid JSON: $file"
 done
-for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json"; do
+for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json"; do
   [[ -f "$schema" ]] || fail "missing $schema"
   jq -e '.["$schema"] | type == "string"' "$schema" >/dev/null 2>&1 || fail "invalid schema: $schema"
 done
@@ -26,6 +27,8 @@ jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.relationshipT
   || fail "relationships have an invalid shape"
 jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.relationshipType | type) == "string" and (.requiredRoles | type) == "array" and (.requiredRoles | length) > 0 and (.recommendedRoles | type) == "array" and (.messages | type) == "object")' "$insights" >/dev/null \
   || fail "insights require a relationship, required roles, and messages"
+jq -e '(.version == 1) and (.hosts | type == "array") and (.metadataPaths | type == "array") and (all(.hosts[]; (.host | type == "string" and test("^[A-Za-z0-9.-]+$")) and (.provider | IN("github", "gitlab", "bitbucket")))) and (all(.metadataPaths[]; ((.path | type) == "string") and ((.path | startswith("/")) | not) and ((.path | contains("..")) | not) and (.kind | IN("file", "directory", "any"))))' "$git_recognition" >/dev/null \
+  || fail "git recognition declarations are malformed"
 
 duplicate_ids=$(jq -r '.[].id' "$file_types" | sort | uniq -d)
 [[ -z "$duplicate_ids" ]] || fail "duplicate file type id: $duplicate_ids"
@@ -35,6 +38,10 @@ duplicate_relationship_ids=$(jq -r '.[].id' "$relationships" | sort | uniq -d)
 [[ -z "$duplicate_relationship_ids" ]] || fail "duplicate relationship id: $duplicate_relationship_ids"
 duplicate_insight_ids=$(jq -r '.[].id' "$insights" | sort | uniq -d)
 [[ -z "$duplicate_insight_ids" ]] || fail "duplicate insight id: $duplicate_insight_ids"
+duplicate_git_hosts=$(jq -r '.hosts[].host | ascii_downcase' "$git_recognition" | sort | uniq -d)
+[[ -z "$duplicate_git_hosts" ]] || fail "duplicate Git host: $duplicate_git_hosts"
+duplicate_git_metadata_paths=$(jq -r '.metadataPaths[].path' "$git_recognition" | sort | uniq -d)
+[[ -z "$duplicate_git_metadata_paths" ]] || fail "duplicate Git metadata path: $duplicate_git_metadata_paths"
 duplicate_extensions=$(jq -r '.[].extensions[]? | ascii_downcase' "$file_types" | sort | uniq -d)
 [[ -z "$duplicate_extensions" ]] || fail "duplicate extension: $duplicate_extensions"
 

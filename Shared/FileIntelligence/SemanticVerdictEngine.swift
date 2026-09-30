@@ -11,6 +11,12 @@ enum SemanticArchetype: String, Sendable, Hashable {
     case goModule
     case xcodeProject
     case photoCollection
+    case gitRepository
+    case githubRepository
+    case gitlabRepository
+    case bitbucketRepository
+    case gitMetadata
+    case githubMetadataProject
 }
 
 enum SemanticVerdictStatus: String, Sendable, Hashable {
@@ -32,6 +38,7 @@ enum SemanticEvidenceKind: String, Sendable, Hashable {
     case insight
     case companionFile
     case importantFile
+    case repositoryMetadata
 }
 
 /// A provider-neutral reference to an entry already admitted to FolderAnalysis.
@@ -74,6 +81,9 @@ struct SemanticDecision: Sendable, Hashable {
     let insights: [Insight]
     let importantFiles: [ImportantFile]
     let evidence: [SemanticEvidence]
+    /// Repository context composes with, rather than replaces, a stronger
+    /// project semantic such as Transformer or Node.
+    let repositoryContext: GitRepositoryContext?
 }
 
 /// Converts existing structured intelligence into a concise, explainable
@@ -86,18 +96,22 @@ struct SemanticVerdictEngine: Sendable {
         importantFiles: [ImportantFile]
     ) -> SemanticDecision {
         let visibleInsights = insights.sorted(by: insightPriority).prefix(SemanticDecision.maximumVisibleInsights).map { $0 }
-        let verdict = verdict(for: analysis, relationships: relationships, insights: visibleInsights)
+        let domainVerdict = verdict(for: analysis, relationships: relationships, insights: visibleInsights)
+        let repositoryVerdict = repositoryVerdict(for: analysis.repositoryContext)
+        let verdict = domainVerdict ?? repositoryVerdict
         let evidence = combinedEvidence(
             verdict: verdict,
             insights: visibleInsights,
             importantFiles: importantFiles,
-            analysis: analysis
+            analysis: analysis,
+            repositoryContext: analysis.repositoryContext
         )
         return SemanticDecision(
             verdict: verdict,
             insights: visibleInsights,
             importantFiles: importantFiles,
-            evidence: evidence
+            evidence: evidence,
+            repositoryContext: domainVerdict == nil ? nil : analysis.repositoryContext
         )
     }
 
@@ -155,6 +169,32 @@ struct SemanticVerdictEngine: Sendable {
         }
         // A generic folder stays quiet: no inferred identity and no filler verdict.
         return nil
+    }
+
+    private func repositoryVerdict(for context: GitRepositoryContext?) -> SemanticVerdict? {
+        guard let context else { return nil }
+        let archetype: SemanticArchetype
+        switch context.state {
+        case .repository:
+            switch context.remote?.provider {
+            case .github: archetype = .githubRepository
+            case .gitlab: archetype = .gitlabRepository
+            case .bitbucket: archetype = .bitbucketRepository
+            default: archetype = .gitRepository
+            }
+        case .metadataDetected: archetype = .gitMetadata
+        case .githubMetadataOnly: archetype = .githubMetadataProject
+        }
+        let evidence = context.evidence.map {
+            SemanticEvidence(relativePath: $0.relativePath, kind: .repositoryMetadata,
+                             sourceID: "git", reason: $0.reason)
+        }
+        guard !evidence.isEmpty else { return nil }
+        return SemanticVerdict(id: archetype.rawValue, archetype: archetype, title: context.title,
+                               summary: context.summary,
+                               status: context.isRepository ? .detected : .warning,
+                               support: context.isRepository ? .strong : .supported,
+                               evidence: evidence)
     }
 
     private func primaryRelationship(in relationships: [DetectedRelationship]) -> DetectedRelationship? {
@@ -233,9 +273,16 @@ struct SemanticVerdictEngine: Sendable {
         verdict: SemanticVerdict?,
         insights: [Insight],
         importantFiles: [ImportantFile],
-        analysis: FolderAnalysis
+        analysis: FolderAnalysis,
+        repositoryContext: GitRepositoryContext?
     ) -> [SemanticEvidence] {
         var all = verdict?.evidence ?? []
+        if let repositoryContext {
+            all += repositoryContext.evidence.map {
+                SemanticEvidence(relativePath: $0.relativePath, kind: .repositoryMetadata,
+                                 sourceID: "git", reason: $0.reason)
+            }
+        }
         for insight in insights {
             all += evidence(for: insight, analysis: analysis)
         }
@@ -248,8 +295,12 @@ struct SemanticVerdictEngine: Sendable {
                                         sourceID: important.reason.rawValue,
                                         reason: text("Important file", "重要文件")))
         }
+        let repositoryPaths = Set(repositoryContext?.evidence.map(\.relativePath) ?? [])
         var paths = Set<String>()
-        return all.filter { entriesByPath.contains($0.relativePath) && paths.insert($0.relativePath).inserted }
+        return all.filter {
+            (entriesByPath.contains($0.relativePath) || repositoryPaths.contains($0.relativePath)) &&
+                paths.insert($0.relativePath).inserted
+        }
             .prefix(SemanticDecision.maximumVisibleEvidence)
             .map { $0 }
     }
@@ -276,6 +327,12 @@ struct SemanticVerdictEngine: Sendable {
             case "relationshipMember": raw = item.value
             case "filePath": raw = item.value
             case "fileSize": raw = item.value.split(separator: "=", maxSplits: 1).first.map(String.init) ?? item.value
+            case "gitMetadata":
+                if let context = analysis.repositoryContext,
+                   context.evidence.contains(where: { $0.relativePath == item.value }) {
+                    paths.insert(item.value)
+                }
+                continue
             default: continue
             }
             if let exact = entries.first(where: { $0.relativePath == raw }) {
@@ -304,6 +361,12 @@ struct SemanticVerdictEngine: Sendable {
         case .goModule: return text("Go module", "Go 模块")
         case .xcodeProject: return text("Xcode project", "Xcode 项目")
         case .photoCollection: return text("Photo collection", "照片集合")
+        case .gitRepository: return text("Git Repository", "Git 仓库")
+        case .githubRepository: return text("GitHub Repository", "GitHub 仓库")
+        case .gitlabRepository: return text("GitLab Repository", "GitLab 仓库")
+        case .bitbucketRepository: return text("Bitbucket Repository", "Bitbucket 仓库")
+        case .gitMetadata: return text("Git metadata detected", "检测到 Git 元数据")
+        case .githubMetadataProject: return text("GitHub project metadata detected", "检测到 GitHub 项目元数据")
         }
     }
 

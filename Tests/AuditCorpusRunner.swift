@@ -20,11 +20,15 @@ struct AuditCase: Decodable {
     let forbiddenVerdicts: [String]
     let requiredEvidence: [String]
     let parityWith: String?
+    let expectedRepositoryState: String?
+    let expectedRemoteHost: String?
+    let expectedRemoteIdentity: String?
+    let expectedBranch: String?
 
     enum CodingKeys: String, CodingKey {
         case id, kind, sourceKind, path, requiredRelationships, forbiddenRelationships
         case requiredInsights, forbiddenInsights, maxInsights, expectedVerdict, expectedVerdictStatus
-        case forbiddenVerdicts, requiredEvidence, parityWith
+        case forbiddenVerdicts, requiredEvidence, parityWith, expectedRepositoryState, expectedRemoteHost, expectedRemoteIdentity, expectedBranch
     }
 
     init(from decoder: Decoder) throws {
@@ -43,6 +47,10 @@ struct AuditCase: Decodable {
         forbiddenVerdicts = try c.decodeIfPresent([String].self, forKey: .forbiddenVerdicts) ?? []
         requiredEvidence = try c.decodeIfPresent([String].self, forKey: .requiredEvidence) ?? []
         parityWith = try c.decodeIfPresent(String.self, forKey: .parityWith)
+        expectedRepositoryState = try c.decodeIfPresent(String.self, forKey: .expectedRepositoryState)
+        expectedRemoteHost = try c.decodeIfPresent(String.self, forKey: .expectedRemoteHost)
+        expectedRemoteIdentity = try c.decodeIfPresent(String.self, forKey: .expectedRemoteIdentity)
+        expectedBranch = try c.decodeIfPresent(String.self, forKey: .expectedBranch)
     }
 }
 
@@ -58,6 +66,10 @@ enum AuditCorpusRunner {
         let verdict: String?
         let verdictStatus: String?
         let evidencePaths: [String]
+        let repositoryState: String?
+        let remoteHost: String?
+        let remoteIdentity: String?
+        let branch: String?
         let visibleInsightCount: Int
         let durationMilliseconds: Int
         var reason: String?
@@ -114,7 +126,7 @@ enum AuditCorpusRunner {
                 unavailable += 1
                 results.append(CaseResult(id: item.id, kind: item.kind, sourceKind: item.sourceKind,
                                           status: "unavailable", relationships: [], insights: [], verdict: nil, verdictStatus: nil,
-                                          evidencePaths: [], visibleInsightCount: 0, durationMilliseconds: 0,
+                                          evidencePaths: [], repositoryState: nil, remoteHost: nil, remoteIdentity: nil, branch: nil, visibleInsightCount: 0, durationMilliseconds: 0,
                                           reason: "case source is not available"))
                 continue
             }
@@ -144,7 +156,7 @@ enum AuditCorpusRunner {
                 let forbiddenInsights = item.forbiddenInsights.filter { detectedInsights.contains($0) }
                 let overflow = item.maxInsights.map { insights.count > $0 } ?? false
                 let verdict = decision.verdict
-                let validPaths = Set(analysis.analyzedEntries.map(\.relativePath))
+                let validPaths = Set(analysis.analyzedEntries.map(\.relativePath)).union(analysis.repositoryContext?.evidence.map(\.relativePath) ?? [])
                 let evidencePaths = decision.evidence.map(\.relativePath)
                 let invalidEvidence = evidencePaths.contains { !validPaths.contains($0) || $0.hasPrefix("/") }
                 let missingEvidence = item.requiredEvidence.filter { !evidencePaths.contains($0) }
@@ -152,6 +164,13 @@ enum AuditCorpusRunner {
                 let statusFailure = item.expectedVerdictStatus.map { verdict?.status.rawValue != $0 } ?? false
                 let forbiddenVerdict = item.forbiddenVerdicts.contains { verdict?.archetype.rawValue == $0 }
                 let unsupportedVerdict = verdict != nil && verdict!.evidence.isEmpty
+                let context = analysis.repositoryContext
+                let branch: String?
+                if case let .branch(name)? = context?.head { branch = name } else { branch = nil }
+                let stateFailure = item.expectedRepositoryState.map { context?.state.rawValue != $0 } ?? false
+                let remoteHostFailure = item.expectedRemoteHost.map { context?.remote?.host != $0 } ?? false
+                let remoteIdentityFailure = item.expectedRemoteIdentity.map { context?.remote?.identity != $0 } ?? false
+                let branchFailure = item.expectedBranch.map { branch != $0 } ?? false
                 let failures = missingRelationships.map { "missing relationship \($0)" }
                     + forbiddenRelationships.map { "forbidden relationship \($0)" }
                     + missingInsights.map { "missing insight \($0)" }
@@ -163,16 +182,22 @@ enum AuditCorpusRunner {
                     + missingEvidence.map { "missing evidence \($0)" }
                     + (invalidEvidence ? ["evidence outside analyzed entries"] : [])
                     + (unsupportedVerdict ? ["verdict has no evidence"] : [])
+                    + (stateFailure ? ["unexpected repository state"] : [])
+                    + (remoteHostFailure ? ["unexpected remote host"] : [])
+                    + (remoteIdentityFailure ? ["unexpected remote identity"] : [])
+                    + (branchFailure ? ["unexpected branch"] : [])
                 results.append(CaseResult(id: item.id, kind: item.kind, sourceKind: item.sourceKind,
                                           status: failures.isEmpty ? "pass" : "review", relationships: relationships,
                                           insights: insights, verdict: verdict?.archetype.rawValue,
                                           verdictStatus: verdict?.status.rawValue, evidencePaths: evidencePaths,
+                                          repositoryState: context?.state.rawValue, remoteHost: context?.remote?.host,
+                                          remoteIdentity: context?.remote?.identity, branch: branch,
                                           visibleInsightCount: insights.count, durationMilliseconds: max(0, Int(Date().timeIntervalSince(started) * 1_000)),
                                           reason: failures.isEmpty ? nil : failures.joined(separator: "; ")))
             } catch {
                 results.append(CaseResult(id: item.id, kind: item.kind, sourceKind: item.sourceKind,
                                           status: "error", relationships: [], insights: [], verdict: nil, verdictStatus: nil,
-                                          evidencePaths: [], visibleInsightCount: 0, durationMilliseconds: max(0, Int(Date().timeIntervalSince(started) * 1_000)),
+                                          evidencePaths: [], repositoryState: nil, remoteHost: nil, remoteIdentity: nil, branch: nil, visibleInsightCount: 0, durationMilliseconds: max(0, Int(Date().timeIntervalSince(started) * 1_000)),
                                           reason: String(describing: error)))
             }
         }

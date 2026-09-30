@@ -6,6 +6,7 @@ rm -rf "$out"
 mkdir -p "$out/synthetic" "$out/semi-realistic"
 write() { local filepath="$1"; local bytes="${2:-8}"; mkdir -p "${filepath:h}"; dd if=/dev/zero of="$filepath" bs=1 count="$bytes" 2>/dev/null; }
 zip_case() { local source="$1"; local target="$2"; (cd "$out/$source" && /usr/bin/zip -q -r "$out/$target" .); }
+git_fixture() { local name="$1"; local head="$2"; local remote="${3:-}"; mkdir -p "$out/synthetic/$name/.git"; print -r -- "$head" > "$out/synthetic/$name/.git/HEAD"; [[ -z "$remote" ]] || print -r -- $'[remote "origin"]\n\turl = '"$remote" > "$out/synthetic/$name/.git/config"; }
 
 # Synthetic corpus: clean, bounded cases used for stable regression expectations.
 write "$out/synthetic/transformer-complete/config.json" 3
@@ -39,6 +40,35 @@ write "$out/synthetic/storage-concentration/large.dat" 800
 write "$out/synthetic/storage-concentration/a.txt" 100
 write "$out/synthetic/storage-concentration/b.txt" 100
 for i in {0..3}; do write "$out/synthetic/balanced/file-$i.txt" 250; done
+
+# Stage 10A: deterministic local-only Git metadata fixtures. None invokes Git
+# or carries a usable credential; the credential fixture uses a fake token.
+git_fixture git-github-https "ref: refs/heads/main" "https://github.com/example/demo.git"
+git_fixture git-github-ssh "ref: refs/heads/dev" "git@github.com:example/demo.git"
+git_fixture git-gitlab "ref: refs/heads/main" "https://gitlab.com/example/demo.git"
+git_fixture git-bitbucket "ref: refs/heads/main" "https://bitbucket.org/example/demo.git"
+git_fixture git-custom-remote "ref: refs/heads/release" "ssh://git@git.example.test/team/demo.git"
+git_fixture git-no-remote "ref: refs/heads/main"
+git_fixture git-detached-head "0123456789012345678901234567890123456789" "https://github.com/example/demo.git"
+mkdir -p "$out/synthetic/github-metadata-no-git/.github/workflows"
+write "$out/synthetic/github-metadata-no-git/README.md" 10
+mkdir -p "$out/synthetic/malformed-git/.git"
+print -r -- "not-a-valid-head" > "$out/synthetic/malformed-git/.git/HEAD"
+mkdir -p "$out/synthetic/git-worktree-pointer/linked-git"
+print -r -- "gitdir: linked-git" > "$out/synthetic/git-worktree-pointer/.git"
+print -r -- "ref: refs/heads/worktree" > "$out/synthetic/git-worktree-pointer/linked-git/HEAD"
+print -r -- $'[remote "upstream"]\n\turl = https://github.com/example/worktree.git' > "$out/synthetic/git-worktree-pointer/linked-git/config"
+git_fixture credential-bearing-remote "ref: refs/heads/main" "https://username:fake-token@github.com/example/demo.git"
+mkdir -p "$out/synthetic/generic-folder"
+git_fixture git-github-transformer "ref: refs/heads/main" "https://github.com/example/model.git"
+write "$out/synthetic/git-github-transformer/config.json" 3
+write "$out/synthetic/git-github-transformer/tokenizer.json" 3
+write "$out/synthetic/git-github-transformer/model.safetensors" 2048
+git_fixture git-github-node "ref: refs/heads/main" "https://github.com/example/node.git"
+write "$out/synthetic/git-github-node/package.json" 20
+write "$out/synthetic/git-github-node/pnpm-lock.yaml" 20
+write "$out/synthetic/git-github-node/Dockerfile" 20
+write "$out/synthetic/git-github-node/compose.yml" 20
 
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30

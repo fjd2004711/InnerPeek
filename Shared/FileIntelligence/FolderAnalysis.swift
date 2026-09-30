@@ -87,6 +87,9 @@ struct FolderAnalysis: Sendable, Hashable {
     let analyzedEntries: [AnalyzedEntry]
     let scanState: FolderAnalysisScanState
     let sourceKind: ContentSourceKind
+    /// Repository context is obtained from a fixed set of root metadata paths,
+    /// outside the regular visible-file traversal.
+    let repositoryContext: GitRepositoryContext?
 
     init(
         analyzedFileCount: Int,
@@ -98,7 +101,8 @@ struct FolderAnalysis: Sendable, Hashable {
         analyzedFiles: [AnalyzedFile],
         analyzedEntries: [AnalyzedEntry],
         scanState: FolderAnalysisScanState,
-        sourceKind: ContentSourceKind = .filesystem
+        sourceKind: ContentSourceKind = .filesystem,
+        repositoryContext: GitRepositoryContext? = nil
     ) {
         self.analyzedFileCount = analyzedFileCount
         self.analyzedDirectoryCount = analyzedDirectoryCount
@@ -110,6 +114,7 @@ struct FolderAnalysis: Sendable, Hashable {
         self.analyzedEntries = analyzedEntries
         self.scanState = scanState
         self.sourceKind = sourceKind
+        self.repositoryContext = repositoryContext
     }
 
     /// Builds the existing analysis contract from a provider-neutral snapshot.
@@ -162,6 +167,7 @@ struct FolderAnalysis: Sendable, Hashable {
                   analyzedFiles: files,
                   analyzedEntries: analyzedEntries,
                   scanState: snapshot.scanState,
-                  sourceKind: snapshot.sourceKind)
+                  sourceKind: snapshot.sourceKind,
+                  repositoryContext: nil)
     }
 }

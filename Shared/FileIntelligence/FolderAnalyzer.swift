@@ -47,6 +47,7 @@ struct FolderAnalyzer: Sendable {
         // Retain .dockerignore as a relationship sidecar while preserving the
         // preview's policy of skipping every other hidden entry.
         let options: FileManager.DirectoryEnumerationOptions = []
+        let repositoryContext = GitRepositoryInspector().inspect(folderURL: folderURL)
         guard let enumerator = FileManager.default.enumerator(
             at: folderURL,
             includingPropertiesForKeys: Array(keys),
@@ -62,7 +63,8 @@ struct FolderAnalyzer: Sendable {
                 extensionStatistics: [],
                 analyzedFiles: [],
                 analyzedEntries: [],
-                scanState: .complete
+                scanState: .complete,
+                repositoryContext: repositoryContext
             )
         }
 
@@ -160,7 +162,8 @@ struct FolderAnalyzer: Sendable {
             extensionStatistics: extensionStatistics,
             analyzedFiles: analyzedFiles,
             analyzedEntries: analyzedEntries,
-            scanState: reachedLimits.isEmpty ? .complete : .partial(reachedLimits)
+            scanState: reachedLimits.isEmpty ? .complete : .partial(reachedLimits),
+            repositoryContext: repositoryContext
         )
     }
 

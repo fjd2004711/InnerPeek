@@ -19,6 +19,7 @@ swiftc -parse-as-library \
   "$repo_root/Shared/FileIntelligence/FileTypeRegistry.swift" \
   "$repo_root/Shared/FileIntelligence/FileIntelligenceRecognizer.swift" \
   "$repo_root/Shared/FileIntelligence/FolderAnalysis.swift" \
+  "$repo_root/Shared/FileIntelligence/GitRepositoryInspector.swift" \
   "$repo_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$repo_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
   "$repo_root/Shared/FileIntelligence/MetadataItem.swift" \
