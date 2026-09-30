@@ -68,9 +68,10 @@ enum FileIntelligenceRegression {
         }
 
         try runFolderAnalysisRegression(using: registry)
+        try runRelationshipRegression(using: recognizer)
         try await runMetadataRegression(using: recognizer)
 
-        print("File intelligence and folder analysis regression checks passed.")
+        print("Stage 1–5 regression checks passed.")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ description: String) throws {
@@ -159,6 +160,100 @@ enum FileIntelligenceRegression {
         try expect(important.count == ImportantFileDetector.maximumResults, "important result bound")
         try expect(important.first?.file.intelligence.fileName == "README.md", "README ranks first")
         try expect(important.contains(where: { $0.file.intelligence.fileName == "package.json" }), "manifest is important")
+    }
+
+    private static func runRelationshipRegression(using recognizer: FileIntelligenceRecognizer) throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-Relationships-\(UUID().uuidString)", isDirectory: true)
+        try makeDirectory(root)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let analyzer = FolderAnalyzer(recognizer: recognizer)
+        let engine = RelationshipEngine()
+
+        func fixture(_ name: String, files: [String], directories: [String] = []) throws -> [DetectedRelationship] {
+            let folder = root.appendingPathComponent(name, isDirectory: true)
+            try makeDirectory(folder)
+            for directory in directories { try makeDirectory(folder.appendingPathComponent(directory, isDirectory: true)) }
+            for file in files { try writeFile(folder, file, bytes: 1) }
+            return engine.detect(in: try analyzer.analyze(folderURL: folder))
+        }
+        func group(_ type: RelationshipType, in relationships: [DetectedRelationship]) -> DetectedRelationship? {
+            relationships.first { $0.type == type }
+        }
+
+        let shape = try fixture("shape", files: ["map.shp", "map.shx", "map.dbf", "map.prj", "other.dbf"])
+        try expect(shape.count == 1, "one Shapefile relationship")
+        try expect(group(.shapefile, in: shape)?.members.count == 4, "Shapefile member count")
+        try expect((group(.shapefile, in: shape)?.confidence ?? 0) > 0.95, "Shapefile confidence")
+        try expect(group(.shapefile, in: shape)?.members.first(where: { $0.relativePath == "map.shp" })?.role == .geometry, "geometry role")
+        try expect(group(.shapefile, in: shape)?.members.first(where: { $0.relativePath == "map.shx" })?.role == .index, "index role")
+        try expect(group(.shapefile, in: shape)?.members.first(where: { $0.relativePath == "map.dbf" })?.role == .attributes, "attributes role")
+        try expect(group(.shapefile, in: shape)?.members.first(where: { $0.relativePath == "map.prj" })?.role == .projection, "projection role")
+        let shapeMismatched = try fixture("shape-mismatched", files: ["map.shp", "map.shx", "other.dbf"])
+        try expect(shapeMismatched.isEmpty, "different Shapefile stem rejected")
+        let shapeIncomplete = try fixture("shape-incomplete", files: ["map.shp", "map.dbf"])
+        try expect(shapeIncomplete.isEmpty, "incomplete Shapefile rejected")
+
+        let transformer = try fixture("transformer", files: ["config.json", "tokenizer.json", "tokenizer_config.json", "model.safetensors"])
+        try expect(group(.transformer, in: transformer)?.members.count == 4, "Transformer model package")
+        let configAlone = try fixture("config-alone", files: ["config.json"])
+        try expect(configAlone.isEmpty, "config alone rejected")
+        let configSettings = try fixture("config-settings", files: ["config.json", "settings.json"])
+        try expect(configSettings.isEmpty, "generic configuration rejected")
+        let transformerNoWeights = try fixture("transformer-no-weights", files: ["config.json", "tokenizer.json"])
+        try expect(transformerNoWeights.isEmpty, "Transformer requires weights")
+        let split = try fixture("split-directories", files: ["a/config.json", "b/tokenizer.json", "b/model.safetensors"], directories: ["a", "b"])
+        try expect(group(.transformer, in: split) == nil, "different directories are not grouped")
+
+        let latex = try fixture("latex", files: ["main.tex", "references.bib"], directories: ["figures"])
+        try expect(group(.latex, in: latex)?.members.count == 3, "LaTeX document set")
+        let texAlone = try fixture("tex-alone", files: ["notes.tex"])
+        try expect(texAlone.isEmpty, "single TeX file rejected")
+        let node = try fixture("node", files: ["package.json", "pnpm-lock.yaml", "tsconfig.json"])
+        try expect(group(.node, in: node)?.members.count == 3, "Node package")
+        let python = try fixture("python", files: ["pyproject.toml", "uv.lock"], directories: ["src"])
+        try expect(group(.python, in: python)?.members.count == 3, "Python project files")
+        let rust = try fixture("rust", files: ["Cargo.toml", "Cargo.lock"], directories: ["src"])
+        try expect(group(.rust, in: rust)?.members.count == 3, "Rust package")
+        let go = try fixture("go", files: ["go.mod", "go.sum"])
+        try expect(group(.go, in: go)?.members.count == 2, "Go module")
+        let xcode = try fixture("xcode", files: ["Package.resolved"], directories: ["Example.xcodeproj"])
+        try expect(group(.xcode, in: xcode)?.members.count == 2, "Xcode project")
+        let docker = try fixture("docker", files: ["Dockerfile", "compose.yml", ".dockerignore"])
+        try expect(group(.docker, in: docker)?.members.count == 3, "Docker configuration with sidecar")
+
+        let overlap = try fixture("overlap", files: ["package.json", "pnpm-lock.yaml", "Dockerfile", "compose.yml", ".dockerignore"])
+        try expect(overlap.count == 2 && group(.node, in: overlap) != nil && group(.docker, in: overlap) != nil, "distinct overlapping relationships coexist")
+        try expect(Set(overlap.map { $0.type }).count == overlap.count, "duplicate relationships suppressed")
+        let repeatAnalysis = try analyzer.analyze(folderURL: root.appendingPathComponent("overlap"))
+        let reference = engine.detect(in: repeatAnalysis)
+        for _ in 0..<20 { try expect(engine.detect(in: repeatAnalysis) == reference, "deterministic relationship order") }
+
+        let many = try fixture("many", files: [
+            "map.shp", "map.shx", "map.dbf", "config.json", "tokenizer.json", "model.safetensors",
+            "main.tex", "references.bib", "package.json", "pnpm-lock.yaml", "Dockerfile", "compose.yml"
+        ])
+        try expect(many.count > RelationshipEngine.maxDisplayedRelationships, "engine retains more than UI limit")
+        try expect(Array(many.prefix(RelationshipEngine.maxDisplayedRelationships)).count == 4, "visible relationship bound")
+        let partialFolder = root.appendingPathComponent("python")
+        let partial = try FolderAnalyzer(recognizer: recognizer, limits: .init(maximumDepth: 1, maximumEntries: 2000, ignoredDirectoryNames: [])).analyze(folderURL: partialFolder)
+        try expect(partial.scanState.isPartial && group(.python, in: engine.detect(in: partial)) != nil, "strong group remains valid in partial analysis")
+        let ordinaryPhoto = try fixture("ordinary-photo", files: ["a.jpg", "b.png"])
+        try expect(ordinaryPhoto.isEmpty, "ordinary photos do not match software groups")
+        let genericDocuments = try fixture("generic-documents", files: ["notes.txt", "report.pdf"])
+        try expect(genericDocuments.isEmpty, "generic documents do not match")
+        let empty = try fixture("empty", files: [])
+        try expect(empty.isEmpty, "empty folder has no relationships")
+
+        let resourceDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("InnerPeekQL")
+        for language in ["en", "zh-Hans"] {
+            let strings = try Data(contentsOf: resourceDirectory.appendingPathComponent("\(language).lproj/Localizable.strings"))
+            let values = try PropertyListSerialization.propertyList(from: strings, format: nil) as? [String: String] ?? [:]
+            try expect(values["detected_relationships"] != nil, "\(language) section localization")
+            for type in [RelationshipType.shapefile, .transformer, .latex, .node, .python, .rust, .go, .xcode, .docker] {
+                try expect(values["relationship_\(type.rawValue)"] != nil, "\(language) \(type.rawValue) localization")
+            }
+        }
     }
 
     private static func runMetadataRegression(using recognizer: FileIntelligenceRecognizer) async throws {

@@ -44,7 +44,9 @@ struct FolderAnalyzer: Sendable {
             .fileSizeKey,
             .contentModificationDateKey
         ]
-        let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles]
+        // Retain .dockerignore as a relationship sidecar while preserving the
+        // preview's policy of skipping every other hidden entry.
+        let options: FileManager.DirectoryEnumerationOptions = []
         guard let enumerator = FileManager.default.enumerator(
             at: folderURL,
             includingPropertiesForKeys: Array(keys),
@@ -59,6 +61,7 @@ struct FolderAnalyzer: Sendable {
                 categoryStatistics: [],
                 extensionStatistics: [],
                 analyzedFiles: [],
+                analyzedEntries: [],
                 scanState: .complete
             )
         }
@@ -70,10 +73,17 @@ struct FolderAnalyzer: Sendable {
         var categories: [FileCategory: MutableStatistic] = [:]
         var extensions: [String?: MutableStatistic] = [:]
         var analyzedFiles: [AnalyzedFile] = []
+        var analyzedEntries: [AnalyzedEntry] = []
         var reachedLimits = Set<FolderAnalysisLimit>()
+        let resolvedRootPath = folderURL.resolvingSymlinksInPath().path
 
         while let itemURL = enumerator.nextObject() as? URL {
             try Task.checkCancellation()
+            let name = itemURL.lastPathComponent
+            if name.hasPrefix(".") && name != ".dockerignore" {
+                enumerator.skipDescendants()
+                continue
+            }
             if entryCount >= limits.maximumEntries {
                 reachedLimits.insert(.maximumEntries)
                 break
@@ -82,6 +92,11 @@ struct FolderAnalyzer: Sendable {
             // FileManager.DirectoryEnumerator reports the root's direct
             // children at level 1, which is our documented traversal depth.
             let depth = enumerator.level
+            let itemPath = itemURL.path
+            let canonicalItemPath = itemPath.hasPrefix(resolvedRootPath + "/")
+                ? itemPath : itemURL.resolvingSymlinksInPath().path
+            guard canonicalItemPath.hasPrefix(resolvedRootPath + "/") else { continue }
+            let relativePath = String(canonicalItemPath.dropFirst(resolvedRootPath.count + 1))
             do {
                 let values = try itemURL.resourceValues(forKeys: keys)
                 let isDirectory = values.isDirectory ?? false
@@ -89,6 +104,10 @@ struct FolderAnalyzer: Sendable {
 
                 entryCount += 1
                 if isDirectory {
+                    analyzedEntries.append(AnalyzedEntry(
+                        url: itemURL, relativePath: relativePath, name: name,
+                        isDirectory: true, intelligence: nil
+                    ))
                     directoryCount += 1
 
                     // Count the visible directory itself, but never recurse into a
@@ -105,6 +124,10 @@ struct FolderAnalyzer: Sendable {
                 guard values.isRegularFile ?? true else { continue }
                 let size = values.fileSize.map(Int64.init) ?? 0
                 let intelligence = recognizer.intelligence(for: itemURL)
+                analyzedEntries.append(AnalyzedEntry(
+                    url: itemURL, relativePath: relativePath, name: name,
+                    isDirectory: false, intelligence: intelligence
+                ))
                 fileCount += 1
                 totalSize += size
                 categories[intelligence.category, default: MutableStatistic()].add(size: size)
@@ -136,6 +159,7 @@ struct FolderAnalyzer: Sendable {
             categoryStatistics: categoryStatistics,
             extensionStatistics: extensionStatistics,
             analyzedFiles: analyzedFiles,
+            analyzedEntries: analyzedEntries,
             scanState: reachedLimits.isEmpty ? .complete : .partial(reachedLimits)
         )
     }

@@ -20,6 +20,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var analysisSummaryLabel: NSTextField!
     private var importantSection: NSStackView!
     private var importantRows: NSStackView!
+    private var relationshipSection: NSStackView!
+    private var relationshipRows: NSStackView!
     private var fileDetailSection: NSStackView!
     private var fileDetailText: NSTextField!
     private var contentTopToHeader: NSLayoutConstraint!
@@ -238,7 +240,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
-        guard !statistics.isEmpty || !importantFiles.isEmpty else { return }
+        let relationships = RelationshipEngine().detect(in: analysis)
+        guard !statistics.isEmpty || !importantFiles.isEmpty || !relationships.isEmpty else { return }
 
         whatsInsideRows.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
@@ -247,6 +250,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         for statistic in statistics {
             whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
         }
+        presentRelationships(relationships)
         presentImportantFiles(importantFiles)
 
         let summaryKey = analysis.scanState.isPartial
@@ -262,6 +266,52 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisTopToHeader.isActive = true
         contentTopToAnalysis.isActive = true
         whatsInsideSection.isHidden = false
+    }
+
+    private func presentRelationships(_ relationships: [DetectedRelationship]) {
+        relationshipRows.arrangedSubviews.forEach {
+            relationshipRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        guard !relationships.isEmpty else {
+            relationshipSection.isHidden = true
+            return
+        }
+        for relationship in relationships.prefix(RelationshipEngine.maxDisplayedRelationships) {
+            let title = NSTextField(labelWithString: NSLocalizedString(
+                relationship.localizationKey, comment: "Detected file relationship"
+            ))
+            title.font = PreviewVisuals.rowFont
+            title.lineBreakMode = .byTruncatingTail
+
+            let count = NSTextField(labelWithString: String.localizedStringWithFormat(
+                NSLocalizedString("related_files_count", comment: "Related file count"),
+                relationship.members.count
+            ))
+            count.font = PreviewVisuals.metadataFont
+            count.textColor = PreviewVisuals.secondaryLabelColor
+            let heading = NSStackView(views: [title, NSView(), count])
+            heading.orientation = .horizontal
+            heading.alignment = .centerY
+
+            let names = relationship.members.prefix(4).map { ($0.relativePath as NSString).lastPathComponent }
+            let remaining = relationship.members.count - names.count
+            let overflow = remaining > 0 ? String.localizedStringWithFormat(
+                NSLocalizedString("related_files_more", comment: "Additional related files"), remaining
+            ) : nil
+            let preview = NSTextField(labelWithString: (names + [overflow].compactMap { $0 }).joined(separator: " · "))
+            preview.font = PreviewVisuals.metadataFont
+            preview.textColor = PreviewVisuals.secondaryLabelColor
+            preview.lineBreakMode = .byTruncatingMiddle
+            preview.maximumNumberOfLines = 1
+
+            let row = NSStackView(views: [heading, preview])
+            row.orientation = .vertical
+            row.alignment = .width
+            row.spacing = 1
+            relationshipRows.addArrangedSubview(row)
+        }
+        relationshipSection.isHidden = false
     }
 
     private func presentImportantFiles(_ files: [ImportantFile]) {
@@ -422,6 +472,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             importantRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
+        relationshipRows?.arrangedSubviews.forEach {
+            relationshipRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        relationshipSection?.isHidden = true
         importantSection?.isHidden = true
         fileDetailSection?.isHidden = true
         whatsInsideSection?.isHidden = true
@@ -574,6 +629,17 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         analysisStack.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
         analysisStack.translatesAutoresizingMaskIntoConstraints = false
 
+        let relationshipTitle = NSTextField(labelWithString: NSLocalizedString("detected_relationships", comment: "Detected relationships section"))
+        relationshipTitle.font = PreviewVisuals.analysisTitleFont
+        relationshipRows = NSStackView()
+        relationshipRows.orientation = .vertical
+        relationshipRows.alignment = .width
+        relationshipRows.spacing = PreviewVisuals.analysisRowSpacing
+        relationshipSection = NSStackView(views: [relationshipTitle, relationshipRows])
+        relationshipSection.orientation = .vertical
+        relationshipSection.alignment = .width
+        relationshipSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
+
         let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_files", comment: "Important files section title"))
         importantTitle.font = PreviewVisuals.analysisTitleFont
         importantRows = NSStackView()
@@ -597,6 +663,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         fileDetailSection.alignment = .leading
         fileDetailSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
 
+        analysisStack.addArrangedSubview(relationshipSection)
         analysisStack.addArrangedSubview(importantSection)
         analysisStack.addArrangedSubview(fileDetailSection)
 

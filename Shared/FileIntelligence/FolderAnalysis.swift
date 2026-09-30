@@ -22,6 +22,13 @@ struct AnalyzedFile: Sendable, Hashable {
     let modifiedDate: Date?
     let intelligence: FileIntelligence
 }
+struct AnalyzedEntry: Sendable, Hashable {
+    let url: URL
+    let relativePath: String
+    let name: String
+    let isDirectory: Bool
+    let intelligence: FileIntelligence?
+}
 
 enum FolderAnalysisLimit: String, Sendable, Hashable {
     case maximumDepth
@@ -51,5 +58,6 @@ struct FolderAnalysis: Sendable, Hashable {
     let categoryStatistics: [CategoryStatistic]
     let extensionStatistics: [ExtensionStatistic]
     let analyzedFiles: [AnalyzedFile]
+    let analyzedEntries: [AnalyzedEntry]
     let scanState: FolderAnalysisScanState
 }
