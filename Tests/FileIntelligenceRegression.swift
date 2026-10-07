@@ -125,6 +125,7 @@ enum FileIntelligenceRegression {
         try runProjectRecognitionRegression()
         try runVisualIdentityRegression()
         try runRepositoryHealthRegression()
+        try runLocalizationRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -330,11 +331,11 @@ enum FileIntelligenceRegression {
         try writeData(root, "table.csv", Data("a,b,c,d\n1,2,3,4\n".utf8))
         var values = await metadata(extractor, recognizer, root, "table.csv")
         try expect(values[.columns] == "4", "CSV columns")
-        try expect(values[.delimiter] == "Comma", "CSV delimiter")
+        try expect(values[.delimiter] == MessageCatalog.shared.string("Comma"), "CSV delimiter")
 
         try writeData(root, "object.json", Data("{\"one\":1}".utf8))
         values = await metadata(extractor, recognizer, root, "object.json")
-        try expect(values[.jsonShape] == "Object", "JSON top-level shape")
+        try expect(values[.jsonShape] == MessageCatalog.shared.string("Object"), "JSON top-level shape")
 
         let notebook = "{\"cells\":[{\"cell_type\":\"code\"},{\"cell_type\":\"code\"},{\"cell_type\":\"markdown\"}],\"metadata\":{\"kernelspec\":{\"display_name\":\"Python 3\"}}}"
         try writeData(root, "sample.ipynb", Data(notebook.utf8))
@@ -901,6 +902,58 @@ enum FileIntelligenceRegression {
         let recognition = ProjectRecognition(facts: [], conflicts: [])
         try expect(custom.evaluate(recognition: recognition, repositoryContext: nil) == nil, "custom knowledge: not applicable without a language")
         try expect(RepositoryHealthEvaluator(data: Data("nope".utf8)).evaluate(recognition: recognition, repositoryContext: nil) == nil, "malformed health knowledge yields nothing")
+    }
+
+    /// Language selection, fallback and the English-keyed catalog.
+    private static func runLocalizationRegression() throws {
+        func chain(_ identifier: String) -> [String] { LanguageResolver.candidates(for: Locale(identifier: identifier)) }
+        // Foundation may add a default script (en-Latn); only the order and the final fallback matter.
+        func before(_ list: [String], _ first: String, _ second: String) -> Bool {
+            guard let i = list.firstIndex(of: first), let j = list.firstIndex(of: second) else { return false }
+            return i < j
+        }
+        for identifier in ["en_US", "fr_CA", "zh-Hans", "zh_TW", "pt_BR", "ja"] { try expect(chain(identifier).last == "en", "\(identifier) ends in English") }
+        try expect(before(chain("fr_CA"), "fr-CA", "fr") && before(chain("fr_CA"), "fr", "en"), "regional language falls back to its language then English")
+        try expect(before(chain("zh-Hans"), "zh-Hans", "zh") && before(chain("zh-Hans"), "zh", "en"), "Simplified Chinese chain")
+        let taiwan = chain("zh_TW")
+        try expect(taiwan.first == "zh-Hant-TW" && before(taiwan, "zh-Hant", "zh-Hans") && before(taiwan, "zh-Hans", "en"), "Traditional Chinese by region falls back to Simplified before English")
+        let traditional = chain("zh-Hant")
+        try expect(traditional.first == "zh-Hant" && before(traditional, "zh-Hant", "zh-Hans") && before(traditional, "zh-Hans", "en"), "Traditional Chinese by script")
+        try expect(!chain("fr_CA").contains("zh-Hans"), "other languages never fall back to Chinese")
+
+        let text = LocalizedText(translations: ["en": "Hello", "zh-Hans": "你好", "fr": "Bonjour", "pt-BR": "Olá"])
+        func show(_ id: String) -> String { text.value(for: Locale(identifier: id)) }
+        try expect(show("fr_FR") == "Bonjour" && show("fr") == "Bonjour", "a regional locale uses its language's translation")
+        try expect(show("pt_BR") == "Olá" && show("pt_PT") == "Hello", "an exact regional translation wins; another region falls to English")
+        try expect(show("de") == "Hello" && show("ja") == "Hello", "untranslated languages show English")
+        try expect(show("zh-Hant") == "你好" && show("zh_HK") == "你好", "Traditional Chinese reads Simplified rather than English")
+        try expect(LocalizedText(translations: ["zh-Hans": "仅中文"]).english == "仅中文", "a text without English still resolves")
+
+        // Decoding accepts any number of languages and never requires Chinese.
+        let decoded = try JSONDecoder().decode(LocalizedText.self, from: Data(#"{"en":"Only English"}"#.utf8))
+        try expect(decoded.value(for: Locale(identifier: "zh-Hans")) == "Only English", "English-only knowledge text")
+        let roundTrip = try JSONDecoder().decode(LocalizedText.self, from: JSONEncoder().encode(text))
+        try expect(roundTrip == text, "localized text round-trips")
+        let definition = try JSONDecoder().decode(FileTypeDefinition.self, from: Data(#"{"id":"x","extensions":["x"],"category":"unknown","name":{"en":"X file"},"description":{"en":"d"},"isText":true,"isBinary":false}"#.utf8))
+        try expect(definition.displayName(for: Locale(identifier: "zh-Hans")) == "X file", "a file type without translations shows English")
+
+        // Per-language filling and joining.
+        let template = LocalizedText(translations: ["en": "Found: %@", "zh-Hans": "已具备：%@", "fr": "Trouvé : %@"])
+        let names = [LocalizedText(translations: ["en": "README", "zh-Hans": "README"]), LocalizedText(translations: ["en": "Tests", "zh-Hans": "测试", "fr": "Tests"])]
+        let filled = LocalizedText.fill(template, names: names)
+        try expect(filled.translations["en"] == "Found: README, Tests" && filled.translations["zh-Hans"] == "已具备：README、测试" && filled.translations["fr"] == "Trouvé : README, Tests", "names are joined per language with that language's separator")
+        let joined = LocalizedText.joined([LocalizedText(english: "a", simplifiedChinese: "甲"), LocalizedText(english: "b")])
+        try expect(joined.translations["en"] == "a · b" && joined.translations["zh-Hans"] == "甲 · b", "joined parts fall back to English per part")
+        try expect(MessageCatalog.shared.text("%@%% of analysed files are .%@ (%@ files)").formatted(["33", "swift", "14"]).english == "33% of analysed files are .swift (14 files)", "formatted keeps an escaped percent sign")
+
+        // The catalog is keyed by English text and degrades to it.
+        let catalog = MessageCatalog(data: Data(#"{"version":1,"messages":{"Hello":{"fr":"Bonjour","zh-Hans":"你好"}}}"#.utf8))
+        try expect(catalog.string("Hello", locale: Locale(identifier: "fr")) == "Bonjour", "catalog translation")
+        try expect(catalog.string("Hello", locale: Locale(identifier: "de")) == "Hello", "catalog falls back to the English key")
+        try expect(catalog.string("Never translated", locale: Locale(identifier: "fr")) == "Never translated", "unknown messages show their English text")
+        try expect(MessageCatalog(data: Data("garbage".utf8)).string("Hello") == "Hello", "a broken catalog degrades to English")
+        try expect(FileIntelligenceRecognizer(locale: Locale(identifier: "zh-Hans")).intelligence(for: URL(fileURLWithPath: "/tmp/a.zzzunknown")).typeName == "未知文件", "bundled Chinese catalog entry")
+        try expect(FileIntelligenceRecognizer(locale: Locale(identifier: "fr")).intelligence(for: URL(fileURLWithPath: "/tmp/a.zzzunknown")).typeName == "Unknown File", "untranslated language shows English")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {
