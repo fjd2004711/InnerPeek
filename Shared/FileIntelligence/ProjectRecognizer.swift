@@ -198,7 +198,8 @@ struct ProjectRecognizer: Sendable {
                   let match = workspace.extensionMatch(extensions: Set(extensions.map { $0.lowercased() }),
                                                        minimumFiles: rule.minimumFiles ?? 1,
                                                        minimumShare: rule.minimumShare ?? 0) else { return nil }
-            return RecognitionEvidence(type: rule.type, relativePath: match.path, key: match.extension, weight: rule.weight)
+            return RecognitionEvidence(type: rule.type, relativePath: match.path, key: match.extension, weight: rule.weight,
+                                       matchedFiles: match.count, share: match.share)
         }
     }
 }
@@ -229,11 +230,12 @@ private final class RecognitionWorkspace {
 
     /// Succeeds when enough of the analysed files carry one of `extensions`;
     /// reports the first such file (by path) so the evidence stays traceable.
-    func extensionMatch(extensions: Set<String>, minimumFiles: Int, minimumShare: Double) -> (path: String, extension: String)? {
+    func extensionMatch(extensions: Set<String>, minimumFiles: Int, minimumShare: Double) -> (path: String, extension: String, count: Int, share: Double)? {
         let matches = analyzedFiles.filter { extensions.contains($0.ext) }
-        guard let first = matches.first, matches.count >= minimumFiles,
-              Double(matches.count) / Double(analyzedFiles.count) >= minimumShare else { return nil }
-        return (first.path, first.ext)
+        guard let first = matches.first, matches.count >= minimumFiles else { return nil }
+        let share = Double(matches.count) / Double(analyzedFiles.count)
+        guard share >= minimumShare else { return nil }
+        return (first.path, first.ext, matches.count, share)
     }
 
     func actualName(of file: String) -> String? { lowered[file.lowercased()] }

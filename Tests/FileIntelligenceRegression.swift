@@ -602,6 +602,10 @@ enum FileIntelligenceRegression {
         }
         let enough = try shareFacts(["a.foo", "b.FOO", "c.txt"])
         try expect(enough.map(\.id) == ["language.lang"] && enough[0].evidence[0].relativePath == "a.foo" && enough[0].evidence[0].key == "foo", "extension_share match is case-insensitive and traceable")
+        let shareEvidence = enough[0].evidence[0]
+        try expect(shareEvidence.matchedFiles == 2 && abs((shareEvidence.share ?? 0) - 2.0 / 3.0) < 0.001, "extension_share records count and share")
+        try expect(shareEvidence.explanation.value(for: Locale(identifier: "en")) == "67% of analysed files are .foo (2 files)"
+                   && shareEvidence.explanation.value(for: Locale(identifier: "zh-Hans")) == "已分析文件中 67% 为 .foo（2 个）", "extension_share explanation")
         let sparse = try shareFacts(["a.foo", "b.txt", "c.txt"])
         try expect(sparse.isEmpty, "extension_share respects minimumFiles and minimumShare")
         let none = try shareFacts([])
@@ -615,6 +619,10 @@ enum FileIntelligenceRegression {
         try expect(identity.frameworks.map(\.id) == ["framework.nextjs", "framework.react"], "identity frameworks list primary first")
         try expect(identity.primaryLanguage?.id == "language.typescript" && identity.languages.last?.role == .supporting, "identity language roles")
         try expect(identity.primaryPackageManager?.id == "packageManager.pnpm", "identity package manager")
+        try expect(identity.technologyStack.map(\.id) == ["framework.nextjs", "language.typescript", "packageManager.pnpm"], "technology stack order, no supporting facts")
+        let pathEvidence = RecognitionEvidence(type: .manifestDependency, relativePath: "package.json", key: "next", weight: 0.9)
+        try expect(pathEvidence.explanation.value(for: Locale(identifier: "en")) == "package.json depends on next"
+                   && pathEvidence.explanation.value(for: Locale(identifier: "zh-Hans")) == "package.json 依赖 next", "dependency evidence explanation")
         try expect(identity.confidence == .high && identity.repository == nil, "identity confidence from facts without a repository")
         let bare = ProjectIdentityResolver().resolve(folderName: "bare", repositoryContext: nil)
         try expect(bare.facts.isEmpty && bare.confidence == .low, "identity without recognition stays low")

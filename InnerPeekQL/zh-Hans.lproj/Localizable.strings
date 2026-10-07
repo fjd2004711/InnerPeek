@@ -31,9 +31,6 @@
 "file_category_project" = "项目";
 "file_category_unknown" = "其他";
 "important_files" = "重要内容";
-"important_and_evidence" = "重要内容与依据";
-"more_evidence" = "+ %ld 个更多依据";
-"evidence_abnormal_model_weight" = "异常模型权重 · %@";
 "selected_file" = "所选文件";
 "detail_type" = "类型";
 "detail_purpose" = "用途";
@@ -71,3 +68,7 @@
 "metadata_arrays" = "数组";
 "metadata_tensors" = "张量";
 "metadata_metadataKeys" = "元数据键";
+"tech_stack" = "技术栈";
+"header_modified" = "最近修改 %@";
+"evidence_more" = "另有 %ld 项";
+"why_this_conclusion" = "识别依据";

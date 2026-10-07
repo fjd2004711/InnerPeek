@@ -3,12 +3,6 @@ import Quartz
 
 @objc(PreviewViewController)
 final class PreviewViewController: NSViewController, QLPreviewingController {
-    private enum SemanticHeaderLayout: Equatable {
-        case singleColumn
-        case narrowColumns
-        case wideColumns
-    }
-
     private var provider: (any PreviewContentProvider)?
     private var loadTask: Task<Void, Never>?
     private var analysisTask: Task<Void, Never>?
@@ -22,15 +16,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
     private let iconRegistry = IconRegistry()
+    private var analysisMetrics: String?
+    private var disclosures: [EvidenceDisclosure] = []
+    private static let maximumVisibleReasons = 6
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
-    private var semanticColumns: NSView!
     private var semanticLeftColumn: NSStackView!
-    private var semanticRightColumn: NSStackView!
-    private var wideSemanticConstraints: [NSLayoutConstraint] = []
-    private var narrowSemanticConstraints: [NSLayoutConstraint] = []
-    private var singleColumnSemanticConstraints: [NSLayoutConstraint] = []
-    private var semanticHeaderLayout: SemanticHeaderLayout?
     private var whatsInsideHeader: NSStackView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
@@ -38,10 +29,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var verdictRows: NSStackView!
     private var insightSection: NSStackView!
     private var insightRows: NSStackView!
-    private var importantSection: NSStackView!
-    private var importantRows: NSStackView!
-    private var relationshipSection: NSStackView!
-    private var relationshipRows: NSStackView!
     private var fileDetailSection: NSStackView!
     private var fileDetailText: NSTextField!
     private var contentTopToHeader: NSLayoutConstraint!
@@ -57,11 +44,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     override func viewDidDisappear() {
         super.viewDidDisappear()
         cancelLoading()
-    }
-
-    override func viewDidLayout() {
-        super.viewDidLayout()
-        updateSemanticHeaderLayoutIfNeeded()
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
@@ -102,6 +84,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 accessibilityDescription: nil
             )
             self.titleLabel.stringValue = url.lastPathComponent
+            self.analysisMetrics = nil
             self.countLabel.stringValue = NSLocalizedString("loading", comment: "Preview loading status")
             self.resetAnalysisPresentation()
             self.spinner.isHidden = false
@@ -269,20 +252,20 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
     }
 
-    /// Brand logos for the summary rows. Archives and folders without a
-    /// recognised technology or host keep the neutral row glyph.
-    private func visualIdentity(for analysis: FolderAnalysis) -> VisualIdentity? {
+    /// Folder facts for the summary and brand logos. Archives carry no readable
+    /// manifests, so they keep the neutral presentation.
+    private func projectIdentity(for analysis: FolderAnalysis) -> ProjectIdentity? {
         guard analysis.sourceKind == .filesystem else { return nil }
-        let identity = ProjectIdentityResolver().resolve(
+        return ProjectIdentityResolver().resolve(
             folderName: titleLabel.stringValue,
             repositoryContext: analysis.repositoryContext,
             recognition: analysis.projectRecognition
         )
-        return VisualIdentityResolver().resolve(identity)
     }
 
     private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
-        let visual = visualIdentity(for: analysis)
+        let identity = projectIdentity(for: analysis)
+        let visual = identity.map { VisualIdentityResolver().resolve($0) }
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
@@ -293,11 +276,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             insights: insights,
             importantFiles: importantFiles
         )
-        guard !statistics.isEmpty || decision.verdict != nil || !decision.insights.isEmpty || !decision.evidence.isEmpty else { return }
-        // When the decision layer has something concrete to say, keep the
-        // default scan order focused: Summary, Insights, Evidence, Browse.
-        // A quiet folder retains its compact category overview instead.
-        let showContents = decision.verdict == nil && decision.insights.isEmpty && decision.evidence.isEmpty
+        presentAnalysisMetrics(for: analysis)
+        let rows = presentSummary(decision: decision, identity: identity, visual: visual)
+        guard !statistics.isEmpty || rows || !decision.insights.isEmpty else { return }
+        // Summary and insights answer "what is this, and is anything wrong".
+        // A folder with neither keeps the compact category overview instead.
+        let showContents = !rows && decision.insights.isEmpty
 
         whatsInsideRows.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
@@ -308,18 +292,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
             }
         }
-        presentVerdict(decision.verdict, repositoryContext: decision.repositoryContext, visual: visual)
         presentInsights(decision.insights)
-        // The evidence model remains unchanged. Presentation is deliberately
-        // compact so it cannot compete with the verdict and insights for the
-        // vertical space that belongs to the file browser.
-        let visibleEvidenceLimit = decision.insights.isEmpty ? 1 : PreviewVisuals.maximumCompactEvidenceItems
-        presentEvidence(
-            decision.evidence,
-            analysis: analysis,
-            insights: decision.insights,
-            visibleLimit: visibleEvidenceLimit
-        )
 
         if showContents {
             let summaryKey = analysis.scanState.isPartial
@@ -335,33 +308,73 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         contentTopToHeader.isActive = false
         analysisTopToHeader.isActive = true
         contentTopToAnalysis.isActive = true
-        // The section also hosts the verdict, insights, and evidence. Hiding
-        // the whole container here would hide the decision layer while its
-        // active top constraint still reserves blank space above the browser.
+        // The section also hosts the summary and insights. Hiding the whole
+        // container here would hide them while its active top constraint still
+        // reserves blank space above the browser.
         whatsInsideHeader.isHidden = !showContents
         whatsInsideRows.isHidden = !showContents
         whatsInsideSection.isHidden = false
         view.needsLayout = true
     }
 
-    private func presentVerdict(_ verdict: SemanticVerdict?, repositoryContext: GitRepositoryContext?, visual: VisualIdentity?) {
+    /// File count, size and latest modification as the header's second line.
+    /// The scan is bounded, so a partial scan reports a lower bound ("≥").
+    private func presentAnalysisMetrics(for analysis: FolderAnalysis) {
+        var parts: [String] = []
+        let bound = analysis.scanState.isPartial ? "≥ " : ""
+        parts.append(bound + Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize))
+        if let latest = analysis.analyzedFiles.compactMap(\.modifiedDate).max() {
+            parts.append(String.localizedStringWithFormat(
+                NSLocalizedString("header_modified", comment: "Latest modification in the analysed files"),
+                Self.relativeDateFormatter.string(from: latest)
+            ))
+        }
+        analysisMetrics = parts.joined(separator: " · ")
+        updateCountLabel()
+    }
+
+    /// Summary rows: project verdict, repository, technology stack. Each row with
+    /// supporting facts can be clicked to reveal why InnerPeek concluded it.
+    /// Returns whether any row was shown.
+    private func presentSummary(decision: SemanticDecision, identity: ProjectIdentity?, visual: VisualIdentity?) -> Bool {
         verdictRows.arrangedSubviews.forEach {
             verdictRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
-        guard let verdict else {
-            verdictSection.isHidden = true
-            return
+        disclosures.removeAll()
+        var shown = false
+        if let verdict = decision.verdict {
+            let own = verdict.evidence.filter { $0.kind != .repositoryMetadata }
+            addSummaryRow(
+                title: verdict.localizedTitle(), summary: verdict.localizedSummary(), status: verdict.status,
+                brandKey: verdict.status == .detected ? brandKey(for: verdict.archetype, visual: visual) : nil,
+                reasons: own.map { "\($0.relativePath) — \($0.localizedReason())" }
+            )
+            shown = true
         }
-        addVerdictRow(title: verdict.localizedTitle(), summary: verdict.localizedSummary(), status: verdict.status,
-                      brandKey: verdict.status == .detected ? brandKey(for: verdict.archetype, visual: visual) : nil)
-        if let repositoryContext {
-            // Repository context is intentionally subordinate to the primary
-            // domain verdict, retaining the compact Stage 9A summary layout.
-            addVerdictRow(title: repositoryContext.title.value(), summary: repositoryContext.summary.value(), status: .detected,
-                          brandKey: repositoryContext.isRepository ? visual?.repositoryIconKey : nil)
+        if let context = decision.repositoryContext {
+            // Repository context is subordinate to the primary domain verdict.
+            addSummaryRow(
+                title: context.title.value(), summary: context.summary.value(), status: .detected,
+                brandKey: context.isRepository ? visual?.repositoryIconKey : nil,
+                reasons: context.evidence.map { "\($0.relativePath) — \($0.reason.value())" }
+            )
+            shown = true
         }
-        verdictSection.isHidden = false
+        let stack = identity?.technologyStack ?? []
+        if !stack.isEmpty {
+            addSummaryRow(
+                title: NSLocalizedString("tech_stack", comment: "Technology stack summary row"),
+                summary: stack.map { $0.name.value() }.joined(separator: " · "), status: .detected,
+                brandKey: nil, symbolName: "square.stack.3d.up",
+                reasons: stack.flatMap { fact in
+                    fact.evidence.sorted { $0.weight > $1.weight }.prefix(2).map { "\(fact.name.value()) — \($0.explanation.value())" }
+                }
+            )
+            shown = true
+        }
+        verdictSection.isHidden = !shown
+        return shown
     }
 
     /// A repository verdict is illustrated by the host logo, any other verdict by the project's technology.
@@ -372,10 +385,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
     }
 
-    private func addVerdictRow(title titleText: String, summary summaryText: String, status: SemanticVerdictStatus, brandKey: String? = nil) {
+    private func addSummaryRow(
+        title titleText: String, summary summaryText: String, status: SemanticVerdictStatus,
+        brandKey: String?, symbolName: String? = nil, reasons: [String]
+    ) {
         let icon = NSImageView()
-        let symbol = status == .warning ? "exclamationmark.triangle" :
-            status == .complete ? "checkmark.seal" : "folder.badge.gearshape"
+        let symbol = symbolName ?? (status == .warning ? "exclamationmark.triangle" :
+            status == .complete ? "checkmark.seal" : "folder.badge.gearshape")
         icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         icon.contentTintColor = status == .warning ? .systemOrange :
             status == .complete ? .systemGreen : PreviewVisuals.secondaryLabelColor
@@ -393,10 +409,52 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         summary.font = PreviewVisuals.metadataFont
         summary.textColor = PreviewVisuals.secondaryLabelColor
         summary.lineBreakMode = .byTruncatingTail
-        let text = NSStackView(views: [title, summary])
+
+        let titleLine = NSStackView(views: [title])
+        titleLine.orientation = .horizontal
+        titleLine.alignment = .centerY
+        titleLine.spacing = 5
+        let text = NSStackView(views: [titleLine, summary])
         text.orientation = .vertical
         text.alignment = .leading
         text.spacing = 1
+
+        let visibleReasons = Array(reasons.prefix(Self.maximumVisibleReasons))
+        if !visibleReasons.isEmpty {
+            let chevron = NSImageView(image: NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil) ?? NSImage())
+            chevron.contentTintColor = .tertiaryLabelColor
+            chevron.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                chevron.widthAnchor.constraint(equalToConstant: 8),
+                chevron.heightAnchor.constraint(equalToConstant: 10)
+            ])
+            titleLine.addArrangedSubview(chevron)
+
+            var lines = visibleReasons.map { "• " + $0 }
+            if reasons.count > visibleReasons.count {
+                lines.append(String.localizedStringWithFormat(
+                    NSLocalizedString("evidence_more", comment: "Additional supporting facts"), reasons.count - visibleReasons.count
+                ))
+            }
+            let heading = NSTextField(labelWithString: NSLocalizedString("why_this_conclusion", comment: "Heading of the reasons for a conclusion"))
+            heading.font = PreviewVisuals.metadataFont
+            heading.textColor = .tertiaryLabelColor
+            let detail = NSStackView(views: [heading] + lines.map { line -> NSView in
+                let label = NSTextField(labelWithString: line)
+                label.font = PreviewVisuals.metadataFont
+                label.textColor = PreviewVisuals.secondaryLabelColor
+                label.lineBreakMode = .byTruncatingMiddle
+                return label
+            })
+            detail.orientation = .vertical
+            detail.alignment = .leading
+            detail.spacing = 2
+            detail.edgeInsets = NSEdgeInsets(top: 4, left: 0, bottom: 2, right: 0)
+            detail.isHidden = true
+            text.addArrangedSubview(detail)
+            disclosures.append(EvidenceDisclosure(detail: detail, chevron: chevron, owner: self))
+        }
+
         let row = NSStackView(views: [icon, text])
         row.orientation = .horizontal
         row.alignment = .top
@@ -405,11 +463,19 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             icon.widthAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize),
             icon.heightAnchor.constraint(equalToConstant: PreviewVisuals.analysisIconSize)
         ])
+        if let disclosure = disclosures.last, !visibleReasons.isEmpty {
+            let click = NSClickGestureRecognizer(target: disclosure, action: #selector(EvidenceDisclosure.toggle))
+            row.addGestureRecognizer(click)
+        }
         verdictRows.addArrangedSubview(row)
         NSLayoutConstraint.activate([
             row.leadingAnchor.constraint(equalTo: verdictRows.leadingAnchor),
             row.trailingAnchor.constraint(equalTo: verdictRows.trailingAnchor)
         ])
+    }
+
+    fileprivate func evidenceDisclosureDidChange() {
+        view.needsLayout = true
     }
 
     private func presentInsights(_ insights: [Insight]) {
@@ -456,7 +522,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         textStack.orientation = .vertical
         textStack.alignment = .leading
         textStack.spacing = 1
-        let row = NSStackView(views: [icon, textStack])
+        let row = NSStackView(views: [icon, textStack, NSView()])
         row.orientation = .horizontal
         row.alignment = .top
         row.spacing = PreviewVisuals.analysisRowSpacing
@@ -466,162 +532,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             textStack.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: PreviewVisuals.analysisIconSize + PreviewVisuals.analysisRowSpacing)
         ])
         return row
-    }
-
-    private func presentRelationships(_ relationships: [DetectedRelationship]) {
-        relationshipRows.arrangedSubviews.forEach {
-            relationshipRows.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-        guard !relationships.isEmpty else {
-            relationshipSection.isHidden = true
-            return
-        }
-        for relationship in relationships.prefix(RelationshipEngine.maxDisplayedRelationships) {
-            let title = NSTextField(labelWithString: NSLocalizedString(
-                relationship.localizationKey, comment: "Detected file relationship"
-            ))
-            title.font = PreviewVisuals.rowFont
-            title.alignment = .left
-            title.lineBreakMode = .byTruncatingTail
-
-            let count = NSTextField(labelWithString: String.localizedStringWithFormat(
-                NSLocalizedString("related_files_count", comment: "Related file count"),
-                relationship.members.count
-            ))
-            count.font = PreviewVisuals.metadataFont
-            count.textColor = PreviewVisuals.secondaryLabelColor
-            let heading = NSStackView(views: [title, NSView(), count])
-            heading.orientation = .horizontal
-            heading.alignment = .centerY
-
-            let names = relationship.members.prefix(4).map { ($0.relativePath as NSString).lastPathComponent }
-            let remaining = relationship.members.count - names.count
-            let overflow = remaining > 0 ? String.localizedStringWithFormat(
-                NSLocalizedString("related_files_more", comment: "Additional related files"), remaining
-            ) : nil
-            let preview = NSTextField(labelWithString: (names + [overflow].compactMap { $0 }).joined(separator: " · "))
-            preview.font = PreviewVisuals.metadataFont
-            preview.textColor = PreviewVisuals.secondaryLabelColor
-            preview.alignment = .left
-            preview.lineBreakMode = .byTruncatingMiddle
-            preview.maximumNumberOfLines = 1
-
-            let row = NSStackView(views: [heading, preview])
-            row.orientation = .vertical
-            row.alignment = .width
-            row.spacing = 1
-            relationshipRows.addArrangedSubview(row)
-        }
-        relationshipSection.isHidden = false
-    }
-
-    private func presentImportantFiles(_ files: [ImportantFile]) {
-        importantRows.arrangedSubviews.forEach {
-            importantRows.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-        guard !files.isEmpty else {
-            importantSection.isHidden = true
-            return
-        }
-        for importantFile in files {
-            let title = NSTextField(labelWithString: importantFile.file.intelligence.fileName)
-            title.font = PreviewVisuals.rowFont
-            title.alignment = .left
-            let subtitle = NSTextField(labelWithString: [
-                importantFile.file.intelligence.typeName,
-                Self.byteCountFormatter.string(fromByteCount: importantFile.file.size)
-            ].joined(separator: " · "))
-            subtitle.font = PreviewVisuals.metadataFont
-            subtitle.textColor = PreviewVisuals.secondaryLabelColor
-            subtitle.alignment = .left
-            let row = NSStackView(views: [title, subtitle])
-            row.orientation = .vertical
-            row.alignment = .leading
-            row.spacing = 1
-            importantRows.addArrangedSubview(row)
-        }
-        importantSection.isHidden = false
-    }
-
-    private func presentEvidence(
-        _ evidence: [SemanticEvidence],
-        analysis: FolderAnalysis,
-        insights: [Insight],
-        visibleLimit: Int
-    ) {
-        importantRows.arrangedSubviews.forEach {
-            importantRows.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-        guard !evidence.isEmpty else {
-            importantSection.isHidden = true
-            semanticRightColumn.isHidden = true
-            return
-        }
-        let visibleEvidence = Array(evidence.prefix(visibleLimit))
-        let names = Dictionary(grouping: evidence) { ($0.relativePath as NSString).lastPathComponent }
-        for item in visibleEvidence {
-            let filename = (item.relativePath as NSString).lastPathComponent
-            let title = NSTextField(labelWithString: filename)
-            title.font = PreviewVisuals.rowFont
-            title.lineBreakMode = .byTruncatingTail
-            title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-            let entry = analysis.analyzedEntries.first { $0.relativePath == item.relativePath }
-            let size = entry.flatMap { entry in
-                analysis.analyzedFiles.first(where: { $0.url == entry.url })?.size
-            }
-            let abnormalWeight = insights.contains { $0.id == "small-model-weights" } &&
-                item.relativePath.caseInsensitiveCompare("model.safetensors") == .orderedSame
-            var detail = compactEvidenceDetail(for: item, fileSize: size, isAbnormalModelWeight: abnormalWeight)
-            if names[filename, default: []].count > 1 {
-                let parent = (item.relativePath as NSString).deletingLastPathComponent
-                if !parent.isEmpty { detail = "\(parent)/ · \(detail)" }
-            }
-            if visibleEvidence.count == 1, evidence.count > visibleEvidence.count {
-                let remainder = evidence.count - visibleEvidence.count
-                detail += " · " + String.localizedStringWithFormat(
-                    NSLocalizedString("more_evidence", comment: "Additional compact evidence"), remainder
-                )
-            }
-            let subtitle = NSTextField(labelWithString: detail)
-            subtitle.font = PreviewVisuals.metadataFont
-            subtitle.textColor = PreviewVisuals.secondaryLabelColor
-            subtitle.lineBreakMode = .byTruncatingTail
-            subtitle.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            let row = NSStackView(views: [title, subtitle])
-            row.orientation = .horizontal
-            row.alignment = .firstBaseline
-            row.spacing = PreviewVisuals.compactEvidenceSpacing
-            importantRows.addArrangedSubview(row)
-        }
-        let remaining = evidence.count - visibleEvidence.count
-        if remaining > 0, visibleEvidence.count > 1 {
-            let more = NSTextField(labelWithString: String.localizedStringWithFormat(
-                NSLocalizedString("more_evidence", comment: "Additional compact evidence"), remaining
-            ))
-            more.font = PreviewVisuals.metadataFont
-            more.textColor = PreviewVisuals.secondaryLabelColor
-            importantRows.addArrangedSubview(more)
-        }
-        importantSection.isHidden = false
-        semanticRightColumn.isHidden = false
-    }
-
-    private func compactEvidenceDetail(
-        for evidence: SemanticEvidence,
-        fileSize: Int64?,
-        isAbnormalModelWeight: Bool
-    ) -> String {
-        if (evidence.sourceID == "small-model-weights" || isAbnormalModelWeight), let fileSize {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("evidence_abnormal_model_weight", comment: "Abnormal model-weight evidence"),
-                Self.byteCountFormatter.string(fromByteCount: fileSize)
-            )
-        }
-        return evidence.localizedReason()
     }
 
     private func presentFileDetails(for item: PreviewItem?, rootURL: URL, isFilesystemFolder: Bool) {
@@ -757,23 +667,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
         whatsInsideHeader?.isHidden = true
         whatsInsideRows?.isHidden = true
-        importantRows?.arrangedSubviews.forEach {
-            importantRows.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-        relationshipRows?.arrangedSubviews.forEach {
-            relationshipRows.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
         insightRows?.arrangedSubviews.forEach {
             insightRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
         }
         insightSection?.isHidden = true
         verdictSection?.isHidden = true
-        relationshipSection?.isHidden = true
-        importantSection?.isHidden = true
-        semanticRightColumn?.isHidden = true
         fileDetailSection?.isHidden = true
         whatsInsideSection?.isHidden = true
         contentTopToAnalysis?.isActive = false
@@ -789,32 +688,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         for row in visibleRows.location..<end {
             _ = outlineView.rowView(atRow: row, makeIfNecessary: true)
         }
-    }
-
-    private func updateSemanticHeaderLayoutIfNeeded() {
-        guard semanticColumns != nil else { return }
-        let layout: SemanticHeaderLayout
-        if semanticRightColumn.isHidden {
-            layout = .singleColumn
-        } else if view.bounds.width >= PreviewVisuals.semanticWideBreakpoint {
-            layout = .wideColumns
-        } else {
-            layout = .narrowColumns
-        }
-        guard layout != semanticHeaderLayout else { return }
-
-        NSLayoutConstraint.deactivate(wideSemanticConstraints)
-        NSLayoutConstraint.deactivate(narrowSemanticConstraints)
-        NSLayoutConstraint.deactivate(singleColumnSemanticConstraints)
-        switch layout {
-        case .singleColumn:
-            NSLayoutConstraint.activate(singleColumnSemanticConstraints)
-        case .narrowColumns:
-            NSLayoutConstraint.activate(narrowSemanticConstraints)
-        case .wideColumns:
-            NSLayoutConstraint.activate(wideSemanticConstraints)
-        }
-        semanticHeaderLayout = layout
     }
 
     private func buildInterface() {
@@ -944,36 +817,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         verdictSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         verdictSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let relationshipTitle = NSTextField(labelWithString: NSLocalizedString("detected_relationships", comment: "Detected relationships section"))
-        relationshipTitle.font = PreviewVisuals.analysisTitleFont
-        relationshipTitle.alignment = .left
-        relationshipRows = NSStackView()
-        relationshipRows.orientation = .vertical
-        relationshipRows.alignment = .width
-        relationshipRows.spacing = PreviewVisuals.analysisRowSpacing
-        relationshipRows.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        relationshipRows.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        relationshipSection = NSStackView(views: [relationshipTitle, relationshipRows])
-        relationshipSection.orientation = .vertical
-        relationshipSection.alignment = .leading
-        relationshipSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
-        relationshipSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        relationshipSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        let importantTitle = NSTextField(labelWithString: NSLocalizedString("important_and_evidence", comment: "Important files and evidence section title"))
-        importantTitle.font = PreviewVisuals.analysisTitleFont
-        importantTitle.alignment = .left
-        importantRows = NSStackView()
-        importantRows.orientation = .vertical
-        importantRows.alignment = .leading
-        importantRows.spacing = PreviewVisuals.analysisRowSpacing
-        importantSection = NSStackView(views: [importantTitle, importantRows])
-        importantSection.orientation = .vertical
-        importantSection.alignment = .leading
-        importantSection.spacing = PreviewVisuals.analysisHeaderToRowsSpacing
-        importantSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        importantSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
         let detailTitle = NSTextField(labelWithString: NSLocalizedString("selected_file", comment: "Selected file section title"))
         detailTitle.font = PreviewVisuals.analysisTitleFont
         detailTitle.alignment = .left
@@ -1011,26 +854,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         semanticLeftColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
         semanticLeftColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        semanticRightColumn = NSStackView(views: [importantSection])
-        semanticRightColumn.orientation = .vertical
-        semanticRightColumn.alignment = .width
-        semanticRightColumn.translatesAutoresizingMaskIntoConstraints = false
-        semanticRightColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        semanticRightColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-        semanticColumns = NSView()
-        semanticColumns.translatesAutoresizingMaskIntoConstraints = false
-        semanticColumns.addSubview(semanticLeftColumn)
-        semanticColumns.addSubview(semanticRightColumn)
-
-        let analysisStack = NSStackView(views: [semanticColumns])
+        let analysisStack = NSStackView(views: [semanticLeftColumn, fileDetailSection])
         analysisStack.orientation = .vertical
         analysisStack.alignment = .width
         analysisStack.spacing = PreviewVisuals.semanticSectionSpacing
         analysisStack.translatesAutoresizingMaskIntoConstraints = false
         analysisStack.setContentHuggingPriority(.defaultLow, for: .horizontal)
         analysisStack.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        analysisStack.addArrangedSubview(fileDetailSection)
 
         // Keep the intelligence summary content-driven and unframed. The file
         // browser below remains the single native rounded panel, so a two-row
@@ -1083,8 +913,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             analysisStack.leadingAnchor.constraint(equalTo: whatsInsideSection.leadingAnchor, constant: PreviewVisuals.analysisInset),
             analysisStack.trailingAnchor.constraint(equalTo: whatsInsideSection.trailingAnchor, constant: -PreviewVisuals.analysisInset),
             analysisStack.bottomAnchor.constraint(equalTo: whatsInsideSection.bottomAnchor, constant: -PreviewVisuals.analysisInset),
-            semanticColumns.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            semanticColumns.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            semanticLeftColumn.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            semanticLeftColumn.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             analysisHeader.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
             analysisHeader.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
             whatsInsideRows.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
@@ -1101,12 +931,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             verdictTitle.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
             verdictRows.leadingAnchor.constraint(equalTo: verdictSection.leadingAnchor),
             verdictRows.trailingAnchor.constraint(equalTo: verdictSection.trailingAnchor),
-            importantSection.leadingAnchor.constraint(equalTo: semanticRightColumn.leadingAnchor),
-            importantSection.trailingAnchor.constraint(equalTo: semanticRightColumn.trailingAnchor),
-            importantTitle.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
-            importantTitle.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
-            importantRows.leadingAnchor.constraint(equalTo: importantSection.leadingAnchor),
-            importantRows.trailingAnchor.constraint(equalTo: importantSection.trailingAnchor),
             fileDetailSection.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
             fileDetailSection.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             detailTitle.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),
@@ -1114,47 +938,30 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             fileDetailText.leadingAnchor.constraint(equalTo: fileDetailSection.leadingAnchor),
             fileDetailText.trailingAnchor.constraint(equalTo: fileDetailSection.trailingAnchor),
         ])
-        narrowSemanticConstraints = [
-            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
-            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
-            semanticLeftColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
-            semanticRightColumn.topAnchor.constraint(equalTo: semanticLeftColumn.bottomAnchor, constant: PreviewVisuals.semanticSectionSpacing),
-            semanticRightColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
-            semanticRightColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
-            semanticRightColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
-        ]
-        singleColumnSemanticConstraints = [
-            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
-            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
-            semanticLeftColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
-            semanticLeftColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
-        ]
-        wideSemanticConstraints = [
-            semanticLeftColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
-            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
-            semanticLeftColumn.bottomAnchor.constraint(equalTo: semanticColumns.bottomAnchor),
-            semanticRightColumn.topAnchor.constraint(equalTo: semanticColumns.topAnchor),
-            semanticRightColumn.leadingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor, constant: PreviewVisuals.semanticColumnSpacing),
-            semanticRightColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
-            semanticRightColumn.bottomAnchor.constraint(lessThanOrEqualTo: semanticLeftColumn.bottomAnchor),
-            semanticLeftColumn.widthAnchor.constraint(equalTo: semanticRightColumn.widthAnchor, multiplier: PreviewVisuals.semanticColumnWidthRatio),
-        ]
         resetAnalysisPresentation()
-        updateSemanticHeaderLayoutIfNeeded()
     }
 
     private func updateCountLabel() {
         guard let dataSource else { return }
         let total = dataSource.rootItems.count
-        countLabel.stringValue = String.localizedStringWithFormat(
+        let items = String.localizedStringWithFormat(
             NSLocalizedString("item_count", comment: "Number of folder items"),
             total
         )
+        countLabel.stringValue = analysisMetrics.map { items + " · " + $0 } ?? items
     }
 
     private static let byteCountFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
+        return formatter
+    }()
+
+    private static let relativeDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = true
         return formatter
     }()
 
@@ -1165,4 +972,23 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         return formatter
     }()
 
+}
+
+/// Reveals or hides the "why this conclusion" block under one summary row.
+final class EvidenceDisclosure: NSObject {
+    private let detail: NSStackView
+    private let chevron: NSImageView
+    private weak var owner: PreviewViewController?
+
+    fileprivate init(detail: NSStackView, chevron: NSImageView, owner: PreviewViewController) {
+        self.detail = detail
+        self.chevron = chevron
+        self.owner = owner
+    }
+
+    @objc func toggle() {
+        detail.isHidden.toggle()
+        chevron.image = NSImage(systemSymbolName: detail.isHidden ? "chevron.right" : "chevron.down", accessibilityDescription: nil)
+        owner?.evidenceDisclosureDidChange()
+    }
 }

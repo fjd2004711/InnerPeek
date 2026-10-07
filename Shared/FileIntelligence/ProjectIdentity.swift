@@ -36,6 +36,13 @@ struct ProjectIdentity: Sendable, Hashable {
     var buildSystems: [DetectedFact] { facts(of: .buildSystem) }
     var packageManagers: [DetectedFact] { facts(of: .packageManager) }
 
+    /// The project's technologies as one ordered line: frameworks, languages, package
+    /// managers, build systems. Supporting facts (React under Next.js) are left out.
+    var technologyStack: [DetectedFact] {
+        [ProjectFactKind.framework, .language, .packageManager, .buildSystem]
+            .flatMap { kind in facts(of: kind).filter { $0.role == .primary } }
+    }
+
     func primary(of kind: ProjectFactKind) -> DetectedFact? { facts(of: kind).first { $0.role == .primary } }
     var primaryFramework: DetectedFact? { primary(of: .framework) }
     var primaryLanguage: DetectedFact? { primary(of: .language) }

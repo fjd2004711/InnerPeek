@@ -32,6 +32,42 @@ struct RecognitionEvidence: Sendable, Hashable {
     let relativePath: String
     let key: String?
     let weight: Double
+    /// Only for `extension_share`: how many analysed files matched, and their share of all analysed files.
+    let matchedFiles: Int?
+    let share: Double?
+
+    init(type: RecognitionEvidenceType, relativePath: String, key: String?, weight: Double,
+         matchedFiles: Int? = nil, share: Double? = nil) {
+        self.type = type
+        self.relativePath = relativePath
+        self.key = key
+        self.weight = weight
+        self.matchedFiles = matchedFiles
+        self.share = share
+    }
+
+    /// A short, user-facing "why was this concluded" sentence. Built only from
+    /// the rule's key, the path and counts, never from manifest contents.
+    var explanation: InsightLocalizedText {
+        let key = key ?? ""
+        switch type {
+        case .pathExists:
+            return InsightLocalizedText(english: "\(relativePath) is present", simplifiedChinese: "存在 \(relativePath)")
+        case .manifestDependency:
+            return InsightLocalizedText(english: "\(relativePath) depends on \(key)", simplifiedChinese: "\(relativePath) 依赖 \(key)")
+        case .manifestKey:
+            return InsightLocalizedText(english: "\(relativePath) defines \(key)", simplifiedChinese: "\(relativePath) 定义了 \(key)")
+        case .manifestText:
+            return InsightLocalizedText(english: "\(relativePath) mentions \(key)", simplifiedChinese: "\(relativePath) 中提到 \(key)")
+        case .extensionShare:
+            let percent = Int(((share ?? 0) * 100).rounded())
+            let count = matchedFiles ?? 0
+            return InsightLocalizedText(
+                english: "\(percent)% of analysed files are .\(key) (\(count) files)",
+                simplifiedChinese: "已分析文件中 \(percent)% 为 .\(key)（\(count) 个）"
+            )
+        }
+    }
 }
 
 struct DetectedFact: Sendable, Hashable {
