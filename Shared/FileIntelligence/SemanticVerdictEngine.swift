@@ -48,7 +48,7 @@ struct SemanticEvidence: Sendable, Hashable {
     let sourceID: String
     let reason: InsightLocalizedText
 
-    func localizedReason(for locale: Locale = .current) -> String {
+    func localizedReason(for locale: Locale = LocaleOverride.effective) -> String {
         reason.value(for: locale)
     }
 }
@@ -62,11 +62,11 @@ struct SemanticVerdict: Sendable, Hashable {
     let support: SemanticSupport
     let evidence: [SemanticEvidence]
 
-    func localizedTitle(for locale: Locale = .current) -> String {
+    func localizedTitle(for locale: Locale = LocaleOverride.effective) -> String {
         title.value(for: locale)
     }
 
-    func localizedSummary(for locale: Locale = .current) -> String {
+    func localizedSummary(for locale: Locale = LocaleOverride.effective) -> String {
         summary.value(for: locale)
     }
 }

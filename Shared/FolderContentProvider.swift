@@ -3,11 +3,13 @@ import UniformTypeIdentifiers
 
 final class FolderContentProvider: PreviewContentProvider, @unchecked Sendable {
     private let rootURL: URL
+    private let showsHiddenFiles: Bool
     private let lock = NSLock()
     private var isCancelled = false
 
-    init(rootURL: URL) {
+    init(rootURL: URL, showsHiddenFiles: Bool = false) {
         self.rootURL = rootURL
+        self.showsHiddenFiles = showsHiddenFiles
     }
 
     func loadRoot() async throws -> [PreviewItem] {
@@ -33,7 +35,7 @@ final class FolderContentProvider: PreviewContentProvider, @unchecked Sendable {
         // Quick Look remote view. The icon layer already classifies by
         // extension, while directory/size/date are cheap resource values.
         let keys: [URLResourceKey] = [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey]
-        let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])
+        let urls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: showsHiddenFiles ? [] : [.skipsHiddenFiles])
         var result: [PreviewItem] = []
         result.reserveCapacity(urls.count)
 

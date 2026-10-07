@@ -7,7 +7,7 @@ struct FileIntelligenceRecognizer: Sendable {
     let registry: FileTypeRegistry
     let locale: Locale
 
-    init(registry: FileTypeRegistry = .shared, locale: Locale = .current) {
+    init(registry: FileTypeRegistry = .shared, locale: Locale = LocaleOverride.effective) {
         self.registry = registry
         self.locale = locale
     }

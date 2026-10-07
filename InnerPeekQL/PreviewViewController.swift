@@ -1,5 +1,6 @@
 import AppKit
 import Quartz
+import os
 
 @objc(PreviewViewController)
 final class PreviewViewController: NSViewController, QLPreviewingController {
@@ -15,7 +16,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var headerIconView: NSImageView!
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
-    private let iconRegistry = IconRegistry()
+    private var iconRegistry = IconRegistry()
+    private var settings = PreviewSettings.standard
+    private static let log = Logger(subsystem: "com.innerpeek.InnerPeek", category: "preview")
     private var analysisMetrics: String?
     private var disclosures: [EvidenceDisclosure] = []
     private static let maximumVisibleReasons = 6
@@ -38,7 +41,18 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var analysisTopToHeader: NSLayoutConstraint!
     private var contentTopToAnalysis: NSLayoutConstraint!
 
+    /// Re-reads the user's preferences and applies the language and icon style they imply.
+    /// Called when the view is created and again for every preview, so a change in the
+    /// settings window takes effect the next time Quick Look opens.
+    private func refreshSettings() {
+        settings = PreviewSettings.load()
+        LocaleOverride.locale = settings.language.locale
+        iconRegistry = IconRegistry(monochrome: settings.iconStyle == .monochrome)
+        Self.log.info("settings loaded: language=\(self.settings.language.rawValue, privacy: .public) depth=\(self.settings.scanDepth) entries=\(self.settings.maximumEntries) hidden=\(self.settings.showHiddenFiles) summary=\(self.settings.showSummary) insights=\(self.settings.showInsights) icons=\(self.settings.iconStyle.rawValue, privacy: .public)")
+    }
+
     override func loadView() {
+        refreshSettings()
         view = NSView()
         view.wantsLayer = true
         buildInterface()
@@ -63,6 +77,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
+        refreshSettings()
         // Quick Look does not guarantee that a directory URL carries a
         // trailing slash. `hasDirectoryPath` is therefore insufficient here:
         // returning without rendering makes the host silently fall back to
@@ -75,7 +90,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         cancelLoading()
 
         let contentProvider: any PreviewContentProvider = isDirectory
-            ? FolderContentProvider(rootURL: url)
+            ? FolderContentProvider(rootURL: url, showsHiddenFiles: settings.showHiddenFiles)
             : ZIPContentProvider(archiveURL: url)
         provider = contentProvider
         let source = await MainActor.run {
@@ -101,7 +116,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             )
             self.titleLabel.stringValue = url.lastPathComponent
             self.analysisMetrics = nil
-            self.countLabel.stringValue = NSLocalizedString("loading", comment: "Preview loading status")
+            self.countLabel.stringValue = localizedUI("loading", comment: "Preview loading status")
             self.resetAnalysisPresentation()
             self.spinner.isHidden = false
             self.spinner.startAnimation(nil)
@@ -146,7 +161,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             } catch {
                 await MainActor.run {
                     let key = isDirectory ? "unable_to_read_folder" : "unable_to_preview_archive"
-                    controller.countLabel.stringValue = NSLocalizedString(key, comment: "Preview read error")
+                    controller.countLabel.stringValue = localizedUI(key, comment: "Preview read error")
                     controller.spinner.stopAnimation(nil)
                     controller.spinner.isHidden = true
                 }
@@ -225,8 +240,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private func beginFolderAnalysis(at folderURL: URL) {
         let requestID = UUID()
         analysisRequestID = requestID
+        let limits = settings.analysisLimits
         let worker = Task.detached(priority: .utility) {
-            try FolderAnalyzer().analyze(folderURL: folderURL)
+            try FolderAnalyzer(limits: limits).analyze(folderURL: folderURL)
         }
         analysisWorker = worker
         analysisTask = Task { [weak self, worker] in
@@ -281,7 +297,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
     private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
         let identity = projectIdentity(for: analysis)
-        let visual = identity.map { VisualIdentityResolver().resolve($0) }
+        let visual = settings.showBrandIcons ? identity.map { VisualIdentityResolver().resolve($0) } : nil
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
@@ -294,10 +310,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         )
         presentAnalysisMetrics(for: analysis)
         let rows = presentSummary(decision: decision, identity: identity, visual: visual)
-        guard !statistics.isEmpty || rows || !decision.insights.isEmpty else { return }
+        let insightList = settings.showInsights ? decision.insights : []
+        guard !statistics.isEmpty || rows || !insightList.isEmpty else { return }
         // Summary and insights answer "what is this, and is anything wrong".
         // A folder with neither keeps the compact category overview instead.
-        let showContents = !rows && decision.insights.isEmpty
+        let showContents = !rows && insightList.isEmpty
 
         whatsInsideRows.arrangedSubviews.forEach {
             whatsInsideRows.removeArrangedSubview($0)
@@ -308,14 +325,14 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
             }
         }
-        presentInsights(decision.insights)
+        presentInsights(insightList)
 
         if showContents {
             let summaryKey = analysis.scanState.isPartial
                 ? "analysis_summary_partial"
                 : "analysis_summary_complete"
-            analysisSummaryLabel.stringValue = String.localizedStringWithFormat(
-                NSLocalizedString(summaryKey, comment: "Bounded folder analysis summary"),
+            analysisSummaryLabel.stringValue = localizedFormat(
+                localizedUI(summaryKey, comment: "Bounded folder analysis summary"),
                 analysis.analyzedFileCount,
                 analysis.analyzedDirectoryCount,
                 Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize)
@@ -343,8 +360,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let bound = analysis.scanState.isPartial ? "≥ " : ""
         parts.append(bound + Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize))
         if let latest = analysis.analyzedFiles.compactMap(\.modifiedDate).max() {
-            parts.append(String.localizedStringWithFormat(
-                NSLocalizedString("header_modified", comment: "Latest modification in the analysed files"),
+            parts.append(localizedFormat(
+                localizedUI("header_modified", comment: "Latest modification in the analysed files"),
                 Self.relativeDateFormatter.string(from: latest)
             ))
         }
@@ -361,6 +378,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             $0.removeFromSuperview()
         }
         disclosures.removeAll()
+        guard settings.showSummary else {
+            verdictSection.isHidden = true
+            return false
+        }
         var shown = false
         if let verdict = decision.verdict {
             let own = verdict.evidence.filter { $0.kind != .repositoryMetadata }
@@ -380,10 +401,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             )
             shown = true
         }
-        let stack = identity?.technologyStack ?? []
+        let stack = settings.showTechStack ? (identity?.technologyStack ?? []) : []
         if !stack.isEmpty {
             addSummaryRow(
-                title: NSLocalizedString("tech_stack", comment: "Technology stack summary row"),
+                title: localizedUI("tech_stack", comment: "Technology stack summary row"),
                 summary: stack.map { $0.name.value() }.joined(separator: " · "), status: .detected,
                 brandKey: nil, symbolName: "square.stack.3d.up",
                 reasons: stack.flatMap { fact -> [String] in
@@ -456,11 +477,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
             var lines = visibleReasons.map { "• " + $0 }
             if reasons.count > visibleReasons.count {
-                lines.append(String.localizedStringWithFormat(
-                    NSLocalizedString("evidence_more", comment: "Additional supporting facts"), reasons.count - visibleReasons.count
+                lines.append(localizedFormat(
+                    localizedUI("evidence_more", comment: "Additional supporting facts"), reasons.count - visibleReasons.count
                 ))
             }
-            let heading = NSTextField(labelWithString: NSLocalizedString("why_this_conclusion", comment: "Heading of the reasons for a conclusion"))
+            let heading = NSTextField(labelWithString: localizedUI("why_this_conclusion", comment: "Heading of the reasons for a conclusion"))
             heading.font = PreviewVisuals.metadataFont
             heading.textColor = .tertiaryLabelColor
             let detail = NSStackView(views: [heading] + lines.map { line -> NSView in
@@ -476,7 +497,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             detail.edgeInsets = NSEdgeInsets(top: 4, left: 0, bottom: 2, right: 0)
             detail.isHidden = true
             text.addArrangedSubview(detail)
-            disclosures.append(EvidenceDisclosure(detail: detail, chevron: chevron, owner: self))
+            disclosures.append(EvidenceDisclosure(detail: detail, chevron: chevron, owner: self, expanded: settings.expandReasons))
         }
 
         let row = NSStackView(views: [icon, text])
@@ -570,23 +591,23 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let intelligence = FileIntelligenceRecognizer().intelligence(for: fileURL)
         var lines = [
             intelligence.fileName,
-            "\(NSLocalizedString("detail_type", comment: "File detail type")): \(intelligence.typeName)",
-            "\(NSLocalizedString("detail_category", comment: "File detail category")): \(NSLocalizedString(intelligence.category.localizationKey, comment: "File category"))",
-            "\(NSLocalizedString("detail_size", comment: "File detail size")): \(Self.byteCountFormatter.string(fromByteCount: item.size ?? 0))"
+            "\(localizedUI("detail_type", comment: "File detail type")): \(intelligence.typeName)",
+            "\(localizedUI("detail_category", comment: "File detail category")): \(localizedUI(intelligence.category.localizationKey, comment: "File category"))",
+            "\(localizedUI("detail_size", comment: "File detail size")): \(Self.byteCountFormatter.string(fromByteCount: item.size ?? 0))"
         ]
         if let purpose = intelligence.purpose {
-            lines.append("\(NSLocalizedString("detail_purpose", comment: "File detail purpose")): \(purpose)")
+            lines.append("\(localizedUI("detail_purpose", comment: "File detail purpose")): \(purpose)")
         }
         if intelligence.category == .unknown {
             if let fileExtension = intelligence.fileExtension {
-                lines.append("\(NSLocalizedString("detail_extension", comment: "Unknown file extension")): .\(fileExtension)")
+                lines.append("\(localizedUI("detail_extension", comment: "Unknown file extension")): .\(fileExtension)")
             }
             if let identifier = intelligence.systemTypeIdentifier {
                 lines.append("UTType: \(identifier)")
             }
         }
         if let modifiedDate = item.modifiedDate {
-            lines.append("\(NSLocalizedString("detail_modified", comment: "File detail date")): \(Self.detailDateFormatter.string(from: modifiedDate))")
+            lines.append("\(localizedUI("detail_modified", comment: "File detail date")): \(Self.detailDateFormatter.string(from: modifiedDate))")
         }
         let baseDetails = lines.joined(separator: "\n")
         fileDetailText.stringValue = baseDetails
@@ -602,9 +623,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             await MainActor.run {
                 guard let self, self.metadataRequestID == requestID else { return }
                 let detailRows = metadata.prefix(5).map {
-                    "\(NSLocalizedString($0.key.localizationKey, comment: "File metadata label")): \($0.value)"
+                    "\(localizedUI($0.key.localizationKey, comment: "File metadata label")): \($0.value)"
                 }
-                self.fileDetailText.stringValue = baseDetails + "\n\n" + NSLocalizedString("metadata", comment: "Metadata section title") + "\n" + detailRows.joined(separator: "\n")
+                self.fileDetailText.stringValue = baseDetails + "\n\n" + localizedUI("metadata", comment: "Metadata section title") + "\n" + detailRows.joined(separator: "\n")
             }
         }
     }
@@ -647,15 +668,15 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = NSTextField(labelWithString: NSLocalizedString(
+        let title = NSTextField(labelWithString: localizedUI(
             statistic.category.localizationKey,
             comment: "Folder analysis category"
         ))
         title.font = PreviewVisuals.rowFont
         title.lineBreakMode = .byTruncatingTail
 
-        let count = NSTextField(labelWithString: String.localizedStringWithFormat(
-            NSLocalizedString("analysis_file_count", comment: "Number of files in category"),
+        let count = NSTextField(labelWithString: localizedFormat(
+            localizedUI("analysis_file_count", comment: "Number of files in category"),
             statistic.fileCount
         ))
         count.font = PreviewVisuals.metadataFont
@@ -727,10 +748,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         headerIconView.imageAlignment = .alignCenter
         headerIconView.image = NSImage(
             systemSymbolName: "folder.fill",
-            accessibilityDescription: NSLocalizedString("folder_accessibility_label", comment: "Folder icon accessibility label")
+            accessibilityDescription: localizedUI("folder_accessibility_label", comment: "Folder icon accessibility label")
         )
 
-        titleLabel = NSTextField(labelWithString: NSLocalizedString("folder", comment: "Default folder title"))
+        titleLabel = NSTextField(labelWithString: localizedUI("folder", comment: "Default folder title"))
         titleLabel.font = PreviewVisuals.headerTitleFont
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.maximumNumberOfLines = 1
@@ -775,7 +796,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         outlineView.cornerView = TransparentCornerView()
 
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Name"))
-        nameColumn.title = NSLocalizedString("name_column", comment: "Name column title")
+        nameColumn.title = localizedUI("name_column", comment: "Name column title")
         nameColumn.resizingMask = .autoresizingMask
         nameColumn.minWidth = PreviewVisuals.nameColumnMinimumWidth
         nameColumn.width = 300
@@ -783,13 +804,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         outlineView.outlineTableColumn = nameColumn
 
         let sizeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Size"))
-        sizeColumn.title = NSLocalizedString("size_column", comment: "Size column title")
+        sizeColumn.title = localizedUI("size_column", comment: "Size column title")
         sizeColumn.resizingMask = []
         sizeColumn.width = PreviewVisuals.sizeColumnWidth
         outlineView.addTableColumn(sizeColumn)
 
         let modifiedColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Modified"))
-        modifiedColumn.title = NSLocalizedString("modified_column", comment: "Modified column title")
+        modifiedColumn.title = localizedUI("modified_column", comment: "Modified column title")
         modifiedColumn.resizingMask = []
         modifiedColumn.width = PreviewVisuals.modifiedColumnWidth
         outlineView.addTableColumn(modifiedColumn)
@@ -812,7 +833,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         contentPanel.translatesAutoresizingMaskIntoConstraints = false
         contentPanel.addSubview(scrollView)
 
-        let whatsInsideTitle = NSTextField(labelWithString: NSLocalizedString("whats_inside", comment: "Folder analysis section title"))
+        let whatsInsideTitle = NSTextField(labelWithString: localizedUI("whats_inside", comment: "Folder analysis section title"))
         whatsInsideTitle.font = PreviewVisuals.analysisTitleFont
         whatsInsideTitle.alignment = .left
         analysisSummaryLabel = NSTextField(labelWithString: "")
@@ -831,7 +852,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         whatsInsideRows.alignment = .width
         whatsInsideRows.spacing = PreviewVisuals.analysisRowSpacing
 
-        let verdictTitle = NSTextField(labelWithString: NSLocalizedString("semantic_verdict", comment: "Semantic verdict section title"))
+        let verdictTitle = NSTextField(labelWithString: localizedUI("semantic_verdict", comment: "Semantic verdict section title"))
         verdictTitle.font = PreviewVisuals.analysisTitleFont
         verdictTitle.alignment = .left
         verdictRows = NSStackView()
@@ -845,7 +866,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         verdictSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         verdictSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let detailTitle = NSTextField(labelWithString: NSLocalizedString("selected_file", comment: "Selected file section title"))
+        let detailTitle = NSTextField(labelWithString: localizedUI("selected_file", comment: "Selected file section title"))
         detailTitle.font = PreviewVisuals.analysisTitleFont
         detailTitle.alignment = .left
         fileDetailText = NSTextField(labelWithString: "")
@@ -860,7 +881,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         fileDetailSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         fileDetailSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let insightTitle = NSTextField(labelWithString: NSLocalizedString("insights", comment: "Actionable insights section title"))
+        let insightTitle = NSTextField(labelWithString: localizedUI("insights", comment: "Actionable insights section title"))
         insightTitle.font = PreviewVisuals.analysisTitleFont
         insightTitle.alignment = .left
         insightRows = NSStackView()
@@ -994,8 +1015,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private func updateCountLabel() {
         guard let dataSource else { return }
         let total = dataSource.rootItems.count
-        let items = String.localizedStringWithFormat(
-            NSLocalizedString("item_count", comment: "Number of folder items"),
+        let items = localizedFormat(
+            localizedUI("item_count", comment: "Number of folder items"),
             total
         )
         countLabel.stringValue = analysisMetrics.map { items + " · " + $0 } ?? items
@@ -1030,10 +1051,12 @@ final class EvidenceDisclosure: NSObject {
     private let chevron: NSImageView
     private weak var owner: PreviewViewController?
 
-    fileprivate init(detail: NSStackView, chevron: NSImageView, owner: PreviewViewController) {
+    fileprivate init(detail: NSStackView, chevron: NSImageView, owner: PreviewViewController, expanded: Bool) {
         self.detail = detail
         self.chevron = chevron
         self.owner = owner
+        detail.isHidden = !expanded
+        chevron.image = NSImage(systemSymbolName: expanded ? "chevron.down" : "chevron.right", accessibilityDescription: nil)
     }
 
     @objc func toggle() {

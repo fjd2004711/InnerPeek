@@ -50,7 +50,7 @@ struct LocalizedText: Codable, Sendable, Hashable {
     var english: String { translations["en"] ?? translations.keys.sorted().first.flatMap { translations[$0] } ?? "" }
     var simplifiedChinese: String { translations["zh-Hans"] ?? english }
 
-    func value(for locale: Locale = .current, arguments: [String] = []) -> String {
+    func value(for locale: Locale = LocaleOverride.effective, arguments: [String] = []) -> String {
         let template = LanguageResolver.candidates(for: locale).lazy.compactMap { translations[$0] }.first ?? english
         guard !arguments.isEmpty else { return template }
         return String(format: template, locale: locale, arguments: arguments.map { $0 as CVarArg })
@@ -109,7 +109,7 @@ final class MessageCatalog: @unchecked Sendable {
         return LocalizedText(translations: translations)
     }
 
-    func string(_ english: String, locale: Locale = .current) -> String {
+    func string(_ english: String, locale: Locale = LocaleOverride.effective) -> String {
         text(english).value(for: locale)
     }
 }

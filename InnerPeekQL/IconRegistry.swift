@@ -5,9 +5,11 @@ import AppKit
 final class IconRegistry {
     private let catalog: IconCatalog
     private let bundle: Bundle
+    private let monochrome: Bool
     private var cache: [String: NSImage] = [:]
 
-    init(catalog: IconCatalog = IconCatalog(), bundle: Bundle = Bundle(for: IconRegistry.self)) {
+    init(catalog: IconCatalog = IconCatalog(), bundle: Bundle = Bundle(for: IconRegistry.self), monochrome: Bool = false) {
+        self.monochrome = monochrome
         self.catalog = catalog
         self.bundle = bundle
     }
@@ -20,7 +22,7 @@ final class IconRegistry {
                 ?? bundle.url(forResource: entry.asset, withExtension: "svg"),
               let image = NSImage(contentsOf: url), image.isValid else { return nil }
         // Coloured logos keep their brand colour; near-black ones are templates so Dark Mode can tint them.
-        image.isTemplate = entry.monochrome
+        image.isTemplate = monochrome || entry.monochrome
         cache[key] = image
         return image
     }

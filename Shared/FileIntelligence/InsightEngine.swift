@@ -38,11 +38,11 @@ struct Insight: Sendable, Hashable {
     let confidence: Double
     let priority: Int
 
-    func localizedTitle(for locale: Locale = .current) -> String {
+    func localizedTitle(for locale: Locale = LocaleOverride.effective) -> String {
         title.value(for: locale)
     }
 
-    func localizedDetail(for locale: Locale = .current) -> String? {
+    func localizedDetail(for locale: Locale = LocaleOverride.effective) -> String? {
         detail?.value(for: locale, arguments: detailArguments)
     }
 }
