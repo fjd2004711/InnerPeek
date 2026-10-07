@@ -126,6 +126,8 @@ enum FileIntelligenceRegression {
         try runVisualIdentityRegression()
         try runRepositoryHealthRegression()
         try runProjectInsightsRegression()
+        try runFormattingLocaleRegression()
+        try runModelStorageRegression()
         try runLocalizationRegression()
         try runSettingsRegression()
         try runDiagnosticsRegression()
@@ -905,6 +907,48 @@ enum FileIntelligenceRegression {
         let recognition = ProjectRecognition(facts: [], conflicts: [])
         try expect(custom.evaluate(recognition: recognition, repositoryContext: nil) == nil, "custom knowledge: not applicable without a language")
         try expect(RepositoryHealthEvaluator(data: Data("nope".utf8)).evaluate(recognition: recognition, repositoryContext: nil) == nil, "malformed health knowledge yields nothing")
+    }
+
+    /// A model package is dominated by its weights by design; that is not worth reporting.
+    private static func runModelStorageRegression() throws {
+        let knowledge = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Knowledge/file-types.json")
+        let analyzer = FolderAnalyzer(recognizer: FileIntelligenceRecognizer(
+            registry: FileTypeRegistry(data: try Data(contentsOf: knowledge)), locale: Locale(identifier: "en_US")))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("InnerPeek-ModelStorage-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try makeDirectory(root)
+        for name in ["config.json", "tokenizer.json", "README.md"] { try writeFile(root, name, bytes: 50) }
+        try writeFile(root, "model.safetensors", bytes: 200_000)
+        let ids = Set(InsightEngine().generate(for: try analyzer.analyze(folderURL: root), relationships: [], importantFiles: []).map(\.id))
+        try expect(!ids.contains("largest-file-concentration") && !ids.contains("top-three-concentration"), "dominant model weights are not a storage finding: \(ids)")
+
+        let plain = FileManager.default.temporaryDirectory.appendingPathComponent("InnerPeek-PlainStorage-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: plain) }
+        try makeDirectory(plain)
+        for name in ["a.txt", "b.txt", "c.txt"] { try writeFile(plain, name, bytes: 50) }
+        try writeFile(plain, "huge.dat", bytes: 200_000)
+        let plainIDs = Set(InsightEngine().generate(for: try analyzer.analyze(folderURL: plain), relationships: [], importantFiles: []).map(\.id))
+        try expect(plainIDs.contains("largest-file-concentration"), "an ordinary dominant file is still reported")
+    }
+
+    /// Sizes and dates follow the language chosen in Settings, not only the system locale.
+    private static func runFormattingLocaleRegression() throws {
+        let previous = LocaleOverride.locale
+        defer { LocaleOverride.locale = previous }
+        let size: Int64 = 2_048
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        LocaleOverride.locale = Locale(identifier: "en")
+        let english = UIFormatters.bytes(size), englishDate = UIFormatters.date(date, .detail)
+        LocaleOverride.locale = Locale(identifier: "zh-Hans")
+        let chinese = UIFormatters.bytes(size), chineseDate = UIFormatters.date(date, .detail)
+        try expect(english.lowercased().contains("kb") && !english.contains("字"), "English sizes use English units: \(english)")
+        LocaleOverride.locale = Locale(identifier: "en")
+        try expect(UIFormatters.bytes(12).lowercased().contains("byte"), "small English sizes say bytes: \(UIFormatters.bytes(12))")
+        LocaleOverride.locale = Locale(identifier: "zh-Hans")
+        try expect(UIFormatters.bytes(12).contains("字节"), "small Chinese sizes say 字节: \(UIFormatters.bytes(12))")
+        try expect(english != chinese || englishDate != chineseDate, "the chosen language changes formatting")
+        try expect(englishDate != chineseDate, "dates follow the chosen language")
     }
 
     /// Risk and stack insights: sensitive files, .gitignore awareness, missing lockfiles.

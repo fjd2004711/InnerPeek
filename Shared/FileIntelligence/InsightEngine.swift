@@ -324,6 +324,8 @@ struct InsightEngine: Sendable {
         let files = analysis.analyzedFiles.filter { $0.size > 0 }.sorted { $0.size > $1.size }
         // With only a few files some file is always the biggest; that is not a finding.
         guard files.count >= Self.minimumFilesForConcentration, analysis.totalKnownFileSize > 0 else { return [] }
+        // Weights are the point of a model package; their size is expected, not a finding.
+        guard !files[0].intelligence.roles.contains(.modelWeights) else { return [] }
         let total = Double(analysis.totalKnownFileSize)
         let topRatio = Double(files[0].size) / total
         if topRatio >= Self.singleFileConcentrationThreshold {
@@ -417,9 +419,7 @@ struct InsightEngine: Sendable {
     }
 
     private func formatBytes(_ size: Int64) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: size)
+        LocaleOverride.byteCount(size)
     }
 
     private func percentage(_ ratio: Double) -> String { "\(Int((ratio * 100).rounded()))%" }

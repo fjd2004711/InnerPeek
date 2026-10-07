@@ -85,4 +85,48 @@ struct PreviewSettings: Equatable, Sendable {
 enum LocaleOverride {
     nonisolated(unsafe) static var locale: Locale?
     static var effective: Locale { locale ?? .current }
+
+    /// File sizes in the chosen language. `ByteCountFormatter` cannot take a locale, so the
+    /// format style is used instead.
+    static func byteCount(_ size: Int64) -> String {
+        ByteCountFormatStyle(style: .file, allowedUnits: .all, spellsOutZero: false,
+                             includesActualByteCount: false, locale: effective).format(size)
+            // Finder writes "KB"; the format style says "kB".
+            .replacingOccurrences(of: "kB", with: "KB")
+    }
+}
+
+/// Sizes and dates follow the language chosen in Settings, not just the system locale, so an
+/// English preview on a Chinese system does not show "字节" or "今天". Formatters are cached per
+/// locale because creating a `DateFormatter` per table row would be wasteful.
+enum UIFormatters {
+    enum DateKind: String {
+        case table, header, detail
+    }
+
+    private static let lock = NSLock()
+    private static var cache: [String: Formatter] = [:]
+
+    static func bytes(_ count: Int64) -> String { LocaleOverride.byteCount(count) }
+
+    static func date(_ date: Date, _ kind: DateKind) -> String {
+        let locale = LocaleOverride.effective
+        let formatter: DateFormatter = cached("\(kind.rawValue)|\(locale.identifier)") {
+            let formatter = DateFormatter()
+            formatter.locale = locale
+            formatter.dateStyle = kind == .header ? .medium : .short
+            formatter.timeStyle = .short
+            formatter.doesRelativeDateFormatting = kind != .detail
+            return formatter
+        }
+        return formatter.string(from: date)
+    }
+
+    private static func cached<T: Formatter>(_ key: String, make: () -> T) -> T {
+        lock.lock(); defer { lock.unlock() }
+        if let existing = cache[key] as? T { return existing }
+        let created = make()
+        cache[key] = created
+        return created
+    }
 }

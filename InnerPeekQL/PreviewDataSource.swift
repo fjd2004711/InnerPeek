@@ -16,8 +16,8 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
     var onItemSelected: ((PreviewItem?) -> Void)?
 
     static func prewarmPresentationResources() {
-        _ = dateFormatter.string(from: Date())
-        _ = byteCountFormatter.string(fromByteCount: 0)
+        _ = UIFormatters.date(Date(), .table)
+        _ = UIFormatters.bytes(0)
         FileIconProvider.shared.prewarm()
     }
 
@@ -184,10 +184,10 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
         switch identifier.rawValue {
         case "Size":
             cell.textField?.alignment = .right
-            cell.textField?.stringValue = previewItem.size.map { Self.byteCountFormatter.string(fromByteCount: $0) } ?? "—"
+            cell.textField?.stringValue = previewItem.size.map { UIFormatters.bytes($0) } ?? "—"
         case "Modified":
             cell.textField?.alignment = .left
-            cell.textField?.stringValue = previewItem.modifiedDate.map(Self.dateFormatter.string(from:)) ?? "—"
+            cell.textField?.stringValue = previewItem.modifiedDate.map { UIFormatters.date($0, .table) } ?? "—"
         default:
             cell.textField?.alignment = .left
             cell.textField?.stringValue = previewItem.name
@@ -201,18 +201,5 @@ final class PreviewDataSource: NSObject, NSOutlineViewDataSource, NSOutlineViewD
         return cell
     }
 
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        formatter.doesRelativeDateFormatting = true
-        return formatter
-    }()
-
-    private static let byteCountFormatter: ByteCountFormatter = {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter
-    }()
 
 }

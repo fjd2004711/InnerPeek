@@ -339,6 +339,7 @@ private struct DocumentFormatMetadataExtractor: MetadataExtracting {
             parser.dateFormat = format
             if let date = parser.date(from: cleaned) {
                 let display = DateFormatter()
+                display.locale = LocaleOverride.effective
                 display.dateStyle = .medium
                 display.timeStyle = .short
                 return display.string(from: date)
@@ -410,7 +411,7 @@ private struct DocumentFormatMetadataExtractor: MetadataExtracting {
         if let der = firstCertificate, let certificate = SecCertificateCreateWithData(nil, der as CFData) {
             if let subject = SecCertificateCopySubjectSummary(certificate) as String? { items.append(MetadataItem(key: .certificateSubject, value: subject, priority: 95)) }
             if let expiry = notAfter(of: certificate) {
-                let formatter = DateFormatter(); formatter.dateStyle = .medium; formatter.timeStyle = .none
+                let formatter = DateFormatter(); formatter.locale = LocaleOverride.effective; formatter.dateStyle = .medium; formatter.timeStyle = .none
                 let label = formatter.string(from: expiry)
                 items.append(MetadataItem(key: .expires, value: expiry < Date() ? label + catalog(" (expired)") : label, priority: 90))
             }

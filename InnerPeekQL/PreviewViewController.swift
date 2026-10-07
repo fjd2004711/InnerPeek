@@ -335,7 +335,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 localizedUI(summaryKey, comment: "Bounded folder analysis summary"),
                 analysis.analyzedFileCount,
                 analysis.analyzedDirectoryCount,
-                Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize)
+                UIFormatters.bytes(analysis.totalKnownFileSize)
             )
         }
         contentTopToHeader.isActive = false
@@ -358,11 +358,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private func presentAnalysisMetrics(for analysis: FolderAnalysis) {
         var parts: [String] = []
         let bound = analysis.scanState.isPartial ? "≥ " : ""
-        parts.append(bound + Self.byteCountFormatter.string(fromByteCount: analysis.totalKnownFileSize))
+        parts.append(bound + UIFormatters.bytes(analysis.totalKnownFileSize))
         if let latest = analysis.analyzedFiles.compactMap(\.modifiedDate).max() {
             parts.append(localizedFormat(
                 localizedUI("header_modified", comment: "Latest modification in the analysed files"),
-                Self.relativeDateFormatter.string(from: latest)
+                UIFormatters.date(latest, .header)
             ))
         }
         analysisMetrics = parts.joined(separator: " · ")
@@ -593,7 +593,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             intelligence.fileName,
             "\(localizedUI("detail_type", comment: "File detail type")): \(intelligence.typeName)",
             "\(localizedUI("detail_category", comment: "File detail category")): \(localizedUI(intelligence.category.localizationKey, comment: "File category"))",
-            "\(localizedUI("detail_size", comment: "File detail size")): \(Self.byteCountFormatter.string(fromByteCount: item.size ?? 0))"
+            "\(localizedUI("detail_size", comment: "File detail size")): \(UIFormatters.bytes(item.size ?? 0))"
         ]
         if let purpose = intelligence.purpose {
             lines.append("\(localizedUI("detail_purpose", comment: "File detail purpose")): \(purpose)")
@@ -607,7 +607,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             }
         }
         if let modifiedDate = item.modifiedDate {
-            lines.append("\(localizedUI("detail_modified", comment: "File detail date")): \(Self.detailDateFormatter.string(from: modifiedDate))")
+            lines.append("\(localizedUI("detail_modified", comment: "File detail date")): \(UIFormatters.date(modifiedDate, .detail))")
         }
         let baseDetails = lines.joined(separator: "\n")
         fileDetailText.stringValue = baseDetails
@@ -683,7 +683,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         count.textColor = PreviewVisuals.secondaryLabelColor
         count.alignment = .right
 
-        let size = NSTextField(labelWithString: Self.byteCountFormatter.string(fromByteCount: statistic.totalKnownSize))
+        let size = NSTextField(labelWithString: UIFormatters.bytes(statistic.totalKnownSize))
         size.font = PreviewVisuals.metadataFont
         size.textColor = PreviewVisuals.secondaryLabelColor
         size.alignment = .right
@@ -1022,26 +1022,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         countLabel.stringValue = analysisMetrics.map { items + " · " + $0 } ?? items
     }
 
-    private static let byteCountFormatter: ByteCountFormatter = {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter
-    }()
-
-    private static let relativeDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.doesRelativeDateFormatting = true
-        return formatter
-    }()
-
-    private static let detailDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter
-    }()
 
 }
 
