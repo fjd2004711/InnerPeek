@@ -19,6 +19,7 @@ private struct RecognitionKnowledge: Decodable, Sendable {
         let extensions: [String]?
         let minimumFiles: Int?
         let minimumShare: Double?
+        let module: String?
         let weight: Double
     }
 
@@ -193,6 +194,12 @@ struct ProjectRecognizer: Sendable {
                   let actual = workspace.actualName(of: file),
                   workspace.text(of: actual)?.range(of: needle, options: .caseInsensitive) != nil else { return nil }
             return RecognitionEvidence(type: rule.type, relativePath: actual, key: needle, weight: rule.weight)
+        case .sourceImport:
+            guard let extensions = rule.extensions, !extensions.isEmpty, let module = rule.module,
+                  let match = workspace.importMatch(extensions: Set(extensions.map { $0.lowercased() }), module: module,
+                                                    minimumFiles: rule.minimumFiles ?? 1) else { return nil }
+            return RecognitionEvidence(type: rule.type, relativePath: match.path, key: module, weight: rule.weight,
+                                       matchedFiles: match.count)
         case .extensionShare:
             guard let extensions = rule.extensions, !extensions.isEmpty,
                   let match = workspace.extensionMatch(extensions: Set(extensions.map { $0.lowercased() }),
@@ -214,6 +221,9 @@ private final class RecognitionWorkspace {
     private var dependencyNames: [String: Set<String>?] = [:]
     private var keyNames: [String: Set<String>?] = [:]
     private let analyzedFiles: [(path: String, ext: String)]
+    private var importCache: [String: [(path: String, modules: Set<String>)]] = [:]
+    private static let maximumImportFiles = 60
+    private static let maximumImportBytes = 8 * 1_024
 
     init(root: URL, maximumEntries: Int, maximumBytes: Int, analyzedFiles: [(String, String)]) {
         self.analyzedFiles = analyzedFiles.sorted { $0.0 < $1.0 }.map { (path: $0.0, ext: $0.1) }
@@ -223,6 +233,8 @@ private final class RecognitionWorkspace {
         entries = Array(names.prefix(maximumEntries))
         lowered = Dictionary(entries.map { ($0.lowercased(), $0) }, uniquingKeysWith: { first, _ in first })
     }
+
+    private static func lower(_ name: String) -> String { name.lowercased() }
 
     static func normalize(_ name: String) -> String {
         name.lowercased().replacingOccurrences(of: "_", with: "-").replacingOccurrences(of: ".", with: "-")
@@ -236,6 +248,86 @@ private final class RecognitionWorkspace {
         let share = Double(matches.count) / Double(analyzedFiles.count)
         guard share >= minimumShare else { return nil }
         return (first.path, first.ext, matches.count, share)
+    }
+
+    /// Succeeds when at least `minimumFiles` of the first 60 matching source files
+    /// import `module` in their first 8 KB. Reports the first such file.
+    func importMatch(extensions: Set<String>, module: String, minimumFiles: Int) -> (path: String, count: Int)? {
+        let key = extensions.sorted().joined(separator: ",")
+        let scanned: [(path: String, modules: Set<String>)]
+        if let cached = importCache[key] {
+            scanned = cached
+        } else {
+            scanned = analyzedFiles.filter { extensions.contains($0.ext) }.prefix(Self.maximumImportFiles).map { file in
+                (file.path, Self.importedModules(in: readPrefix(of: file.path), extension: file.ext))
+            }
+            importCache[key] = scanned
+        }
+        let wanted = module.lowercased()
+        let hits = scanned.filter { entry in
+            entry.modules.contains { $0 == wanted || $0.hasPrefix(wanted + ".") || $0.hasPrefix(wanted + "/") }
+        }
+        guard let first = hits.first, hits.count >= minimumFiles else { return nil }
+        return (first.path, hits.count)
+    }
+
+    private func readPrefix(of relativePath: String) -> String {
+        let url = root.appendingPathComponent(relativePath)
+        guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]),
+              values.isRegularFile == true, values.isSymbolicLink != true,
+              let handle = try? FileHandle(forReadingFrom: url) else { return "" }
+        defer { try? handle.close() }
+        let data = (try? handle.read(upToCount: Self.maximumImportBytes)) ?? Data()
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    /// Normalized module names a source file imports. Only import statements at the
+    /// start of a line are read, so commented-out or quoted imports do not count.
+    static func importedModules(in text: String, extension ext: String) -> Set<String> {
+        var modules = Set<String>()
+        for rawLine in text.split(whereSeparator: \.isNewline).prefix(400) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            switch ext {
+            case "swift":
+                var body = Substring(line)
+                for attribute in ["@testable ", "@_exported ", "@preconcurrency "] where body.hasPrefix(attribute) { body = body.dropFirst(attribute.count) }
+                guard body.hasPrefix("import ") else { continue }
+                var parts = body.dropFirst(7).split(whereSeparator: \.isWhitespace)
+                if let first = parts.first, ["struct", "class", "enum", "protocol", "func", "var", "let", "typealias"].contains(String(first)) { parts.removeFirst() }
+                if let path = parts.first, let module = path.split(separator: ".").first { modules.insert(lower(String(module))) }
+            case "py":
+                if line.hasPrefix("import ") {
+                    for item in line.dropFirst(7).split(separator: ",") {
+                        let name = item.trimmingCharacters(in: .whitespaces).split(whereSeparator: \.isWhitespace).first.map(String.init) ?? ""
+                        if let module = name.split(separator: ".").first { modules.insert(lower(String(module))) }
+                    }
+                } else if line.hasPrefix("from "), line.contains(" import ") {
+                    let name = line.dropFirst(5).split(whereSeparator: \.isWhitespace).first.map(String.init) ?? ""
+                    if !name.hasPrefix("."), let module = name.split(separator: ".").first { modules.insert(lower(String(module))) }
+                }
+            case "js", "jsx", "mjs", "cjs", "ts", "tsx":
+                for marker in ["from \"", "from '", "require(\"", "require('", "import \"", "import '"] {
+                    guard line.hasPrefix("import") || line.hasPrefix("export") || line.contains("require("),
+                          let range = line.range(of: marker) else { continue }
+                    let rest = line[range.upperBound...]
+                    guard let end = rest.firstIndex(where: { $0 == "\"" || $0 == "'" }) else { continue }
+                    let specifier = String(rest[..<end])
+                    guard !specifier.hasPrefix("."), !specifier.hasPrefix("/") else { continue }
+                    let segments = specifier.split(separator: "/", omittingEmptySubsequences: true)
+                    let name = specifier.hasPrefix("@") ? segments.prefix(2).joined(separator: "/") : (segments.first.map(String.init) ?? "")
+                    if !name.isEmpty { modules.insert(lower(name)) }
+                }
+            case "java", "kt", "kts":
+                guard line.hasPrefix("import ") else { continue }
+                var path = line.dropFirst(7).trimmingCharacters(in: .whitespaces)
+                if path.hasPrefix("static ") { path = String(path.dropFirst(7)) }
+                path = path.trimmingCharacters(in: CharacterSet(charactersIn: "; "))
+                if !path.isEmpty { modules.insert(lower(path)) }
+            default:
+                continue
+            }
+        }
+        return modules
     }
 
     func actualName(of file: String) -> String? { lowered[file.lowercased()] }
@@ -494,5 +586,12 @@ private final class RecognitionWorkspace {
             }
         }
         return result
+    }
+}
+
+/// Test-only entry point for the import grammar; production code goes through `ProjectRecognizer`.
+enum RecognitionWorkspaceTestHook {
+    static func modules(_ text: String, _ ext: String) -> Set<String> {
+        RecognitionWorkspace.importedModules(in: text, extension: ext)
     }
 }

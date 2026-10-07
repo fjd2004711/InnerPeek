@@ -23,6 +23,7 @@ enum RecognitionEvidenceType: String, Codable, Sendable, Hashable {
     case manifestKey = "manifest_key"
     case manifestText = "manifest_text"
     case extensionShare = "extension_share"
+    case sourceImport = "source_import"
 }
 
 /// One matched rule. `key` always comes from the knowledge rule, never from
@@ -59,6 +60,12 @@ struct RecognitionEvidence: Sendable, Hashable {
             return InsightLocalizedText(english: "\(relativePath) defines \(key)", simplifiedChinese: "\(relativePath) 定义了 \(key)")
         case .manifestText:
             return InsightLocalizedText(english: "\(relativePath) mentions \(key)", simplifiedChinese: "\(relativePath) 中提到 \(key)")
+        case .sourceImport:
+            let count = matchedFiles ?? 0
+            return InsightLocalizedText(
+                english: "\(count) \(count == 1 ? "file imports" : "files import") \(key)",
+                simplifiedChinese: "\(count) 个文件引入了 \(key)"
+            )
         case .extensionShare:
             let percent = Int(((share ?? 0) * 100).rounded())
             let count = matchedFiles ?? 0

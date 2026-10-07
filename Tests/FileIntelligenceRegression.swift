@@ -611,6 +611,31 @@ enum FileIntelligenceRegression {
         let none = try shareFacts([])
         try expect(none.isEmpty, "extension_share on an empty folder")
 
+        // source_import: statement-start imports only, per-language grammar, bounded.
+        func importFacts(_ files: [String: String], rule: String) throws -> Set<String> {
+            let url = try folder("imports-\(UUID().uuidString)", [:])
+            for (name, text) in files { try text.write(to: url.appendingPathComponent(name), atomically: true, encoding: .utf8) }
+            let analysis = try FolderAnalyzer().analyze(folderURL: url)
+            let json = Data(#"{"version":1,"detectionThreshold":0.5,"conflictMargin":0.05,"facts":[\#(rule)]}"#.utf8)
+            return Set(ProjectRecognizer(data: json).recognize(folderURL: url, entries: analysis.analyzedEntries).facts.map(\.id))
+        }
+        func importRule(_ extensions: String, _ module: String, minimumFiles: Int = 1) -> String {
+            #"{"id":"framework.m","kind":"framework","name":{"en":"M","zh-Hans":"M"},"evidence":[{"type":"source_import","extensions":[\#(extensions)],"module":"\#(module)","minimumFiles":\#(minimumFiles),"weight":0.8}]}"#
+        }
+        func modules(_ text: String, _ ext: String) -> Set<String> { RecognitionWorkspaceTestHook.modules(text, ext) }
+        try expect(modules("import SwiftUI\n@testable import Foo.Bar\nimport struct Foundation.URL\n// import Nope\n", "swift") == ["swiftui", "foo", "foundation"], "swift imports")
+        try expect(modules("import os, numpy as np\nfrom torch.nn import Module\nfrom . import x\nfrom .y import z\n# import no\n", "py") == ["os", "numpy", "torch"], "python imports")
+        try expect(modules("import React from 'react';\nimport {a} from \"@scope/pkg/sub\";\nconst b = require('lodash/fp');\nimport './local';\nimport 'side-effect';\nexport * from \"../up\";\n", "ts") == ["react", "@scope/pkg", "lodash", "side-effect"], "javascript imports")
+        try expect(modules("import static org.springframework.boot.SpringApplication.run;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n", "java") == ["org.springframework.boot.springapplication.run", "org.springframework.boot.autoconfigure.springbootapplication"], "java imports")
+        try expect(modules("import Foo\n", "rb").isEmpty, "unsupported language yields no imports")
+        let torchRule = importRule(#""py""#, "torch")
+        let sameName = try importFacts(["a.py": "import torchvision\n", "b.py": "from .torch import x\n"], rule: torchRule)
+        try expect(sameName.isEmpty, "torchvision and relative torch are not torch")
+        let two = try importFacts(["a.py": "import torch\n", "b.py": "x = 1\n"], rule: importRule(#""py""#, "torch", minimumFiles: 2))
+        try expect(two.isEmpty, "source_import honours minimumFiles")
+        let javaPrefix = try importFacts(["A.java": "import org.springframework.boot.SpringApplication;\n"], rule: importRule(#""java""#, "org.springframework.boot"))
+        try expect(javaPrefix == ["framework.m"], "java module prefix match")
+
         // Identity aggregation: confidence is the stronger of repository and best primary fact.
         let identityFolder = try folder("identity", ["package.json": #"{"dependencies":{"next":"1","react":"1"}}"#, "tsconfig.json": "{}", "pnpm-lock.yaml": "x"])
         let recognition = ProjectRecognizer().recognize(folderURL: identityFolder)

@@ -68,6 +68,18 @@
                 },
                 {
                   "type": "object",
+                  "required": ["type", "extensions", "module", "weight"],
+                  "properties": {
+                    "type": {"const": "source_import"},
+                    "extensions": {"type": "array", "minItems": 1, "items": {"enum": ["swift", "py", "js", "jsx", "mjs", "cjs", "ts", "tsx", "java", "kt", "kts"]}},
+                    "module": {"type": "string", "minLength": 1},
+                    "minimumFiles": {"type": "integer", "minimum": 1},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
                   "required": ["type", "file", "contains", "weight"],
                   "properties": {
                     "type": {"const": "manifest_text"},

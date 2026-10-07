@@ -59,6 +59,7 @@ jq -e '
     elif .type == "manifest_key" then (.file | IN("package.json","pyproject.toml","Cargo.toml")) and (.key | type == "string" and length > 0) and (.weight | valid_weight) and (keys - ["type","file","key","weight"] | length == 0)
     elif .type == "manifest_text" then (.file | type == "string" and length > 0 and (contains("/") | not)) and (.contains | type == "string" and length > 0) and (.weight | valid_weight) and (keys - ["type","file","contains","weight"] | length == 0)
     elif .type == "extension_share" then (.extensions | type == "array" and length > 0 and all(.[]; type == "string" and test("^[a-z0-9]+$"))) and ((.minimumFiles // 1) | type == "number" and . >= 1 and . == floor) and ((.minimumShare // 0) | type == "number" and . >= 0 and . <= 1) and (.weight | valid_weight) and (keys - ["type","extensions","minimumFiles","minimumShare","weight"] | length == 0)
+    elif .type == "source_import" then (.extensions | type == "array" and length > 0 and all(.[]; IN("swift","py","js","jsx","mjs","cjs","ts","tsx","java","kt","kts"))) and (.module | type == "string" and length > 0) and ((.minimumFiles // 1) | type == "number" and . >= 1 and . == floor) and (.weight | valid_weight) and (keys - ["type","extensions","module","minimumFiles","weight"] | length == 0)
     else false end;
   (.version == 1) and (.detectionThreshold | type == "number" and . > 0 and . <= 1) and (.conflictMargin | type == "number" and . >= 0 and . <= 1)
   and (.facts | type == "array" and length > 0)
