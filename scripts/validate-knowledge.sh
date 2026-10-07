@@ -18,15 +18,15 @@ for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognitio
   [[ -f "$file" ]] || fail "missing $file"
   jq empty "$file" >/dev/null 2>&1 || fail "invalid JSON: $file"
 done
-for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json" "$repo_root/Schemas/repository-health.schema.json"; do
+for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json" "$repo_root/Schemas/repository-health.schema.json" "$repo_root/Schemas/messages.schema.json"; do
   [[ -f "$schema" ]] || fail "missing $schema"
   jq -e '.["$schema"] | type == "string"' "$schema" >/dev/null 2>&1 || fail "invalid schema: $schema"
 done
 
-jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.name.en | type) == "string" and (.name.en | length) > 0 and (.name["zh-Hans"] | type) == "string" and (.name["zh-Hans"] | length) > 0)' "$roles" >/dev/null \
-  || fail "roles must have id, en, and zh-Hans"
-jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.extensions | type) == "array" and (.filenames | type) == "array" and (.roles | type) == "array" and (.name.en | type) == "string" and (.name.en | length) > 0 and (.name["zh-Hans"] | type) == "string" and (.name["zh-Hans"] | length) > 0 and (.description.en | type) == "string" and (.description.en | length) > 0 and (.description["zh-Hans"] | type) == "string" and (.description["zh-Hans"] | length) > 0)' "$file_types" >/dev/null \
-  || fail "file types require extensions, filenames, roles, and localized names"
+jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.name.en | type) == "string" and (.name.en | length) > 0)' "$roles" >/dev/null \
+  || fail "roles must have an id and an English name"
+jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.extensions | type) == "array" and (.filenames | type) == "array" and (.roles | type) == "array" and (.name.en | type) == "string" and (.name.en | length) > 0 and (.description.en | type) == "string" and (.description.en | length) > 0)' "$file_types" >/dev/null \
+  || fail "file types require extensions, filenames, roles, and English names"
 jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.relationshipType | type) == "string" and (.confidence | type) == "number" and (.priority | type) == "number")' "$relationships" >/dev/null \
   || fail "relationships have an invalid shape"
 jq -e 'type == "array" and all(.[]; (.id | type) == "string" and (.relationshipType | type) == "string" and (.requiredRoles | type) == "array" and (.requiredRoles | length) > 0 and (.recommendedRoles | type) == "array" and (.messages | type) == "object")' "$insights" >/dev/null \
@@ -72,7 +72,7 @@ jq -e '
   and all(.facts[]; (.id | type == "string" and test("^(projectKind|language|framework|buildSystem|packageManager|practice)\\.[a-z0-9][a-z0-9.-]*$"))
       and (.kind | IN("projectKind","language","framework","buildSystem","packageManager","practice"))
       and ((.id | split(".")[0]) == .kind)
-      and (.name.en | type == "string" and length > 0) and (.name["zh-Hans"] | type == "string" and length > 0)
+      and (.name.en | type == "string" and length > 0)
       and (.evidence | type == "array") and all(.evidence[]; valid_evidence)
       and ((.group // "x") | type == "string" and test("^[A-Za-z0-9.-]+$"))
       and ((.supersedes // []) | type == "array") and ((.implies // []) | type == "array"))
@@ -133,11 +133,11 @@ done
 jq -e '(.version == 1) and (.appliesWhenAny | type == "array" and length > 0 and all(.[]; IN("repository","language")))
   and (.minimumCoreChecks | type == "number" and . >= 1 and . == floor)
   and (.checks | type == "array" and length > 0 and all(.[]; (.id | test("^health\\.[a-z0-9-]+$")) and (.practice | test("^practice\\.[a-z0-9-]+$"))
-        and (.name["en"] | type == "string" and length > 0) and (.name["zh-Hans"] | type == "string" and length > 0)
+        and (.name["en"] | type == "string" and length > 0)
         and (.importance | IN("core","extra")) and ((.requires // "repository") | IN("repository","language")) and ((.missingSeverity // "info") | IN("info","notice","warning"))
         and (.importance == "core" or .missingSeverity == null)))
-  and all(.messages.complete, .messages.gaps; (.title["en"] | type == "string" and length > 0) and (.title["zh-Hans"] | type == "string" and length > 0)
-        and (.detail["en"] | type == "string" and length > 0) and (.detail["zh-Hans"] | type == "string" and length > 0))
+  and all(.messages.complete, .messages.gaps; (.title["en"] | type == "string" and length > 0)
+        and (.detail["en"] | type == "string" and length > 0))
   and (.messages.complete.title["en"] | test("%@") | not) and (.messages.complete.detail["en"] | test("%@")) and (.messages.gaps.title["en"] | test("%@"))' "$repository_health" >/dev/null \
   || fail "repository health declarations are malformed"
 duplicate_health_ids=$(jq -r '.checks[].id' "$repository_health" | sort | uniq -d)
@@ -149,6 +149,34 @@ unknown_health_practices=$(comm -13 <(jq -r '.facts[] | select(.kind == "practic
 unjudged_practices=$(comm -23 <(jq -r '.facts[] | select(.kind == "practice") | .id' "$project_recognition" | sort -u) <(jq -r '.checks[].practice' "$repository_health" | sort -u))
 [[ -z "$unjudged_practices" ]] || fail "practice fact is not judged by any health check: $unjudged_practices"
 [[ $(jq '[.checks[] | select(.importance == "core")] | length' "$repository_health") -ge $(jq '.minimumCoreChecks' "$repository_health") ]] || fail "fewer core health checks than minimumCoreChecks"
+
+# Localization: English is the only mandatory language. Any other language tag is optional, but a
+# translation must keep exactly the placeholders of the English text, or formatting breaks at runtime.
+messages="$knowledge_dir/messages.json"
+[[ -f "$messages" ]] || fail "missing $messages"
+jq -e '(.version == 1) and (.messages | type == "object") and all(.messages | to_entries[]; (.key | length) > 0 and (.value | type == "object") and all(.value | to_entries[]; (.key | test("^[a-z]{2,3}(-[A-Za-z0-9]+)*$")) and (.key != "en") and (.value | type == "string" and length > 0)))' "$messages" >/dev/null \
+  || fail "messages.json is malformed (keys are English source texts; values map language tags to non-empty strings)"
+bad_message_placeholders=$(jq -r 'def n: [match("%(%|@|[0-9]*\\$?@)";"g")] | map(.string) | map(select(. != "%%")) | sort | join(","); .messages | to_entries[] | .key as $src | .value | to_entries[] | select((.value | n) != ($src | n)) | "\($src) [\(.key)]"' "$messages")
+[[ -z "$bad_message_placeholders" ]] || fail "translation changes placeholders: $bad_message_placeholders"
+bad_inline_placeholders=$(jq -r 'def n: [match("%(%|@)";"g")] | map(.string) | map(select(. != "%%")) | length; [.. | objects | select(has("en") and (.en | type == "string"))] | .[] | .en as $en | to_entries[] | select(.key != "en" and (.value | type == "string") and ((.value | n) != ($en | n))) | "\($en) [\(.key)]"' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health")
+[[ -z "$bad_inline_placeholders" ]] || fail "knowledge translation changes placeholders: $bad_inline_placeholders"
+bad_language_tags=$(jq -r '[.. | objects | select(has("en") and (.en | type == "string")) | keys[]] | unique[] | select(test("^[a-z]{2,3}(-[A-Za-z0-9]+)*$") | not)' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health")
+[[ -z "$bad_language_tags" ]] || fail "invalid language tag in knowledge text: $bad_language_tags"
+# Every English sentence the code looks up must be registered, or its translations silently stop applying.
+code_messages=$(mktemp); registered_messages=$(mktemp)
+grep -rhoE '(\btext|MessageCatalog\.shared\.(text|string)|catalog)\("([^"\\]|\\.)*"' "$repo_root/Shared" "$repo_root/InnerPeekQL" 2>/dev/null \
+  | sed -E 's/^[A-Za-z.]*\("//; s/"$//' | grep -v '\\' | sort -u > "$code_messages"
+jq -r '.messages | keys[]' "$messages" | sort -u > "$registered_messages"
+unregistered_messages=$(comm -23 "$code_messages" "$registered_messages")
+[[ -z "$unregistered_messages" ]] || fail "English text used in code is missing from messages.json: $unregistered_messages"
+rm -f "$code_messages" "$registered_messages"
+# UI strings: every language must define exactly the keys English defines.
+en_keys=$(grep -oE '^"[^"]+"' "$repo_root/InnerPeekQL/en.lproj/Localizable.strings" | sort)
+for dir in "$repo_root"/InnerPeekQL/*.lproj; do
+  [[ "$dir" == */en.lproj ]] && continue
+  extra=$(comm -13 <(print -r -- "$en_keys") <(grep -oE '^"[^"]+"' "$dir/Localizable.strings" | sort))
+  [[ -z "$extra" ]] || fail "${dir:t} defines keys English does not: $extra"
+done
 
 role_ids=$(mktemp)
 type_roles=$(mktemp)

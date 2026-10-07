@@ -1,102 +1,301 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["version", "detectionThreshold", "conflictMargin", "facts"],
+  "required": [
+    "version",
+    "detectionThreshold",
+    "conflictMargin",
+    "facts"
+  ],
   "properties": {
-    "version": {"const": 1},
-    "detectionThreshold": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-    "conflictMargin": {"type": "number", "minimum": 0, "maximum": 1},
+    "version": {
+      "const": 1
+    },
+    "detectionThreshold": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "conflictMargin": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
     "facts": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "kind", "name", "evidence"],
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "evidence"
+        ],
         "properties": {
-          "id": {"type": "string", "pattern": "^(projectKind|language|framework|buildSystem|packageManager|practice)\\.[a-z0-9][a-z0-9.-]*$"},
-          "kind": {"enum": ["projectKind", "language", "framework", "buildSystem", "packageManager", "practice"]},
+          "id": {
+            "type": "string",
+            "pattern": "^(projectKind|language|framework|buildSystem|packageManager|practice)\\.[a-z0-9][a-z0-9.-]*$"
+          },
+          "kind": {
+            "enum": [
+              "projectKind",
+              "language",
+              "framework",
+              "buildSystem",
+              "packageManager",
+              "practice"
+            ]
+          },
           "name": {
             "type": "object",
-            "required": ["en", "zh-Hans"],
-            "properties": {"en": {"type": "string", "minLength": 1}, "zh-Hans": {"type": "string", "minLength": 1}},
+            "required": [
+              "en"
+            ],
+            "properties": {
+              "en": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "patternProperties": {
+              "^[a-z]{2,3}(-[A-Za-z0-9]+)*$": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
             "additionalProperties": false
           },
           "visual": {
             "type": "object",
-            "required": ["icon"],
-            "properties": {"icon": {"type": "string", "pattern": "^brand\\.[a-z0-9-]+$"}},
+            "required": [
+              "icon"
+            ],
+            "properties": {
+              "icon": {
+                "type": "string",
+                "pattern": "^brand\\.[a-z0-9-]+$"
+              }
+            },
             "additionalProperties": false
           },
-          "group": {"type": "string", "pattern": "^[A-Za-z0-9.-]+$"},
-          "supersedes": {"type": "array", "items": {"type": "string"}},
-          "implies": {"type": "array", "items": {"type": "string"}},
+          "group": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9.-]+$"
+          },
+          "supersedes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "implies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "evidence": {
             "type": "array",
             "items": {
               "oneOf": [
                 {
                   "type": "object",
-                  "required": ["type", "path", "weight"],
+                  "required": [
+                    "type",
+                    "path",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"const": "path_exists"},
-                    "path": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.)[^\\u0000]+$"},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "const": "path_exists"
+                    },
+                    "path": {
+                      "type": "string",
+                      "pattern": "^(?!/)(?!.*\\.\\.)[^\\u0000]+$"
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 },
                 {
                   "type": "object",
-                  "required": ["type", "file", "key", "weight"],
+                  "required": [
+                    "type",
+                    "file",
+                    "key",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"enum": ["manifest_dependency", "manifest_key"]},
-                    "file": {"enum": ["package.json", "requirements.txt", "pyproject.toml", "Cargo.toml", "go.mod"]},
-                    "key": {"type": "string", "minLength": 1},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "enum": [
+                        "manifest_dependency",
+                        "manifest_key"
+                      ]
+                    },
+                    "file": {
+                      "enum": [
+                        "package.json",
+                        "requirements.txt",
+                        "pyproject.toml",
+                        "Cargo.toml",
+                        "go.mod"
+                      ]
+                    },
+                    "key": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 },
                 {
                   "type": "object",
-                  "required": ["type", "extensions", "weight"],
+                  "required": [
+                    "type",
+                    "extensions",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"const": "extension_share"},
-                    "extensions": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z0-9]+$"}},
-                    "minimumFiles": {"type": "integer", "minimum": 1},
-                    "minimumShare": {"type": "number", "minimum": 0, "maximum": 1},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "const": "extension_share"
+                    },
+                    "extensions": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+$"
+                      }
+                    },
+                    "minimumFiles": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "minimumShare": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 },
                 {
                   "type": "object",
-                  "required": ["type", "patterns", "weight"],
+                  "required": [
+                    "type",
+                    "patterns",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"const": "file_match"},
-                    "patterns": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[^/\\u0000]+$"}},
-                    "minimumFiles": {"type": "integer", "minimum": 1},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "const": "file_match"
+                    },
+                    "patterns": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[^/\\u0000]+$"
+                      }
+                    },
+                    "minimumFiles": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 },
                 {
                   "type": "object",
-                  "required": ["type", "extensions", "module", "weight"],
+                  "required": [
+                    "type",
+                    "extensions",
+                    "module",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"const": "source_import"},
-                    "extensions": {"type": "array", "minItems": 1, "items": {"enum": ["swift", "py", "js", "jsx", "mjs", "cjs", "ts", "tsx", "java", "kt", "kts"]}},
-                    "module": {"type": "string", "minLength": 1},
-                    "minimumFiles": {"type": "integer", "minimum": 1},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "const": "source_import"
+                    },
+                    "extensions": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "enum": [
+                          "swift",
+                          "py",
+                          "js",
+                          "jsx",
+                          "mjs",
+                          "cjs",
+                          "ts",
+                          "tsx",
+                          "java",
+                          "kt",
+                          "kts"
+                        ]
+                      }
+                    },
+                    "module": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minimumFiles": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 },
                 {
                   "type": "object",
-                  "required": ["type", "file", "contains", "weight"],
+                  "required": [
+                    "type",
+                    "file",
+                    "contains",
+                    "weight"
+                  ],
                   "properties": {
-                    "type": {"const": "manifest_text"},
-                    "file": {"type": "string", "pattern": "^[^/\\u0000]+$"},
-                    "contains": {"type": "string", "minLength": 1},
-                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                    "type": {
+                      "const": "manifest_text"
+                    },
+                    "file": {
+                      "type": "string",
+                      "pattern": "^[^/\\u0000]+$"
+                    },
+                    "contains": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "weight": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "maximum": 1
+                    }
                   },
                   "additionalProperties": false
                 }

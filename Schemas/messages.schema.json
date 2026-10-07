@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "messages"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "messages": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^(?!en$)[a-z]{2,3}(-[A-Za-z0-9]+)*$": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
