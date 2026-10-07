@@ -20,6 +20,7 @@ private struct RecognitionKnowledge: Decodable, Sendable {
         let minimumFiles: Int?
         let minimumShare: Double?
         let module: String?
+        let patterns: [String]?
         let weight: Double
     }
 
@@ -194,6 +195,10 @@ struct ProjectRecognizer: Sendable {
                   let actual = workspace.actualName(of: file),
                   workspace.text(of: actual)?.range(of: needle, options: .caseInsensitive) != nil else { return nil }
             return RecognitionEvidence(type: rule.type, relativePath: actual, key: needle, weight: rule.weight)
+        case .fileMatch:
+            guard let patterns = rule.patterns, !patterns.isEmpty,
+                  let match = workspace.fileNameMatch(patterns: patterns.map { $0.lowercased() }, minimumFiles: rule.minimumFiles ?? 1) else { return nil }
+            return RecognitionEvidence(type: rule.type, relativePath: match.path, key: match.pattern, weight: rule.weight, matchedFiles: match.count)
         case .sourceImport:
             guard let extensions = rule.extensions, !extensions.isEmpty, let module = rule.module,
                   let match = workspace.importMatch(extensions: Set(extensions.map { $0.lowercased() }), module: module,
@@ -248,6 +253,21 @@ private final class RecognitionWorkspace {
         let share = Double(matches.count) / Double(analyzedFiles.count)
         guard share >= minimumShare else { return nil }
         return (first.path, first.ext, matches.count, share)
+    }
+
+    /// Succeeds when at least `minimumFiles` analysed files have a name matching one of `patterns`.
+    /// Only the file name is matched, never the directory, and only already-analysed entries are used.
+    func fileNameMatch(patterns: [String], minimumFiles: Int) -> (path: String, pattern: String, count: Int)? {
+        var first: (path: String, pattern: String)?
+        var count = 0
+        for file in analyzedFiles {
+            let name = (file.path as NSString).lastPathComponent.lowercased()
+            guard let pattern = patterns.first(where: { Self.glob($0, name) }) else { continue }
+            count += 1
+            if first == nil { first = (file.path, pattern) }
+        }
+        guard let first, count >= minimumFiles else { return nil }
+        return (first.path, first.pattern, count)
     }
 
     /// Succeeds when at least `minimumFiles` of the first 60 matching source files

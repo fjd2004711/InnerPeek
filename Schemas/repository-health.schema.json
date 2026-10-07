@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "appliesWhenAny",
+    "minimumCoreChecks",
+    "checks",
+    "messages"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "appliesWhenAny": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "repository",
+          "language"
+        ]
+      }
+    },
+    "minimumCoreChecks": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "practice",
+          "importance",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^health\\.[a-z0-9-]+$"
+          },
+          "practice": {
+            "type": "string",
+            "pattern": "^practice\\.[a-z0-9-]+$"
+          },
+          "importance": {
+            "enum": [
+              "core",
+              "extra"
+            ]
+          },
+          "requires": {
+            "enum": [
+              "repository",
+              "language"
+            ]
+          },
+          "missingSeverity": {
+            "enum": [
+              "info",
+              "notice",
+              "warning"
+            ]
+          },
+          "name": {
+            "$ref": "#/$defs/text"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "messages": {
+      "type": "object",
+      "required": [
+        "complete",
+        "gaps"
+      ],
+      "properties": {
+        "complete": {
+          "$ref": "#/$defs/message"
+        },
+        "gaps": {
+          "$ref": "#/$defs/message"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "required": [
+        "title",
+        "detail"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "detail": {
+          "$ref": "#/$defs/text"
+        }
+      },
+      "additionalProperties": false
+    },
+    "text": {
+      "type": "object",
+      "required": [
+        "en",
+        "zh-Hans"
+      ],
+      "properties": {
+        "en": {
+          "type": "string",
+          "minLength": 1
+        },
+        "zh-Hans": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

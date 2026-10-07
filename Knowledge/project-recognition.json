@@ -1454,6 +1454,386 @@
           "weight": 0.9
         }
       ]
+    },
+    {
+      "id": "practice.readme",
+      "kind": "practice",
+      "name": {
+        "en": "README",
+        "zh-Hans": "README"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "readme*",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.license",
+      "kind": "practice",
+      "name": {
+        "en": "License",
+        "zh-Hans": "许可证"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "license*",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "licence*",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "copying*",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "unlicense*",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.tests",
+      "kind": "practice",
+      "name": {
+        "en": "Tests",
+        "zh-Hans": "测试"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "tests",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "test",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "spec",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "specs",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "__tests__",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "e2e",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "src/test",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "src/tests",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "*Tests",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "*.xctestplan",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "conftest.py",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "pytest.ini",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "jest.config.*",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "vitest.config.*",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "phpunit.xml*",
+          "weight": 0.8
+        },
+        {
+          "type": "file_match",
+          "patterns": [
+            "test_*.py",
+            "*_test.py",
+            "tests.py",
+            "*_test.go",
+            "*.test.ts",
+            "*.test.tsx",
+            "*.test.js",
+            "*.test.jsx",
+            "*.spec.ts",
+            "*.spec.tsx",
+            "*.spec.js",
+            "*Tests.swift",
+            "*Test.java",
+            "*Tests.java",
+            "*Test.kt",
+            "*Tests.kt",
+            "*_test.rs",
+            "*_spec.rb",
+            "*Test.php"
+          ],
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "practice.ci",
+      "kind": "practice",
+      "name": {
+        "en": "CI",
+        "zh-Hans": "持续集成"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": ".github/workflows",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".gitlab-ci.yml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".circleci",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "Jenkinsfile",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "azure-pipelines.yml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".travis.yml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "bitbucket-pipelines.yml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".buildkite",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "appveyor.yml",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": ".drone.yml",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "practice.contributing",
+      "kind": "practice",
+      "name": {
+        "en": "Contributing guide",
+        "zh-Hans": "贡献指南"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "contributing*",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".github/CONTRIBUTING.md",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.security-policy",
+      "kind": "practice",
+      "name": {
+        "en": "Security policy",
+        "zh-Hans": "安全策略"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "security.md",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".github/SECURITY.md",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.changelog",
+      "kind": "practice",
+      "name": {
+        "en": "Changelog",
+        "zh-Hans": "变更日志"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "changelog*",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "changes*",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "history.md",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "practice.gitignore",
+      "kind": "practice",
+      "name": {
+        "en": ".gitignore",
+        "zh-Hans": ".gitignore"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": ".gitignore",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.dependency-updates",
+      "kind": "practice",
+      "name": {
+        "en": "Dependency updates",
+        "zh-Hans": "依赖自动更新"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": ".github/dependabot.yml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".github/dependabot.yaml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "renovate.json",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".github/renovate.json",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "renovate.json5",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "practice.docs",
+      "kind": "practice",
+      "name": {
+        "en": "Documentation",
+        "zh-Hans": "文档目录"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "docs",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "doc",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "documentation",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "mkdocs.yml",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "practice.code-owners",
+      "kind": "practice",
+      "name": {
+        "en": "Code owners",
+        "zh-Hans": "代码所有者"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "CODEOWNERS",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": ".github/CODEOWNERS",
+          "weight": 0.9
+        }
+      ]
     }
   ]
 }

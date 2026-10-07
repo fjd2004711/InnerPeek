@@ -10,14 +10,15 @@ insights="$knowledge_dir/insights.json"
 git_recognition="$knowledge_dir/git-recognition.json"
 project_recognition="$knowledge_dir/project-recognition.json"
 icon_registry="$knowledge_dir/icon-registry.json"
+repository_health="$knowledge_dir/repository-health.json"
 icon_dir="$knowledge_dir/Icons"
 
 fail() { print -u2 "Knowledge validation failed: $1"; exit 1; }
-for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition" "$icon_registry"; do
+for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition" "$icon_registry" "$repository_health"; do
   [[ -f "$file" ]] || fail "missing $file"
   jq empty "$file" >/dev/null 2>&1 || fail "invalid JSON: $file"
 done
-for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json"; do
+for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json" "$repo_root/Schemas/repository-health.schema.json"; do
   [[ -f "$schema" ]] || fail "missing $schema"
   jq -e '.["$schema"] | type == "string"' "$schema" >/dev/null 2>&1 || fail "invalid schema: $schema"
 done
@@ -59,12 +60,13 @@ jq -e '
     elif .type == "manifest_key" then (.file | IN("package.json","pyproject.toml","Cargo.toml")) and (.key | type == "string" and length > 0) and (.weight | valid_weight) and (keys - ["type","file","key","weight"] | length == 0)
     elif .type == "manifest_text" then (.file | type == "string" and length > 0 and (contains("/") | not)) and (.contains | type == "string" and length > 0) and (.weight | valid_weight) and (keys - ["type","file","contains","weight"] | length == 0)
     elif .type == "extension_share" then (.extensions | type == "array" and length > 0 and all(.[]; type == "string" and test("^[a-z0-9]+$"))) and ((.minimumFiles // 1) | type == "number" and . >= 1 and . == floor) and ((.minimumShare // 0) | type == "number" and . >= 0 and . <= 1) and (.weight | valid_weight) and (keys - ["type","extensions","minimumFiles","minimumShare","weight"] | length == 0)
+    elif .type == "file_match" then (.patterns | type == "array" and length > 0 and all(.[]; type == "string" and length > 0 and (contains("/") | not) and (contains("..") | not))) and ((.minimumFiles // 1) | type == "number" and . >= 1 and . == floor) and (.weight | valid_weight) and (keys - ["type","patterns","minimumFiles","weight"] | length == 0)
     elif .type == "source_import" then (.extensions | type == "array" and length > 0 and all(.[]; IN("swift","py","js","jsx","mjs","cjs","ts","tsx","java","kt","kts"))) and (.module | type == "string" and length > 0) and ((.minimumFiles // 1) | type == "number" and . >= 1 and . == floor) and (.weight | valid_weight) and (keys - ["type","extensions","module","minimumFiles","weight"] | length == 0)
     else false end;
   (.version == 1) and (.detectionThreshold | type == "number" and . > 0 and . <= 1) and (.conflictMargin | type == "number" and . >= 0 and . <= 1)
   and (.facts | type == "array" and length > 0)
-  and all(.facts[]; (.id | type == "string" and test("^(projectKind|language|framework|buildSystem|packageManager)\\.[a-z0-9][a-z0-9.-]*$"))
-      and (.kind | IN("projectKind","language","framework","buildSystem","packageManager"))
+  and all(.facts[]; (.id | type == "string" and test("^(projectKind|language|framework|buildSystem|packageManager|practice)\\.[a-z0-9][a-z0-9.-]*$"))
+      and (.kind | IN("projectKind","language","framework","buildSystem","packageManager","practice"))
       and ((.id | split(".")[0]) == .kind)
       and (.name.en | type == "string" and length > 0) and (.name["zh-Hans"] | type == "string" and length > 0)
       and (.evidence | type == "array") and all(.evidence[]; valid_evidence)
@@ -122,6 +124,27 @@ unreferenced_icons=$(comm -23 "$registry_keys" "$used_keys")
 for asset in $(jq -r '.icons[].asset' "$icon_registry" | sort -u); do
   grep -q "brands/$asset.svg" "$icon_dir/LICENSES.md" || fail "icon not listed in Icons/LICENSES.md: $asset"
 done
+
+# Repository health: checks reference real practice facts; every practice fact is judged by exactly one check.
+jq -e '(.version == 1) and (.appliesWhenAny | type == "array" and length > 0 and all(.[]; IN("repository","language")))
+  and (.minimumCoreChecks | type == "number" and . >= 1 and . == floor)
+  and (.checks | type == "array" and length > 0 and all(.[]; (.id | test("^health\\.[a-z0-9-]+$")) and (.practice | test("^practice\\.[a-z0-9-]+$"))
+        and (.name["en"] | type == "string" and length > 0) and (.name["zh-Hans"] | type == "string" and length > 0)
+        and (.importance | IN("core","extra")) and ((.requires // "repository") | IN("repository","language")) and ((.missingSeverity // "info") | IN("info","notice","warning"))
+        and (.importance == "core" or .missingSeverity == null)))
+  and all(.messages.complete, .messages.gaps; (.title["en"] | type == "string" and length > 0) and (.title["zh-Hans"] | type == "string" and length > 0)
+        and (.detail["en"] | type == "string" and length > 0) and (.detail["zh-Hans"] | type == "string" and length > 0))
+  and (.messages.complete.title["en"] | test("%@") | not) and (.messages.complete.detail["en"] | test("%@")) and (.messages.gaps.title["en"] | test("%@"))' "$repository_health" >/dev/null \
+  || fail "repository health declarations are malformed"
+duplicate_health_ids=$(jq -r '.checks[].id' "$repository_health" | sort | uniq -d)
+[[ -z "$duplicate_health_ids" ]] || fail "duplicate health check id: $duplicate_health_ids"
+duplicate_health_practices=$(jq -r '.checks[].practice' "$repository_health" | sort | uniq -d)
+[[ -z "$duplicate_health_practices" ]] || fail "a practice is judged by two health checks: $duplicate_health_practices"
+unknown_health_practices=$(comm -13 <(jq -r '.facts[] | select(.kind == "practice") | .id' "$project_recognition" | sort -u) <(jq -r '.checks[].practice' "$repository_health" | sort -u))
+[[ -z "$unknown_health_practices" ]] || fail "health check references an unknown practice fact: $unknown_health_practices"
+unjudged_practices=$(comm -23 <(jq -r '.facts[] | select(.kind == "practice") | .id' "$project_recognition" | sort -u) <(jq -r '.checks[].practice' "$repository_health" | sort -u))
+[[ -z "$unjudged_practices" ]] || fail "practice fact is not judged by any health check: $unjudged_practices"
+[[ $(jq '[.checks[] | select(.importance == "core")] | length' "$repository_health") -ge $(jq '.minimumCoreChecks' "$repository_health") ]] || fail "fewer core health checks than minimumCoreChecks"
 
 role_ids=$(mktemp)
 type_roles=$(mktemp)

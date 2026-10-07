@@ -12,8 +12,8 @@
         "type": "object",
         "required": ["id", "kind", "name", "evidence"],
         "properties": {
-          "id": {"type": "string", "pattern": "^(projectKind|language|framework|buildSystem|packageManager)\\.[a-z0-9][a-z0-9.-]*$"},
-          "kind": {"enum": ["projectKind", "language", "framework", "buildSystem", "packageManager"]},
+          "id": {"type": "string", "pattern": "^(projectKind|language|framework|buildSystem|packageManager|practice)\\.[a-z0-9][a-z0-9.-]*$"},
+          "kind": {"enum": ["projectKind", "language", "framework", "buildSystem", "packageManager", "practice"]},
           "name": {
             "type": "object",
             "required": ["en", "zh-Hans"],
@@ -62,6 +62,17 @@
                     "extensions": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z0-9]+$"}},
                     "minimumFiles": {"type": "integer", "minimum": 1},
                     "minimumShare": {"type": "number", "minimum": 0, "maximum": 1},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "patterns", "weight"],
+                  "properties": {
+                    "type": {"const": "file_match"},
+                    "patterns": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[^/\\u0000]+$"}},
+                    "minimumFiles": {"type": "integer", "minimum": 1},
                     "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
                   },
                   "additionalProperties": false

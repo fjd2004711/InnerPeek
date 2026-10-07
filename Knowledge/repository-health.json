@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "appliesWhenAny": [
+    "repository",
+    "language"
+  ],
+  "minimumCoreChecks": 3,
+  "checks": [
+    {
+      "id": "health.readme",
+      "practice": "practice.readme",
+      "name": {
+        "en": "README",
+        "zh-Hans": "README"
+      },
+      "importance": "core",
+      "missingSeverity": "notice"
+    },
+    {
+      "id": "health.license",
+      "practice": "practice.license",
+      "name": {
+        "en": "License",
+        "zh-Hans": "许可证"
+      },
+      "importance": "core",
+      "missingSeverity": "info"
+    },
+    {
+      "id": "health.tests",
+      "practice": "practice.tests",
+      "name": {
+        "en": "Tests",
+        "zh-Hans": "测试"
+      },
+      "importance": "core",
+      "requires": "language",
+      "missingSeverity": "notice"
+    },
+    {
+      "id": "health.ci",
+      "practice": "practice.ci",
+      "name": {
+        "en": "CI",
+        "zh-Hans": "持续集成"
+      },
+      "importance": "core",
+      "requires": "repository",
+      "missingSeverity": "info"
+    },
+    {
+      "id": "health.contributing",
+      "practice": "practice.contributing",
+      "name": {
+        "en": "Contributing guide",
+        "zh-Hans": "贡献指南"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.security-policy",
+      "practice": "practice.security-policy",
+      "name": {
+        "en": "Security policy",
+        "zh-Hans": "安全策略"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.changelog",
+      "practice": "practice.changelog",
+      "name": {
+        "en": "Changelog",
+        "zh-Hans": "变更日志"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.dependency-updates",
+      "practice": "practice.dependency-updates",
+      "name": {
+        "en": "Dependency updates",
+        "zh-Hans": "依赖自动更新"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.docs",
+      "practice": "practice.docs",
+      "name": {
+        "en": "Documentation",
+        "zh-Hans": "文档目录"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.code-owners",
+      "practice": "practice.code-owners",
+      "name": {
+        "en": "Code owners",
+        "zh-Hans": "代码所有者"
+      },
+      "importance": "extra"
+    },
+    {
+      "id": "health.gitignore",
+      "practice": "practice.gitignore",
+      "name": {
+        "en": ".gitignore",
+        "zh-Hans": ".gitignore"
+      },
+      "importance": "extra"
+    }
+  ],
+  "messages": {
+    "complete": {
+      "title": {
+        "en": "Project basics in place",
+        "zh-Hans": "项目基础设施齐全"
+      },
+      "detail": {
+        "en": "Found: %@",
+        "zh-Hans": "已具备：%@"
+      }
+    },
+    "gaps": {
+      "title": {
+        "en": "Not found: %@",
+        "zh-Hans": "未发现：%@"
+      },
+      "detail": {
+        "en": "Only common locations were checked, so these may live elsewhere.",
+        "zh-Hans": "仅检查了常见位置，这些内容可能放在其他路径。"
+      }
+    }
+  }
+}

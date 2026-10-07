@@ -8,6 +8,8 @@ enum ProjectFactKind: String, Codable, Sendable, Hashable, CaseIterable {
     case framework
     case buildSystem
     case packageManager
+    /// An engineering practice that is present (README, tests, CI, ...). Whether it is expected is decided by repository-health.json.
+    case practice
 }
 
 /// `primary` facts describe the project; `supporting` facts are real but
@@ -24,6 +26,7 @@ enum RecognitionEvidenceType: String, Codable, Sendable, Hashable {
     case manifestText = "manifest_text"
     case extensionShare = "extension_share"
     case sourceImport = "source_import"
+    case fileMatch = "file_match"
 }
 
 /// One matched rule. `key` always comes from the knowledge rule, never from
@@ -60,6 +63,12 @@ struct RecognitionEvidence: Sendable, Hashable {
             return InsightLocalizedText(english: "\(relativePath) defines \(key)", simplifiedChinese: "\(relativePath) 定义了 \(key)")
         case .manifestText:
             return InsightLocalizedText(english: "\(relativePath) mentions \(key)", simplifiedChinese: "\(relativePath) 中提到 \(key)")
+        case .fileMatch:
+            let count = matchedFiles ?? 0
+            return InsightLocalizedText(
+                english: "\(count) \(count == 1 ? "file is" : "files are") named like \(key)",
+                simplifiedChinese: "\(count) 个文件命名形如 \(key)"
+            )
         case .sourceImport:
             let count = matchedFiles ?? 0
             return InsightLocalizedText(

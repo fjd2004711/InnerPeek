@@ -45,6 +45,7 @@ struct IconCatalog: Sendable {
         case .kind(.buildSystem): return "hammer"
         case .kind(.packageManager): return "shippingbox"
         case .kind(.projectKind): return "square.stack.3d.up"
+        case .kind(.practice): return "checklist"
         case .repository: return "point.3.connected.trianglepath.dotted"
         case .generic: return "folder"
         }
