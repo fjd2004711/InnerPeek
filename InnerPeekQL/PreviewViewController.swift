@@ -761,6 +761,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         outlineView.intercellSpacing = PreviewVisuals.tableIntercellSpacing
         outlineView.gridStyleMask = []
         outlineView.backgroundColor = .clear
+        // The default corner view paints an opaque block above the vertical scroller,
+        // which reads as a stray dark square at the end of the column header.
+        outlineView.cornerView = TransparentCornerView()
 
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Name"))
         nameColumn.title = NSLocalizedString("name_column", comment: "Name column title")
@@ -784,10 +787,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
 
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
-        // Legacy (always-visible) scrollers reserve a column beside the header and leave an
-        // odd-coloured corner there. Overlay scrollers float over the content, so the header
-        // spans the full panel. Quick Look is a transient preview; the file list stays scrollable.
-        scrollView.scrollerStyle = .overlay
         scrollView.autohidesScrollers = true
         scrollView.hasHorizontalScroller = false
         scrollView.drawsBackground = false
@@ -1033,4 +1032,9 @@ final class EvidenceDisclosure: NSObject {
         chevron.image = NSImage(systemSymbolName: detail.isHidden ? "chevron.right" : "chevron.down", accessibilityDescription: nil)
         owner?.evidenceDisclosureDidChange()
     }
+}
+
+/// Draws nothing, so the panel material shows through where the header meets the scroller.
+final class TransparentCornerView: NSView {
+    override func draw(_ dirtyRect: NSRect) {}
 }
