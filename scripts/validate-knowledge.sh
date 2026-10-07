@@ -46,6 +46,10 @@ duplicate_git_hosts=$(jq -r '.hosts[].host | ascii_downcase' "$git_recognition" 
 [[ -z "$duplicate_git_hosts" ]] || fail "duplicate Git host: $duplicate_git_hosts"
 duplicate_git_metadata_paths=$(jq -r '.metadataPaths[].path' "$git_recognition" | sort | uniq -d)
 [[ -z "$duplicate_git_metadata_paths" ]] || fail "duplicate Git metadata path: $duplicate_git_metadata_paths"
+duplicate_patterns=$(jq -r '.[].filenamePatterns[]? | ascii_downcase' "$file_types" | sort | uniq -d)
+[[ -z "$duplicate_patterns" ]] || fail "duplicate filename pattern: $duplicate_patterns"
+bad_patterns=$(jq -r '.[].filenamePatterns[]? | select(contains("/") or length == 0)' "$file_types")
+[[ -z "$bad_patterns" ]] || fail "filename pattern must be a bare name: $bad_patterns"
 duplicate_extensions=$(jq -r '.[].extensions[]? | ascii_downcase' "$file_types" | sort | uniq -d)
 [[ -z "$duplicate_extensions" ]] || fail "duplicate extension: $duplicate_extensions"
 

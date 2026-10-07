@@ -7,6 +7,7 @@ final class FileTypeRegistry: @unchecked Sendable {
     let definitions: [FileTypeDefinition]
     private let definitionsByExtension: [String: FileTypeDefinition]
     private let definitionsByFilename: [String: FileTypeDefinition]
+    private let filenamePatterns: [(pattern: [Character], definition: FileTypeDefinition)]
 
     convenience init() {
         let bundle = Bundle(for: FileTypeRegistry.self)
@@ -24,7 +25,12 @@ final class FileTypeRegistry: @unchecked Sendable {
 
         var index: [String: FileTypeDefinition] = [:]
         var filenameIndex: [String: FileTypeDefinition] = [:]
+        var patterns: [(pattern: [Character], definition: FileTypeDefinition)] = []
         for definition in decoded {
+            for pattern in definition.filenamePatterns {
+                let normalized = Self.normalizeFilename(pattern)
+                if !normalized.isEmpty { patterns.append((Array(normalized), definition)) }
+            }
             for fileExtension in definition.extensions {
                 let normalized = Self.normalize(fileExtension)
                 guard !normalized.isEmpty else { continue }
@@ -43,10 +49,28 @@ final class FileTypeRegistry: @unchecked Sendable {
         }
         definitionsByExtension = index
         definitionsByFilename = filenameIndex
+        filenamePatterns = patterns
     }
 
     func definition(forFileName fileName: String) -> FileTypeDefinition? {
-        definitionsByFilename[Self.normalizeFilename(fileName)]
+        let normalized = Self.normalizeFilename(fileName)
+        if let exact = definitionsByFilename[normalized] { return exact }
+        guard !filenamePatterns.isEmpty else { return nil }
+        let characters = Array(normalized)
+        return filenamePatterns.first { Self.glob($0.pattern, characters) }?.definition
+    }
+
+    /// `*` matches any run of characters; everything else matches literally.
+    private static func glob(_ pattern: [Character], _ name: [Character]) -> Bool {
+        var pi = 0, ni = 0, star = -1, mark = 0
+        while ni < name.count {
+            if pi < pattern.count, pattern[pi] == name[ni] { pi += 1; ni += 1 }
+            else if pi < pattern.count, pattern[pi] == "*" { star = pi; mark = ni; pi += 1 }
+            else if star != -1 { pi = star + 1; mark += 1; ni = mark }
+            else { return false }
+        }
+        while pi < pattern.count, pattern[pi] == "*" { pi += 1 }
+        return pi == pattern.count
     }
 
     func definition(forExtension fileExtension: String?) -> FileTypeDefinition? {

@@ -1129,7 +1129,6 @@
   {
     "id": "ml-model",
     "extensions": [
-      "bin",
       "caffemodel",
       "ckpt",
       "engine",
@@ -1138,9 +1137,7 @@
       "keras",
       "mlmodel",
       "mlpackage",
-      "model",
       "ort",
-      "pb",
       "pdmodel",
       "pdparams",
       "pt",
@@ -1167,7 +1164,17 @@
     "roles": [
       "modelWeights"
     ],
-    "filenames": []
+    "filenames": [],
+    "filenamePatterns": [
+      "*model*.bin",
+      "*weights*.bin",
+      "*checkpoint*.bin",
+      "*adapter*.bin",
+      "ggml-*.bin",
+      "saved_model.pb",
+      "*model*.pb",
+      "*frozen*.pb"
+    ]
   },
   {
     "id": "blender",
@@ -2983,5 +2990,82 @@
       "geometry"
     ],
     "filenames": []
+  },
+  {
+    "id": "binary-data",
+    "extensions": [
+      "bin"
+    ],
+    "filenames": [],
+    "category": "unknown",
+    "roles": [],
+    "name": {
+      "en": "Binary data",
+      "zh-Hans": "二进制数据"
+    },
+    "description": {
+      "en": "Raw binary data with no standard structure.",
+      "zh-Hans": "没有标准结构的原始二进制数据。"
+    },
+    "purpose": {
+      "en": "Used by many programs for firmware, caches and custom formats.",
+      "zh-Hans": "被许多程序用于固件、缓存和自定义格式。"
+    },
+    "isText": false,
+    "isBinary": true
+  },
+  {
+    "id": "protobuf-binary",
+    "extensions": [
+      "pb"
+    ],
+    "filenames": [],
+    "category": "unknown",
+    "roles": [],
+    "name": {
+      "en": "Protocol Buffers data",
+      "zh-Hans": "Protocol Buffers 数据"
+    },
+    "description": {
+      "en": "A binary message serialized with Protocol Buffers.",
+      "zh-Hans": "用 Protocol Buffers 序列化的二进制消息。"
+    },
+    "purpose": {
+      "en": "Used to exchange structured data between programs; model graphs also use it.",
+      "zh-Hans": "用于程序间交换结构化数据，模型图也会使用。"
+    },
+    "isText": false,
+    "isBinary": true
+  },
+  {
+    "id": "tokenizer-model",
+    "extensions": [],
+    "filenames": [
+      "tokenizer.model",
+      "spiece.model",
+      "sentencepiece.model"
+    ],
+    "filenamePatterns": [
+      "*tokenizer*.model",
+      "*sentencepiece*.model"
+    ],
+    "category": "aiModel",
+    "roles": [
+      "tokenizer"
+    ],
+    "name": {
+      "en": "Tokenizer model",
+      "zh-Hans": "分词器模型"
+    },
+    "description": {
+      "en": "A SentencePiece vocabulary used to split text into tokens.",
+      "zh-Hans": "把文本切分成词元的 SentencePiece 词表。"
+    },
+    "purpose": {
+      "en": "Used together with model weights to run language models.",
+      "zh-Hans": "与模型权重配合用于运行语言模型。"
+    },
+    "isText": false,
+    "isBinary": true
   }
 ]

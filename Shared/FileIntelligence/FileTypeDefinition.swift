@@ -23,6 +23,8 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
     let id: String
     let extensions: [String]
     let filenames: [String]
+    /// Case-insensitive glob patterns (`*` only) matched against the whole file name, after exact names and before extensions.
+    let filenamePatterns: [String]
     let category: FileCategory
     let roles: [SemanticRole]
     let name: LocalizedText
@@ -36,6 +38,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
         case id
         case extensions
         case filenames
+        case filenamePatterns
         case category
         case roles
         case name
@@ -51,6 +54,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
         id = try container.decode(String.self, forKey: .id)
         extensions = try container.decodeIfPresent([String].self, forKey: .extensions) ?? []
         filenames = try container.decodeIfPresent([String].self, forKey: .filenames) ?? []
+        filenamePatterns = try container.decodeIfPresent([String].self, forKey: .filenamePatterns) ?? []
         category = try container.decode(FileCategory.self, forKey: .category)
         roles = try container.decodeIfPresent([SemanticRole].self, forKey: .roles) ?? []
         name = try container.decode(LocalizedText.self, forKey: .name)

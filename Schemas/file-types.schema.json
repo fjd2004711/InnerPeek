@@ -9,6 +9,7 @@
       "id":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]*$"},
       "extensions":{"type":"array","items":{"type":"string","pattern":"^[a-z0-9][a-z0-9+._-]*$"},"uniqueItems":true},
       "filenames":{"type":"array","items":{"type":"string","minLength":1},"uniqueItems":true},
+      "filenamePatterns":{"type":"array","items":{"type":"string","pattern":"^[^/\\u0000]+$","minLength":1},"uniqueItems":true},
       "category":{"type":"string","enum":["document","spreadsheet","image","rawImage","audio","video","archive","sourceCode","configuration","database","scientificData","aiModel","threeD","font","executable","project","unknown"]},
       "roles":{"type":"array","minItems":1,"items":{"type":"string"},"uniqueItems":true},
       "name":{"$ref":"#/$defs/localized"},
