@@ -23,6 +23,8 @@ enum PreviewVisuals {
     static let analysisRowSpacing: CGFloat = 4
     static let analysisHeaderToRowsSpacing: CGFloat = 5
     static let semanticSectionSpacing: CGFloat = 10
+    static let semanticColumnSpacing: CGFloat = 24
+    static let semanticWideBreakpoint: CGFloat = 720
     static let analysisCountWidth: CGFloat = 52
     static let analysisSizeWidth: CGFloat = 70
     static let maximumDisplayedCategories = 6

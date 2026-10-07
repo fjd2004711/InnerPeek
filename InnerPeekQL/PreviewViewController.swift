@@ -21,7 +21,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private static let maximumVisibleReasons = 6
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
+    private var semanticColumns: NSStackView!
     private var semanticLeftColumn: NSStackView!
+    private var semanticRightColumn: NSStackView!
+    private var stackedColumnConstraints: [NSLayoutConstraint] = []
     private var whatsInsideHeader: NSStackView!
     private var whatsInsideRows: NSStackView!
     private var analysisSummaryLabel: NSTextField!
@@ -39,6 +42,19 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         view = NSView()
         view.wantsLayer = true
         buildInterface()
+    }
+
+    override func viewDidLayout() {
+        super.viewDidLayout()
+        guard semanticColumns != nil else { return }
+        let wide = view.bounds.width >= PreviewVisuals.semanticWideBreakpoint
+        let orientation: NSUserInterfaceLayoutOrientation = wide ? .horizontal : .vertical
+        guard semanticColumns.orientation != orientation else { return }
+        semanticColumns.orientation = orientation
+        semanticColumns.alignment = wide ? .top : .leading
+        semanticColumns.distribution = wide ? .fillEqually : .fill
+        // Stacked columns must span the full width explicitly; stack alignment alone leaves them content-sized.
+        if wide { NSLayoutConstraint.deactivate(stackedColumnConstraints) } else { NSLayoutConstraint.activate(stackedColumnConstraints) }
     }
 
     override func viewDidDisappear() {
@@ -745,6 +761,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         outlineView.intercellSpacing = PreviewVisuals.tableIntercellSpacing
         outlineView.gridStyleMask = []
         outlineView.backgroundColor = .clear
+        // The default corner view paints an opaque block above the vertical scroller,
+        // which reads as a stray dark square at the end of the column header.
+        outlineView.cornerView = TransparentCornerView()
 
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Name"))
         nameColumn.title = NSLocalizedString("name_column", comment: "Name column title")
@@ -846,7 +865,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         insightSection.setContentHuggingPriority(.defaultLow, for: .horizontal)
         insightSection.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        semanticLeftColumn = NSStackView(views: [analysisHeader, whatsInsideRows, verdictSection, insightSection])
+        semanticLeftColumn = NSStackView(views: [analysisHeader, whatsInsideRows, verdictSection])
         semanticLeftColumn.orientation = .vertical
         semanticLeftColumn.alignment = .width
         semanticLeftColumn.spacing = PreviewVisuals.semanticSectionSpacing
@@ -854,7 +873,29 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         semanticLeftColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
         semanticLeftColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let analysisStack = NSStackView(views: [semanticLeftColumn, fileDetailSection])
+        semanticRightColumn = NSStackView(views: [insightSection])
+        semanticRightColumn.orientation = .vertical
+        semanticRightColumn.alignment = .width
+        semanticRightColumn.translatesAutoresizingMaskIntoConstraints = false
+        semanticRightColumn.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        semanticRightColumn.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // Wide previews put insights beside the summary; narrow ones stack them.
+        // A hidden column (no insights) simply gives its width to the other.
+        semanticColumns = NSStackView(views: [semanticLeftColumn, semanticRightColumn])
+        semanticColumns.orientation = .horizontal
+        semanticColumns.alignment = .top
+        semanticColumns.distribution = .fillEqually
+        semanticColumns.spacing = PreviewVisuals.semanticColumnSpacing
+        semanticColumns.translatesAutoresizingMaskIntoConstraints = false
+
+        stackedColumnConstraints = [
+            semanticLeftColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticLeftColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor),
+            semanticRightColumn.leadingAnchor.constraint(equalTo: semanticColumns.leadingAnchor),
+            semanticRightColumn.trailingAnchor.constraint(equalTo: semanticColumns.trailingAnchor)
+        ]
+        let analysisStack = NSStackView(views: [semanticColumns, fileDetailSection])
         analysisStack.orientation = .vertical
         analysisStack.alignment = .width
         analysisStack.spacing = PreviewVisuals.semanticSectionSpacing
@@ -913,14 +954,14 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             analysisStack.leadingAnchor.constraint(equalTo: whatsInsideSection.leadingAnchor, constant: PreviewVisuals.analysisInset),
             analysisStack.trailingAnchor.constraint(equalTo: whatsInsideSection.trailingAnchor, constant: -PreviewVisuals.analysisInset),
             analysisStack.bottomAnchor.constraint(equalTo: whatsInsideSection.bottomAnchor, constant: -PreviewVisuals.analysisInset),
-            semanticLeftColumn.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
-            semanticLeftColumn.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
+            semanticColumns.leadingAnchor.constraint(equalTo: analysisStack.leadingAnchor),
+            semanticColumns.trailingAnchor.constraint(equalTo: analysisStack.trailingAnchor),
             analysisHeader.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
             analysisHeader.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
             whatsInsideRows.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
             whatsInsideRows.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
-            insightSection.leadingAnchor.constraint(equalTo: semanticLeftColumn.leadingAnchor),
-            insightSection.trailingAnchor.constraint(equalTo: semanticLeftColumn.trailingAnchor),
+            insightSection.leadingAnchor.constraint(equalTo: semanticRightColumn.leadingAnchor),
+            insightSection.trailingAnchor.constraint(equalTo: semanticRightColumn.trailingAnchor),
             insightTitle.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
             insightTitle.trailingAnchor.constraint(equalTo: insightSection.trailingAnchor),
             insightRows.leadingAnchor.constraint(equalTo: insightSection.leadingAnchor),
@@ -991,4 +1032,9 @@ final class EvidenceDisclosure: NSObject {
         chevron.image = NSImage(systemSymbolName: detail.isHidden ? "chevron.right" : "chevron.down", accessibilityDescription: nil)
         owner?.evidenceDisclosureDidChange()
     }
+}
+
+/// Draws nothing, so the panel material shows through where the header meets the scroller.
+final class TransparentCornerView: NSView {
+    override func draw(_ dirtyRect: NSRect) {}
 }
