@@ -219,6 +219,34 @@ mkdir -p $p/.git; print -r -- "ref: refs/heads/main" > $p/.git/HEAD; mkdir -p $p
 put $p/README.md '# x'; put $p/LICENSE 'MIT'; put $p/pyproject.toml $'[project]\nname = "x"\n'; put $p/tests/test_a.py 'x'
 put $p/.github/workflows/ci.yml 'on: push'; put $p/CONTRIBUTING.md 'x'; put $p/SECURITY.md 'x'; put $p/CHANGELOG.md 'x'; put $p/docs/index.md 'x'
 
+# Risk and stack insights.
+fake_key=$'-----BEGIN OPENSSH PRIVATE KEY-----\nFAKEFAKEFAKEFAKE\n-----END OPENSSH PRIVATE KEY-----'
+fake_cert=$'-----BEGIN CERTIFICATE-----\nFAKEFAKE\n-----END CERTIFICATE-----'
+mkrepo() { mkdir -p $1/.git; print -r -- "ref: refs/heads/main" > $1/.git/HEAD; }
+p=$(proj risk-env-leaked); mkrepo $p; put $p/.env 'API_TOKEN=hunter2-fake'; put $p/README.md '# x'
+p=$(proj risk-env-ignored); mkrepo $p; put $p/.env 'API_TOKEN=hunter2-fake'; put $p/.gitignore $'.env\n'; put $p/README.md '# x'
+p=$(proj risk-env-template); mkrepo $p; put $p/.env.example 'API_TOKEN='; put $p/README.md '# x'
+p=$(proj risk-env-no-repo); put $p/.env 'API_TOKEN=hunter2-fake'; put $p/README.md '# x'
+p=$(proj risk-private-key); put $p/deploy/id_rsa "$fake_key"; put $p/README.md '# x'
+p=$(proj risk-public-cert); put $p/server.pem "$fake_cert"; put $p/README.md '# x'
+p=$(proj risk-fixture-key); put $p/tests/fixtures/key.pem "$fake_key"; put $p/README.md '# x'
+p=$(proj risk-npm-token); put $p/.npmrc $'//registry.npmjs.org/:_authToken=npm_FAKETOKEN123'; put $p/package.json '{"name":"x"}'
+p=$(proj risk-npm-env-reference); put $p/.npmrc $'//registry.npmjs.org/:_authToken=${NPM_TOKEN}'; put $p/package.json '{"name":"x"}'
+p=$(proj risk-deps-not-ignored); mkrepo $p; put $p/package.json '{"name":"x"}'; put $p/package-lock.json '{}'; put $p/node_modules/a/index.js 'x'
+p=$(proj risk-deps-ignored); mkrepo $p; put $p/package.json '{"name":"x"}'; put $p/package-lock.json '{}'; put $p/node_modules/a/index.js 'x'; put $p/.gitignore $'node_modules/\n'
+p=$(proj risk-archive-source); put $p/app/.env 'API_TOKEN=hunter2-fake'; put $p/app/id_rsa "$fake_key"; put $p/app/README.md '# x'
+p=$(proj stack-node-two-locks); put $p/package.json '{"name":"x"}'; put $p/package-lock.json '{}'; put $p/yarn.lock 'x'
+p=$(proj stack-node-one-lock); put $p/package.json '{"name":"x"}'; put $p/package-lock.json '{}'
+p=$(proj stack-ruby-no-lock); put $p/Gemfile "source 'https://rubygems.org'"; put $p/app.rb 'puts 1'
+p=$(proj stack-ruby-locked); put $p/Gemfile "source 'https://rubygems.org'"; put $p/Gemfile.lock 'x'
+p=$(proj stack-docker-no-ignore); put $p/Dockerfile 'FROM scratch'
+p=$(proj stack-docker-ignore); put $p/Dockerfile 'FROM scratch'; put $p/.dockerignore 'node_modules'
+p=$(proj stack-gradle-no-wrapper); put $p/build.gradle 'plugins {}'
+p=$(proj stack-rust-binary); put $p/Cargo.toml $'[package]\nname = "x"\n'; put $p/src/main.rs 'fn main(){}'
+p=$(proj stack-rust-library); put $p/Cargo.toml $'[package]\nname = "x"\n'; put $p/src/lib.rs 'pub fn a(){}'
+p=$(proj stack-python-no-manifest); mkrepo $p; for n in a b c d; do put $p/src/$n.py 'import os'; done
+p=$(proj stack-python-scripts); for n in a b c d; do put $p/$n.py 'import os'; done
+
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30
 write "$out/semi-realistic/messy-python/uv.lock" 30
@@ -265,3 +293,4 @@ zip_case synthetic/transformer-complete synthetic/transformer-complete.zip
 zip_case synthetic/node-docker synthetic/node-docker.zip
 zip_case synthetic/generic-mixed synthetic/generic-mixed.zip
 zip_case semi-realistic/downloads semi-realistic/random-zip.zip
+zip_case synthetic/risk-archive-source synthetic/risk-archive.zip

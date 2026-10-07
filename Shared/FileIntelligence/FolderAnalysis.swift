@@ -92,6 +92,11 @@ struct FolderAnalysis: Sendable, Hashable {
     let repositoryContext: GitRepositoryContext?
     /// Facts from declarative project recognition; empty for sources that cannot read manifests (ZIP).
     let projectRecognition: ProjectRecognition
+    /// Sensitive-file findings (paths only), from declarative risk rules.
+    let riskFindings: [RiskFinding]
+    /// Root-level names (hidden ones included) and relative paths; `nil` when the listing is
+    /// unavailable or incomplete, which disables rules that depend on a file being absent.
+    let rootContext: ProjectRootContext?
 
     init(
         analyzedFileCount: Int,
@@ -105,7 +110,9 @@ struct FolderAnalysis: Sendable, Hashable {
         scanState: FolderAnalysisScanState,
         sourceKind: ContentSourceKind = .filesystem,
         repositoryContext: GitRepositoryContext? = nil,
-        projectRecognition: ProjectRecognition = .empty
+        projectRecognition: ProjectRecognition = .empty,
+        riskFindings: [RiskFinding] = [],
+        rootContext: ProjectRootContext? = nil
     ) {
         self.analyzedFileCount = analyzedFileCount
         self.analyzedDirectoryCount = analyzedDirectoryCount
@@ -119,11 +126,14 @@ struct FolderAnalysis: Sendable, Hashable {
         self.sourceKind = sourceKind
         self.repositoryContext = repositoryContext
         self.projectRecognition = projectRecognition
+        self.riskFindings = riskFindings
+        self.rootContext = rootContext
     }
 
     /// Builds the existing analysis contract from a provider-neutral snapshot.
     /// ZIP entries are classified from names and central-directory sizes only.
-    init(snapshot: ContentSnapshot, recognizer: FileIntelligenceRecognizer) {
+    init(snapshot: ContentSnapshot, recognizer: FileIntelligenceRecognizer,
+         riskFindings: [RiskFinding] = [], rootContext: ProjectRootContext? = nil) {
         var categories: [FileCategory: (count: Int, size: Int64)] = [:]
         var extensions: [String?: (count: Int, size: Int64)] = [:]
         var files: [AnalyzedFile] = []
@@ -172,6 +182,8 @@ struct FolderAnalysis: Sendable, Hashable {
                   analyzedEntries: analyzedEntries,
                   scanState: snapshot.scanState,
                   sourceKind: snapshot.sourceKind,
-                  repositoryContext: nil)
+                  repositoryContext: nil,
+                  riskFindings: riskFindings,
+                  rootContext: rootContext)
     }
 }

@@ -29,6 +29,7 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
     private var archiveEntries: [ArchiveEntry] = []
 
     static let semanticMaximumDepth = 2
+    static let riskMaximumDepth = 6
     static let semanticMaximumEntries = 2_000
 
     init(archiveURL: URL) { self.archiveURL = archiveURL }
@@ -104,7 +105,22 @@ final class ZIPContentProvider: PreviewContentProvider, @unchecked Sendable {
                                          compressedSize: entry.compressedSize, modifiedDate: entry.modifiedDate, sourceKind: .zip))
         }
         let state: FolderAnalysisScanState = reachedLimits.isEmpty ? .complete : .partial(reachedLimits)
-        return FolderAnalysis(snapshot: ContentSnapshot(entries: selected, scanState: state, sourceKind: .zip), recognizer: recognizer)
+        // Risk and stack rules read names only, from every central-directory entry, so hidden
+        // files such as `.env` count even though the visible listing skips them.
+        let allPaths = entries.map(\.path)
+        let riskCandidates = allPaths.compactMap { raw -> RiskCandidate? in
+            let path = raw.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            guard !path.isEmpty, !path.hasPrefix("__MACOSX/") else { return nil }
+            let components = path.split(separator: "/")
+            guard components.count <= Self.riskMaximumDepth, !components.dropLast().contains(where: { $0 == ".git" || $0 == "node_modules" }) else { return nil }
+            return RiskCandidate(relativePath: path, name: String(components.last ?? ""), isDirectory: raw.hasSuffix("/"))
+        }
+        let files = Set(allPaths.filter { !$0.hasSuffix("/") }.map { $0.lowercased() })
+        let riskFindings = RiskScanner(rules: ProjectInsightKnowledge.shared.risks)
+            .scan(candidates: riskCandidates, environment: .archive(paths: files))
+        return FolderAnalysis(snapshot: ContentSnapshot(entries: selected, scanState: state, sourceKind: .zip), recognizer: recognizer,
+                              riskFindings: riskFindings,
+                              rootContext: ProjectRootContext.archive(entryPaths: allPaths))
     }
 
 

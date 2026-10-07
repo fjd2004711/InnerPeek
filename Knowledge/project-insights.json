@@ -1,0 +1,193 @@
+{
+  "risks": [
+    {
+      "id": "env-file",
+      "entryKind": "file",
+      "names": [".env", ".env.*"],
+      "excludeNames": [".env.example", ".env.sample", ".env.template", ".env.dist", ".env.defaults", ".env.schema", ".env.*.example", ".env.*.sample", ".env.*.template"],
+      "scope": "repository",
+      "respectsGitignore": true,
+      "severity": "warning",
+      "priority": 900,
+      "title": {"en": "Environment file may expose secrets", "zh-Hans": "环境变量文件可能泄露密钥"},
+      "detail": {"en": "%@ is not covered by .gitignore and may be committed.", "zh-Hans": "%@ 没有被 .gitignore 忽略，可能被提交。"},
+      "archiveDetail": {"en": "%@ is included in this archive.", "zh-Hans": "此压缩包包含 %@。"}
+    },
+    {
+      "id": "private-key",
+      "entryKind": "file",
+      "names": ["id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "*.pem", "*.key"],
+      "excludePathComponents": ["test", "tests", "__tests__", "spec", "fixtures", "fixture", "testdata", "example", "examples", "sample", "samples"],
+      "contentPattern": "-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----",
+      "trustedWithoutContent": ["id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"],
+      "scope": "any",
+      "respectsGitignore": true,
+      "severity": "warning",
+      "priority": 920,
+      "title": {"en": "Private key file found", "zh-Hans": "发现私钥文件"},
+      "detail": {"en": "%@ contains private key material. Keep it out of shared folders and repositories.", "zh-Hans": "%@ 含有私钥内容，请不要放进共享文件夹或代码仓库。"},
+      "archiveDetail": {"en": "%@ is included in this archive and may be a private key.", "zh-Hans": "此压缩包包含 %@，可能是私钥。"}
+    },
+    {
+      "id": "npm-auth-token",
+      "entryKind": "file",
+      "names": [".npmrc"],
+      "contentPattern": "_authToken\\s*=\\s*[^\\s$]",
+      "scope": "any",
+      "respectsGitignore": true,
+      "severity": "warning",
+      "priority": 910,
+      "title": {"en": "npm credentials found", "zh-Hans": "发现 npm 凭据"},
+      "detail": {"en": "%@ contains an authentication token.", "zh-Hans": "%@ 中含有认证令牌。"}
+    },
+    {
+      "id": "key-container",
+      "entryKind": "file",
+      "names": ["*.p12", "*.pfx", "*.jks", "*.keystore", "*.ppk"],
+      "excludePathComponents": ["test", "tests", "__tests__", "spec", "fixtures", "fixture", "testdata", "example", "examples", "sample", "samples"],
+      "scope": "repository",
+      "respectsGitignore": true,
+      "severity": "warning",
+      "priority": 890,
+      "title": {"en": "Key or certificate container found", "zh-Hans": "发现密钥或证书容器"},
+      "detail": {"en": "%@ usually holds a private key and is not covered by .gitignore.", "zh-Hans": "%@ 通常包含私钥，且没有被 .gitignore 忽略。"},
+      "archiveDetail": {"en": "%@ usually holds a private key and is included in this archive.", "zh-Hans": "%@ 通常包含私钥，且包含在此压缩包中。"}
+    },
+    {
+      "id": "credential-file",
+      "entryKind": "file",
+      "names": [".pypirc", ".netrc", ".git-credentials", ".htpasswd", "terraform.tfstate", "terraform.tfstate.backup"],
+      "paths": [".aws/credentials"],
+      "scope": "repository",
+      "respectsGitignore": true,
+      "severity": "warning",
+      "priority": 895,
+      "title": {"en": "Credential file found", "zh-Hans": "发现凭据文件"},
+      "detail": {"en": "%@ commonly stores credentials and is not covered by .gitignore.", "zh-Hans": "%@ 通常保存凭据，且没有被 .gitignore 忽略。"},
+      "archiveDetail": {"en": "%@ commonly stores credentials and is included in this archive.", "zh-Hans": "%@ 通常保存凭据，且包含在此压缩包中。"}
+    },
+    {
+      "id": "dependencies-not-ignored",
+      "entryKind": "directory",
+      "names": ["node_modules", ".venv", "venv"],
+      "scope": "repository",
+      "respectsGitignore": true,
+      "severity": "notice",
+      "priority": 600,
+      "title": {"en": "Installed dependencies are not ignored", "zh-Hans": "已安装的依赖没有被忽略"},
+      "detail": {"en": "%@ is not covered by .gitignore and could bloat the repository.", "zh-Hans": "%@ 没有被 .gitignore 忽略，可能让仓库体积膨胀。"}
+    },
+    {
+      "id": "xcode-user-data",
+      "entryKind": "directory",
+      "names": ["xcuserdata"],
+      "scope": "repository",
+      "respectsGitignore": true,
+      "severity": "notice",
+      "priority": 590,
+      "title": {"en": "Personal Xcode settings may be committed", "zh-Hans": "个人 Xcode 设置可能被提交"},
+      "detail": {"en": "%@ is not covered by .gitignore.", "zh-Hans": "%@ 没有被 .gitignore 忽略。"}
+    }
+  ],
+  "stack": [
+    {
+      "id": "node-multiple-lockfiles",
+      "multiplePresent": {"patterns": ["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "bun.lock"], "atLeast": 2},
+      "severity": "notice",
+      "priority": 680,
+      "title": {"en": "More than one Node lockfile", "zh-Hans": "存在多个 Node 锁定文件"},
+      "detail": {"en": "Found %@. Different package managers may resolve different versions.", "zh-Hans": "发现 %@。不同的包管理器可能解析出不同的版本。"}
+    },
+    {
+      "id": "python-no-dependency-manifest",
+      "requiresFact": {"id": "language.python", "minimumConfidence": "medium"},
+      "requiresRepository": true,
+      "nonePresent": ["requirements*.txt", "pyproject.toml", "setup.py", "setup.cfg", "pipfile", "environment.yml", "environment.yaml", "poetry.lock", "uv.lock", "pdm.lock"],
+      "severity": "info",
+      "priority": 660,
+      "title": {"en": "Python code has no dependency list", "zh-Hans": "Python 代码没有依赖清单"},
+      "detail": {"en": "No requirements.txt or pyproject.toml was found, so others cannot reproduce the environment.", "zh-Hans": "没有找到 requirements.txt 或 pyproject.toml，其他人难以复现运行环境。"}
+    },
+    {
+      "id": "pipenv-no-lockfile",
+      "allPresent": ["pipfile"],
+      "nonePresent": ["pipfile.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Pipfile has no Pipfile.lock", "zh-Hans": "Pipfile 没有 Pipfile.lock"},
+      "detail": {"en": "Without a lockfile, installs may resolve different versions over time.", "zh-Hans": "没有锁定文件时，不同时间安装可能得到不同版本。"}
+    },
+    {
+      "id": "rust-binary-no-lockfile",
+      "allPresent": ["cargo.toml", "src/main.rs"],
+      "nonePresent": ["cargo.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Rust application has no Cargo.lock", "zh-Hans": "Rust 应用没有 Cargo.lock"},
+      "detail": {"en": "Applications should commit Cargo.lock so builds are reproducible.", "zh-Hans": "应用程序应提交 Cargo.lock，以保证构建可复现。"}
+    },
+    {
+      "id": "ruby-no-lockfile",
+      "allPresent": ["gemfile"],
+      "nonePresent": ["gemfile.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Gemfile has no Gemfile.lock", "zh-Hans": "Gemfile 没有 Gemfile.lock"},
+      "detail": {"en": "Without a lockfile, gem versions are not pinned.", "zh-Hans": "没有锁定文件时，gem 版本没有被固定。"}
+    },
+    {
+      "id": "php-no-lockfile",
+      "allPresent": ["composer.json"],
+      "nonePresent": ["composer.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Composer project has no composer.lock", "zh-Hans": "Composer 项目没有 composer.lock"},
+      "detail": {"en": "Without a lockfile, package versions are not pinned.", "zh-Hans": "没有锁定文件时，包版本没有被固定。"}
+    },
+    {
+      "id": "cocoapods-no-lockfile",
+      "allPresent": ["podfile"],
+      "nonePresent": ["podfile.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Podfile has no Podfile.lock", "zh-Hans": "Podfile 没有 Podfile.lock"},
+      "detail": {"en": "Without a lockfile, pod versions are not pinned.", "zh-Hans": "没有锁定文件时，pod 版本没有被固定。"}
+    },
+    {
+      "id": "flutter-app-no-lockfile",
+      "allPresent": ["pubspec.yaml", "lib/main.dart"],
+      "nonePresent": ["pubspec.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Flutter app has no pubspec.lock", "zh-Hans": "Flutter 应用没有 pubspec.lock"},
+      "detail": {"en": "Applications should commit pubspec.lock so builds are reproducible.", "zh-Hans": "应用程序应提交 pubspec.lock，以保证构建可复现。"}
+    },
+    {
+      "id": "elixir-no-lockfile",
+      "allPresent": ["mix.exs"],
+      "nonePresent": ["mix.lock"],
+      "severity": "notice",
+      "priority": 670,
+      "title": {"en": "Mix project has no mix.lock", "zh-Hans": "Mix 项目没有 mix.lock"},
+      "detail": {"en": "Without a lockfile, dependency versions are not pinned.", "zh-Hans": "没有锁定文件时，依赖版本没有被固定。"}
+    },
+    {
+      "id": "gradle-no-wrapper",
+      "anyPresent": ["build.gradle", "build.gradle.kts"],
+      "nonePresent": ["gradlew"],
+      "severity": "notice",
+      "priority": 650,
+      "title": {"en": "Gradle project has no wrapper", "zh-Hans": "Gradle 项目没有 wrapper"},
+      "detail": {"en": "Without gradlew, contributors must install a matching Gradle themselves.", "zh-Hans": "没有 gradlew 时，贡献者需要自行安装匹配版本的 Gradle。"}
+    },
+    {
+      "id": "docker-no-dockerignore",
+      "allPresent": ["dockerfile"],
+      "nonePresent": [".dockerignore"],
+      "severity": "notice",
+      "priority": 650,
+      "title": {"en": "Dockerfile without .dockerignore", "zh-Hans": "有 Dockerfile 但没有 .dockerignore"},
+      "detail": {"en": "The whole folder is sent as build context, which can slow builds and leak files into images.", "zh-Hans": "整个文件夹都会作为构建上下文，可能拖慢构建，并把无关文件带进镜像。"}
+    }
+  ]
+}

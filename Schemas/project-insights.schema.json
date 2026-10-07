@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["risks", "stack"],
+  "additionalProperties": false,
+  "properties": {
+    "risks": {"type": "array", "items": {"$ref": "#/$defs/risk"}},
+    "stack": {"type": "array", "items": {"$ref": "#/$defs/stack"}}
+  },
+  "$defs": {
+    "severity": {"enum": ["info", "positive", "notice", "warning"]},
+    "names": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "risk": {
+      "type": "object",
+      "required": ["id", "entryKind", "scope", "respectsGitignore", "severity", "priority", "title", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "entryKind": {"enum": ["file", "directory"]},
+        "names": {"$ref": "#/$defs/names"},
+        "paths": {"$ref": "#/$defs/names"},
+        "excludeNames": {"$ref": "#/$defs/names"},
+        "excludePathComponents": {"$ref": "#/$defs/names"},
+        "contentPattern": {"type": "string", "minLength": 1},
+        "trustedWithoutContent": {"$ref": "#/$defs/names"},
+        "scope": {"enum": ["any", "repository"]},
+        "respectsGitignore": {"type": "boolean"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "priority": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "title": {"$ref": "roles.schema.json#/$defs/localized"},
+        "detail": {"$ref": "roles.schema.json#/$defs/localized"},
+        "archiveDetail": {"$ref": "roles.schema.json#/$defs/localized"}
+      }
+    },
+    "stack": {
+      "type": "object",
+      "required": ["id", "severity", "priority", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "requiresFact": {
+          "type": "object",
+          "required": ["id", "minimumConfidence"],
+          "additionalProperties": false,
+          "properties": {"id": {"type": "string"}, "minimumConfidence": {"enum": ["medium", "high"]}}
+        },
+        "requiresRepository": {"type": "boolean"},
+        "allPresent": {"$ref": "#/$defs/names"},
+        "anyPresent": {"$ref": "#/$defs/names"},
+        "nonePresent": {"$ref": "#/$defs/names"},
+        "multiplePresent": {
+          "type": "object",
+          "required": ["patterns", "atLeast"],
+          "additionalProperties": false,
+          "properties": {"patterns": {"$ref": "#/$defs/names"}, "atLeast": {"type": "integer", "minimum": 2}}
+        },
+        "severity": {"$ref": "#/$defs/severity"},
+        "priority": {"type": "integer", "minimum": 0, "maximum": 1000},
+        "title": {"$ref": "roles.schema.json#/$defs/localized"},
+        "detail": {"$ref": "roles.schema.json#/$defs/localized"}
+      }
+    }
+  }
+}

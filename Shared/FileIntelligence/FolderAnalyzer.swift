@@ -156,6 +156,17 @@ struct FolderAnalyzer: Sendable {
         }.sorted(by: Self.sort)
 
         let projectRecognition = ProjectRecognizer().recognize(folderURL: folderURL, entries: analyzedEntries)
+        let riskSource = FilesystemRiskSource(root: folderURL)
+        let rootListing = riskSource.rootListing()
+        var riskCandidates = analyzedEntries.map {
+            RiskCandidate(relativePath: $0.relativePath, name: $0.name, isDirectory: $0.isDirectory)
+        }
+        // Hidden root entries (.env, .venv, ...) are skipped by the visible traversal.
+        riskCandidates += rootListing.candidates
+        let riskFindings = RiskScanner(rules: ProjectInsightKnowledge.shared.risks).scan(
+            candidates: riskCandidates,
+            environment: riskSource.environment(isRepository: repositoryContext?.isRepository == true)
+        )
         return FolderAnalysis(
             analyzedFileCount: fileCount,
             analyzedDirectoryCount: directoryCount,
@@ -167,7 +178,12 @@ struct FolderAnalyzer: Sendable {
             analyzedEntries: analyzedEntries,
             scanState: reachedLimits.isEmpty ? .complete : .partial(reachedLimits),
             repositoryContext: repositoryContext,
-            projectRecognition: projectRecognition
+            projectRecognition: projectRecognition,
+            riskFindings: riskFindings,
+            rootContext: rootListing.complete ? ProjectRootContext(
+                names: rootListing.names,
+                paths: Set(analyzedEntries.map { $0.relativePath.lowercased() })
+            ) : nil
         )
     }
 

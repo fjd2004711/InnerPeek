@@ -125,6 +125,7 @@ enum FileIntelligenceRegression {
         try runProjectRecognitionRegression()
         try runVisualIdentityRegression()
         try runRepositoryHealthRegression()
+        try runProjectInsightsRegression()
         try runLocalizationRegression()
         try runSettingsRegression()
         try runDiagnosticsRegression()
@@ -134,8 +135,8 @@ enum FileIntelligenceRegression {
         print("Stage 1–5 regression checks passed.")
     }
 
-    private static func expect(_ condition: @autoclosure () -> Bool, _ description: String) throws {
-        guard condition() else { throw RegressionFailure.failed(description) }
+    private static func expect(_ condition: @autoclosure () throws -> Bool, _ description: String) throws {
+        guard try condition() else { throw RegressionFailure.failed(description) }
     }
 
     private enum RegressionFailure: Error, CustomStringConvertible {
@@ -904,6 +905,173 @@ enum FileIntelligenceRegression {
         let recognition = ProjectRecognition(facts: [], conflicts: [])
         try expect(custom.evaluate(recognition: recognition, repositoryContext: nil) == nil, "custom knowledge: not applicable without a language")
         try expect(RepositoryHealthEvaluator(data: Data("nope".utf8)).evaluate(recognition: recognition, repositoryContext: nil) == nil, "malformed health knowledge yields nothing")
+    }
+
+    /// Risk and stack insights: sensitive files, .gitignore awareness, missing lockfiles.
+    private static func runProjectInsightsRegression() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-ProjectInsights-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        func make(_ files: [String: String], repository: Bool = false) throws -> FolderAnalysis {
+            let url = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try makeDirectory(url)
+            if repository {
+                try makeDirectory(url.appendingPathComponent(".git"))
+                try "ref: refs/heads/main\n".write(to: url.appendingPathComponent(".git/HEAD"), atomically: true, encoding: .utf8)
+            }
+            for (file, text) in files {
+                let target = url.appendingPathComponent(file)
+                try makeDirectory(target.deletingLastPathComponent())
+                try text.write(to: target, atomically: true, encoding: .utf8)
+            }
+            return try FolderAnalyzer().analyze(folderURL: url)
+        }
+        func insights(_ files: [String: String], repository: Bool = false) throws -> [Insight] {
+            let analysis = try make(files, repository: repository)
+            return InsightEngine().generate(for: analysis, relationships: [], importantFiles: [])
+        }
+        func ids(_ analysis: FolderAnalysis) -> Set<String> {
+            Set(InsightEngine().generate(for: analysis, relationships: [], importantFiles: []).map(\.id))
+        }
+        let en = Locale(identifier: "en"), zh = Locale(identifier: "zh-Hans")
+        let privateKey = "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----\n"
+
+        // .env: only a finding where it could be shared.
+        let leaked = try insights([".env": "TOKEN=hunter2\n", "README.md": "x"], repository: true).first { $0.id == "risk-env-file" }
+        try expect(leaked?.severity == .warning && leaked?.kind == .risk, "an unignored .env in a repository is a warning")
+        try expect(leaked?.localizedDetail(for: en) == ".env is not covered by .gitignore and may be committed.", "env detail names the file")
+        try expect(leaked?.localizedTitle(for: zh) == "环境变量文件可能泄露密钥", "env title is localized")
+        try expect(leaked?.evidence.contains { $0.value.contains("hunter2") } == false, "evidence never carries file contents")
+        try expect(try insights([".env": "A=1", ".gitignore": ".env\n"], repository: true).allSatisfy { $0.id != "risk-env-file" }, "an ignored .env is not reported")
+        try expect(try insights([".env": "A=1", ".gitignore": ".env*\n!.env.example\n"], repository: true).allSatisfy { $0.id != "risk-env-file" }, "glob rules ignore .env")
+        try expect(try insights([".env": "A=1", ".gitignore": ".env\n!.env\n"], repository: true).contains { $0.id == "risk-env-file" }, "a later negation un-ignores it")
+        try expect(try insights([".env": "A=1"]).allSatisfy { $0.id != "risk-env-file" }, "outside a repository a .env is ordinary configuration")
+        try expect(try insights([".env.example": "A=", ".env.sample": "A=", ".env.production.template": "A="], repository: true).allSatisfy { $0.id != "risk-env-file" }, "example env files are templates")
+        try expect(try insights([".env.production": "A=1"], repository: true).contains { $0.id == "risk-env-file" }, "environment-specific files count")
+
+        // Private keys are confirmed by content, not by extension alone.
+        try expect(try insights(["deploy/id_rsa": privateKey]).contains { $0.id == "risk-private-key" }, "a private key is reported even outside a repository")
+        try expect(try insights(["server.pem": "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"]).allSatisfy { $0.id != "risk-private-key" }, "a public certificate is not a private key")
+        try expect(try insights(["tests/fixtures/key.pem": privateKey, "a.txt": "x"]).allSatisfy { $0.id != "risk-private-key" }, "keys inside test fixtures are skipped")
+        try expect(try insights(["notes.key": "just a note"]).allSatisfy { $0.id != "risk-private-key" }, "a .key file without key material is not reported")
+        let keyDetail = try insights(["id_ed25519": privateKey]).first { $0.id == "risk-private-key" }?.localizedDetail(for: en)
+        try expect(keyDetail?.contains("b3BlbnNzaC1") == false && keyDetail?.contains("id_ed25519") == true, "key detail names the file, never the material")
+
+        // npm tokens: literal tokens only, not environment references.
+        try expect(try insights([".npmrc": "//registry.npmjs.org/:_authToken=npm_abcdef\n"]).contains { $0.id == "risk-npm-auth-token" }, "a literal npm token is reported")
+        try expect(try insights([".npmrc": "//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n"]).allSatisfy { $0.id != "risk-npm-auth-token" }, "an env reference is not a secret")
+        try expect(try insights([".npmrc": "registry=https://registry.npmjs.org/\n"]).allSatisfy { $0.id != "risk-npm-auth-token" }, "registry configuration is not a secret")
+        let tokenText = try insights([".npmrc": "_authToken=npm_abcdef"]).first { $0.id == "risk-npm-auth-token" }
+        try expect(tokenText?.localizedDetail(for: en)?.contains("npm_abcdef") == false, "token text is never shown")
+
+        // Credential files and key containers.
+        try expect(try insights(["terraform.tfstate": "{}", "main.tf": "x"], repository: true).contains { $0.id == "risk-credential-file" }, "terraform state is flagged in a repository")
+        try expect(try insights([".aws/credentials": "[default]"], repository: true).contains { $0.id == "risk-credential-file" }, "an AWS credentials path is flagged")
+        try expect(try insights(["release.p12": "x", "a.txt": "x"], repository: true).contains { $0.id == "risk-key-container" }, "a key container is flagged in a repository")
+        try expect(try insights(["release.p12": "x"], repository: true.self).count >= 1, "key container yields an insight")
+
+        // Installed dependencies and personal IDE data.
+        try expect(try insights(["node_modules/a/index.js": "x", "package.json": "{}"], repository: true).contains { $0.id == "risk-dependencies-not-ignored" }, "an unignored node_modules is a notice")
+        try expect(try insights(["node_modules/a/index.js": "x", "package.json": "{}", ".gitignore": "node_modules/\n"], repository: true).allSatisfy { $0.id != "risk-dependencies-not-ignored" }, "an ignored node_modules is fine")
+        try expect(try insights([".venv/bin/python": "x", "app.py": "x", ".gitignore": ".venv\n"], repository: true).allSatisfy { $0.id != "risk-dependencies-not-ignored" }, "a hidden .venv is judged against .gitignore too")
+        try expect(try insights([".venv/bin/python": "x", "app.py": "x"], repository: true).contains { $0.id == "risk-dependencies-not-ignored" }, "an unignored hidden .venv is reported")
+        try expect(try insights(["A.xcodeproj/xcuserdata/me.xcuserdatad/a.plist": "x", "A.xcodeproj/project.pbxproj": "x"], repository: true).contains { $0.id == "risk-xcode-user-data" }, "xcuserdata is flagged")
+        try expect(try insights(["A.xcodeproj/xcuserdata/me.xcuserdatad/a.plist": "x", "A.xcodeproj/project.pbxproj": "x", ".gitignore": "xcuserdata/\n"], repository: true).allSatisfy { $0.id != "risk-xcode-user-data" }, "ignored xcuserdata is fine")
+
+        // Archives: names only, read from the central directory, hidden entries included.
+        func zipAnalysis(_ files: [String: String], wrapper: String? = nil) throws -> FolderAnalysis {
+            let source = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            for (file, text) in files {
+                let target = source.appendingPathComponent((wrapper.map { $0 + "/" } ?? "") + file)
+                try makeDirectory(target.deletingLastPathComponent())
+                try text.write(to: target, atomically: true, encoding: .utf8)
+            }
+            let archive = root.appendingPathComponent(UUID().uuidString + ".zip")
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+            process.arguments = ["-q", "-r", archive.path, "."]
+            process.currentDirectoryURL = source
+            try process.run(); process.waitUntilExit()
+            return try ZIPContentProvider(archiveURL: archive).semanticAnalysis()
+        }
+        let archive = try zipAnalysis(["app/.env": "API_TOKEN=hunter2", "app/id_rsa": privateKey, "app/server.pem": "-----BEGIN CERTIFICATE-----\nx\n", "app/README.md": "x"])
+        let archiveIDs = ids(archive)
+        try expect(archiveIDs.contains("risk-env-file") && archiveIDs.contains("risk-private-key"), "archives report unmistakable names, hidden ones included")
+        let archiveEnv = InsightEngine().generate(for: archive, relationships: [], importantFiles: []).first { $0.id == "risk-env-file" }
+        try expect(archiveEnv?.localizedDetail(for: en) == "app/.env is included in this archive.", "archive wording differs from repository wording")
+        try expect(archive.riskFindings.first { $0.ruleID == "private-key" }?.paths == ["app/id_rsa"], "a bare .pem in an archive cannot be confirmed")
+        try expect(try ids(zipAnalysis(["README.md": "x", "notes.txt": "y"])).allSatisfy { !$0.hasPrefix("risk-") }, "a clean archive reports no risks")
+        // A wrapping folder is looked through, so an archive is judged like its source folder.
+        try expect(try ids(zipAnalysis(["Dockerfile": "FROM x", "app.py": "x"], wrapper: "proj")).contains("stack-docker-no-dockerignore"), "stack rules look through a wrapping folder")
+        try expect(try ids(zipAnalysis(["Dockerfile": "FROM x", ".dockerignore": "a"], wrapper: "proj")).allSatisfy { $0 != "stack-docker-no-dockerignore" }, "a hidden .dockerignore inside an archive counts")
+        let context = ProjectRootContext.archive(entryPaths: ["proj/", "proj/a.txt", "proj/src/b.rs", "__MACOSX/proj/._a.txt"])
+        try expect(context?.names == ["a.txt", "src"] && context?.paths.contains("src/b.rs") == true, "wrapper stripping")
+        let unwrapped = ProjectRootContext.archive(entryPaths: ["a.txt", "other/b.txt"])
+        try expect(unwrapped?.names == ["a.txt", "other"], "no wrapper when entries sit at the root")
+
+        // The scanner stays inside its caps.
+        let many = Dictionary(uniqueKeysWithValues: (0..<30).map { ("keys/k\($0).pem", privateKey) })
+        let capped = try make(many)
+        try expect(capped.riskFindings.first?.paths.count ?? 0 <= RiskScanner.maximumContentReads, "content reads are capped")
+
+        // .gitignore matching in isolation.
+        func ignored(_ rules: String, _ path: String, dir: Bool = false, base: String = "") -> Bool {
+            GitIgnoreMatcher(sources: [(base, rules)]).isIgnored(path, isDirectory: dir)
+        }
+        try expect(ignored("*.log", "a/b/x.log"), "a bare glob matches at any depth")
+        try expect(!ignored("/build", "src/build", dir: true) && ignored("/build", "build", dir: true), "a leading slash anchors to the folder")
+        try expect(ignored("build/", "build", dir: true) && !ignored("build/", "build"), "a trailing slash matches directories only")
+        try expect(ignored("build/", "build/out/a.o"), "files under an ignored folder are ignored")
+        try expect(ignored("docs/**/gen", "docs/a/b/gen") && ignored("docs/**/gen", "docs/gen"), "** spans folders")
+        try expect(ignored("logs/**", "logs/a/b.txt"), "trailing ** covers the contents")
+        try expect(!ignored("a/b", "x/a/b"), "a rule with a slash is anchored")
+        try expect(ignored("*.env\n!keep.env", "x.env") && !ignored("*.env\n!keep.env", "keep.env"), "negation re-includes a file")
+        try expect(ignored("tmp", "pkg/tmp", dir: true, base: "") && !ignored("tmp", "pkg/tmp", dir: true, base: "other"), "a nested .gitignore only covers its own folder")
+        try expect(ignored("secret.txt", "pkg/secret.txt", base: "pkg") && !ignored("secret.txt", "other/secret.txt", base: "pkg"), "base directory scopes rules")
+        try expect(!ignored("# comment\n\n   \n", "comment"), "comments and blanks are ignored")
+        try expect(ignored("file?.txt", "file1.txt") && !ignored("file?.txt", "file12.txt"), "? matches one character")
+        try expect(ignored("[ab].txt", "a.txt") && !ignored("[ab].txt", "c.txt"), "character classes work")
+
+        // Stack rules: lockfiles, conflicts, wrappers.
+        func stack(_ files: [String: String], repository: Bool = false) throws -> Set<String> {
+            Set(try insights(files, repository: repository).map(\.id).filter { $0.hasPrefix("stack-") })
+        }
+        try expect(try stack(["package-lock.json": "{}", "yarn.lock": "", "package.json": "{}"]).contains("stack-node-multiple-lockfiles"), "two Node lockfiles conflict")
+        try expect(try stack(["package-lock.json": "{}", "package.json": "{}"]).isEmpty, "one lockfile is fine")
+        try expect(try stack(["Gemfile": "source 'x'", "app.rb": "x"]).contains("stack-ruby-no-lockfile"), "Gemfile without a lockfile")
+        try expect(try stack(["Gemfile": "source 'x'", "Gemfile.lock": "x"]).isEmpty, "Gemfile with a lockfile")
+        try expect(try stack(["composer.json": "{}"]).contains("stack-php-no-lockfile"), "composer.json without a lockfile")
+        try expect(try stack(["Podfile": "x"]).contains("stack-cocoapods-no-lockfile"), "Podfile without a lockfile")
+        try expect(try stack(["mix.exs": "x"]).contains("stack-elixir-no-lockfile"), "mix.exs without a lockfile")
+        try expect(try stack(["Pipfile": "x"]).contains("stack-pipenv-no-lockfile"), "Pipfile without a lockfile")
+        try expect(try stack(["Cargo.toml": "[package]\nname=\"a\"\n", "src/main.rs": "fn main(){}"]).contains("stack-rust-binary-no-lockfile"), "a Rust binary without Cargo.lock")
+        try expect(try stack(["Cargo.toml": "[package]\nname=\"a\"\n", "src/lib.rs": "pub fn a(){}"]).isEmpty, "a Rust library may omit Cargo.lock")
+        try expect(try stack(["pubspec.yaml": "name: a", "lib/main.dart": "void main(){}"]).contains("stack-flutter-app-no-lockfile"), "a Flutter app without pubspec.lock")
+        try expect(try stack(["build.gradle": "x"]).contains("stack-gradle-no-wrapper"), "Gradle without a wrapper")
+        try expect(try stack(["build.gradle.kts": "x", "gradlew": "x"]).isEmpty, "Gradle with a wrapper")
+        try expect(try stack(["Dockerfile": "FROM x"]).contains("stack-docker-no-dockerignore"), "Dockerfile without .dockerignore")
+        try expect(try stack(["Dockerfile": "FROM x", ".dockerignore": "node_modules"]).isEmpty, "Dockerfile with .dockerignore")
+        let pythonFiles = Dictionary(uniqueKeysWithValues: (0..<6).map { ("src/m\($0).py", "import os\n") })
+        try expect(try stack(pythonFiles, repository: true).contains("stack-python-no-dependency-manifest"), "Python code in a repository without any dependency list")
+        try expect(try stack(pythonFiles).isEmpty, "a folder of scripts outside a repository is not judged")
+        try expect(try stack(pythonFiles.merging(["requirements.txt": "flask\n"]) { $1 }, repository: true).allSatisfy { $0 != "stack-python-no-dependency-manifest" }, "requirements.txt satisfies the rule")
+        try expect(try stack(pythonFiles.merging(["requirements-dev.txt": "pytest\n"]) { $1 }, repository: true).allSatisfy { $0 != "stack-python-no-dependency-manifest" }, "a wildcard dependency file satisfies the rule")
+        try expect(try stack(["notes.txt": "x"]).isEmpty, "a plain folder triggers no stack rules")
+        let stackInsight = try insights(["package-lock.json": "{}", "yarn.lock": "", "package.json": "{}"]).first { $0.id == "stack-node-multiple-lockfiles" }
+        try expect(stackInsight?.localizedDetail(for: zh)?.contains("package-lock.json") == true, "stack detail lists the files")
+
+        // Without a complete root listing nothing may claim a file is absent.
+        let unknownRoot = FolderAnalysis(
+            analyzedFileCount: 0, analyzedDirectoryCount: 0, analyzedEntryCount: 0, totalKnownFileSize: 0,
+            categoryStatistics: [], extensionStatistics: [], analyzedFiles: [], analyzedEntries: [],
+            scanState: .complete, rootContext: nil)
+        try expect(InsightEngine().generate(for: unknownRoot, relationships: [], importantFiles: []).isEmpty, "an unknown root listing yields no stack insights")
+
+        // Declarative: a custom rule set drives everything.
+        let custom = ProjectInsightKnowledge(data: Data(#"{"risks":[],"stack":[{"id":"t","allPresent":["a.txt"],"nonePresent":["b.txt"],"severity":"warning","priority":1,"title":{"en":"T"}}]}"#.utf8))
+        let evaluated = StackEvaluator(rules: custom.stack).evaluate(rootNames: ["a.txt"], nestedPaths: [], facts: [])
+        try expect(evaluated.count == 1 && StackEvaluator(rules: custom.stack).evaluate(rootNames: ["a.txt", "b.txt"], nestedPaths: [], facts: []).isEmpty, "custom stack rules are data-driven")
+        try expect(ProjectInsightKnowledge(data: Data("nope".utf8)).risks.isEmpty, "malformed knowledge yields no rules")
     }
 
     /// Language selection, fallback and the English-keyed catalog.

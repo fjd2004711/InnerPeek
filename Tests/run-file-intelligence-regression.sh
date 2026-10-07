@@ -32,6 +32,7 @@ swiftc \
   "$project_root/Shared/FileIntelligence/RelationshipEngine.swift" \
   "$project_root/Shared/FileIntelligence/DeclarativeRelationshipDetector.swift" \
   "$project_root/Shared/FileIntelligence/InsightEngine.swift" \
+  "$project_root/Shared/FileIntelligence/ProjectInsights.swift" \
   "$project_root/Shared/FileIntelligence/SemanticVerdictEngine.swift" \
   "$project_root/Shared/PreviewItem.swift" \
   "$project_root/Shared/PreviewContentProvider.swift" \

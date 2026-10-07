@@ -4,6 +4,7 @@ enum InsightKind: String, Codable, Sendable, Hashable {
     case completeness
     case anomaly
     case storage
+    case risk
 }
 
 enum InsightSeverity: String, Codable, Sendable, Hashable {
@@ -100,6 +101,7 @@ struct InsightEngine: Sendable {
 
     private let rules: [InsightRule]
     private let health = RepositoryHealthEvaluator()
+    private let knowledge = ProjectInsightKnowledge.shared
 
     init(data: Data) {
         rules = (try? JSONDecoder().decode([InsightRule].self, from: data)) ?? []
@@ -127,6 +129,8 @@ struct InsightEngine: Sendable {
         findings += storageInsights(analysis: analysis, existing: findings)
         findings += repositoryInsights(analysis.repositoryContext)
         findings += healthInsights(analysis)
+        findings += riskInsights(analysis)
+        findings += stackInsights(analysis)
 
         var seen = Set<String>()
         return findings
@@ -161,6 +165,41 @@ struct InsightEngine: Sendable {
             ))
         }
         return findings
+    }
+
+    /// Sensitive files. Detail names paths only, never contents.
+    private func riskInsights(_ analysis: FolderAnalysis) -> [Insight] {
+        analysis.riskFindings.compactMap { finding in
+            guard let rule = knowledge.risks.first(where: { $0.id == finding.ruleID }) else { return nil }
+            let shown = finding.paths.prefix(3).joined(separator: ", ")
+            let extra = finding.paths.count - 3
+            let list = extra > 0 ? "\(shown) +\(extra)" : shown
+            return Insight(
+                id: "risk-" + rule.id, kind: .risk, severity: rule.severity,
+                title: rule.title,
+                detail: finding.archive ? (rule.archiveDetail ?? rule.detail) : rule.detail,
+                detailArguments: [list],
+                evidence: finding.paths.map { InsightEvidence(source: "filePath", value: $0) },
+                confidence: 0.95, priority: rule.priority
+            )
+        }
+    }
+
+    /// Missing or conflicting project files, judged from root-level names only.
+    private func stackInsights(_ analysis: FolderAnalysis) -> [Insight] {
+        guard let context = analysis.rootContext else { return [] }
+        return StackEvaluator(rules: knowledge.stack)
+            .evaluate(rootNames: context.names, nestedPaths: context.paths, facts: analysis.projectRecognition.facts,
+                      isRepository: analysis.repositoryContext?.isRepository == true)
+            .map { match in
+                Insight(
+                    id: "stack-" + match.rule.id, kind: .completeness, severity: match.rule.severity,
+                    title: match.rule.title, detail: match.rule.detail,
+                    detailArguments: [match.evidence.prefix(4).joined(separator: ", ")],
+                    evidence: match.evidence.map { InsightEvidence(source: "projectFile", value: $0) },
+                    confidence: 0.9, priority: match.rule.priority
+                )
+            }
     }
 
     /// One finding about missing basics, or one positive when the basics are all there.

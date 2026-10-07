@@ -11,14 +11,15 @@ git_recognition="$knowledge_dir/git-recognition.json"
 project_recognition="$knowledge_dir/project-recognition.json"
 icon_registry="$knowledge_dir/icon-registry.json"
 repository_health="$knowledge_dir/repository-health.json"
+project_insights="$knowledge_dir/project-insights.json"
 icon_dir="$knowledge_dir/Icons"
 
 fail() { print -u2 "Knowledge validation failed: $1"; exit 1; }
-for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition" "$icon_registry" "$repository_health"; do
+for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition" "$icon_registry" "$repository_health" "$project_insights"; do
   [[ -f "$file" ]] || fail "missing $file"
   jq empty "$file" >/dev/null 2>&1 || fail "invalid JSON: $file"
 done
-for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json" "$repo_root/Schemas/repository-health.schema.json" "$repo_root/Schemas/messages.schema.json"; do
+for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json" "$repo_root/Schemas/repository-health.schema.json" "$repo_root/Schemas/project-insights.schema.json" "$repo_root/Schemas/messages.schema.json"; do
   [[ -f "$schema" ]] || fail "missing $schema"
   jq -e '.["$schema"] | type == "string"' "$schema" >/dev/null 2>&1 || fail "invalid schema: $schema"
 done
@@ -158,9 +159,9 @@ jq -e '(.version == 1) and (.messages | type == "object") and all(.messages | to
   || fail "messages.json is malformed (keys are English source texts; values map language tags to non-empty strings)"
 bad_message_placeholders=$(jq -r 'def n: [match("%(%|@|[0-9]*\\$?@)";"g")] | map(.string) | map(select(. != "%%")) | sort | join(","); .messages | to_entries[] | .key as $src | .value | to_entries[] | select((.value | n) != ($src | n)) | "\($src) [\(.key)]"' "$messages")
 [[ -z "$bad_message_placeholders" ]] || fail "translation changes placeholders: $bad_message_placeholders"
-bad_inline_placeholders=$(jq -r 'def n: [match("%(%|@)";"g")] | map(.string) | map(select(. != "%%")) | length; [.. | objects | select(has("en") and (.en | type == "string"))] | .[] | .en as $en | to_entries[] | select(.key != "en" and (.value | type == "string") and ((.value | n) != ($en | n))) | "\($en) [\(.key)]"' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health")
+bad_inline_placeholders=$(jq -r 'def n: [match("%(%|@)";"g")] | map(.string) | map(select(. != "%%")) | length; [.. | objects | select(has("en") and (.en | type == "string"))] | .[] | .en as $en | to_entries[] | select(.key != "en" and (.value | type == "string") and ((.value | n) != ($en | n))) | "\($en) [\(.key)]"' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health" "$project_insights")
 [[ -z "$bad_inline_placeholders" ]] || fail "knowledge translation changes placeholders: $bad_inline_placeholders"
-bad_language_tags=$(jq -r '[.. | objects | select(has("en") and (.en | type == "string")) | keys[]] | unique[] | select(test("^[a-z]{2,3}(-[A-Za-z0-9]+)*$") | not)' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health")
+bad_language_tags=$(jq -r '[.. | objects | select(has("en") and (.en | type == "string")) | keys[]] | unique[] | select(test("^[a-z]{2,3}(-[A-Za-z0-9]+)*$") | not)' "$file_types" "$roles" "$insights" "$project_recognition" "$repository_health" "$project_insights")
 [[ -z "$bad_language_tags" ]] || fail "invalid language tag in knowledge text: $bad_language_tags"
 # Every English sentence the code looks up must be registered, or its translations silently stop applying.
 code_messages=$(mktemp); registered_messages=$(mktemp)
@@ -206,5 +207,31 @@ bad_insight_severity=$(jq -r '.[] | .completeSeverity, .missingRequiredSeverity,
 allowed_categories='document|spreadsheet|image|rawImage|audio|video|archive|sourceCode|configuration|database|scientificData|aiModel|threeD|font|executable|project|unknown'
 bad_categories=$(jq -r --arg pattern "^($allowed_categories)$" '.[] | select((.category | test($pattern)) | not) | .id' "$file_types")
 [[ -z "$bad_categories" ]] || fail "illegal category in: $bad_categories"
+
+# Project insights: risk rules (sensitive files) and stack rules (missing or conflicting project files).
+duplicate_project_insights=$(jq -r '[.risks[].id, .stack[].id] | .[]' "$project_insights" | sort | uniq -d)
+[[ -z "$duplicate_project_insights" ]] || fail "duplicate project insight ids: $duplicate_project_insights"
+bad_project_insight_ids=$(jq -r '[.risks[].id, .stack[].id] | .[] | select(test("^[a-z0-9][a-z0-9-]*$") | not)' "$project_insights")
+[[ -z "$bad_project_insight_ids" ]] || fail "invalid project insight id: $bad_project_insight_ids"
+bad_risk_shape=$(jq -r '.risks[] | select(((.entryKind == "file" or .entryKind == "directory") and (.scope == "any" or .scope == "repository") and ((.severity | IN("info","positive","notice","warning"))) and (((.names // []) + (.paths // [])) | length) > 0 and (.detail.en | type == "string" and contains("%@")) and (.title.en | type == "string")) | not) | .id' "$project_insights")
+[[ -z "$bad_risk_shape" ]] || fail "malformed risk rule (kind, scope, severity, a name or path, and a detail with %@): $bad_risk_shape"
+bad_risk_archive=$(jq -r '.risks[] | select(.archiveDetail != null and ((.archiveDetail.en | contains("%@")) | not)) | .id' "$project_insights")
+[[ -z "$bad_risk_archive" ]] || fail "risk archiveDetail needs %@: $bad_risk_archive"
+bad_content_pattern=$(jq -r '.risks[] | select(.contentPattern != null) | . as $rule | select((try ("" | test($rule.contentPattern)) catch "bad") == "bad") | .id' "$project_insights")
+[[ -z "$bad_content_pattern" ]] || fail "risk contentPattern is not a valid regular expression: $bad_content_pattern"
+bad_unread_paths=$(jq -r '.risks[] | select(.paths != null) | select(.paths | any(contains("..") or startswith("/"))) | .id' "$project_insights")
+[[ -z "$bad_unread_paths" ]] || fail "risk paths must be relative and stay inside the folder: $bad_unread_paths"
+unanchored_stack=$(jq -r '.stack[] | select((.requiresFact == null) and ((.allPresent // []) + (.anyPresent // []) | length) == 0 and (.multiplePresent == null)) | .id' "$project_insights")
+[[ -z "$unanchored_stack" ]] || fail "stack rule needs a positive condition (fact, allPresent, anyPresent or multiplePresent): $unanchored_stack"
+absence_with_slash=$(jq -r '.stack[] | select((.nonePresent // []) | any(contains("/"))) | .id' "$project_insights")
+[[ -z "$absence_with_slash" ]] || fail "nonePresent only checks the complete root listing; no slash patterns: $absence_with_slash"
+bad_stack_severity=$(jq -r '.stack[] | select((.severity | IN("info","positive","notice","warning")) | not) | .id' "$project_insights")
+[[ -z "$bad_stack_severity" ]] || fail "invalid stack severity: $bad_stack_severity"
+fact_ids=$(mktemp); required_facts=$(mktemp)
+jq -r '.facts[].id' "$project_recognition" | sort -u > "$fact_ids"
+jq -r '.stack[] | .requiresFact.id? // empty' "$project_insights" | sort -u > "$required_facts"
+unknown_required_facts=$(comm -23 "$required_facts" "$fact_ids")
+rm -f "$fact_ids" "$required_facts"
+[[ -z "$unknown_required_facts" ]] || fail "stack rule requires an unknown fact: $unknown_required_facts"
 
 print "Knowledge validation passed."

@@ -37,7 +37,7 @@ report "Messages (Knowledge/messages.json)" $msg_total $msg_done
 [[ "$show_missing" == "--missing" ]] && jq -r --arg l "$lang" '.messages | to_entries[] | select(.value | has($l) | not) | "    missing message: \(.key)"' "$knowledge/messages.json"
 
 # Texts embedded in knowledge files: any object that has an "en" string
-for file in file-types roles insights project-recognition repository-health; do
+for file in file-types roles insights project-recognition repository-health project-insights; do
   total=$(jq '[.. | objects | select(has("en") and (.en | type == "string"))] | length' "$knowledge/$file.json")
   done_=$(jq --arg l "$lang" '[.. | objects | select(has("en") and (.en | type == "string") and has($l))] | length' "$knowledge/$file.json")
   report "Knowledge ($file.json)" $total $done_
