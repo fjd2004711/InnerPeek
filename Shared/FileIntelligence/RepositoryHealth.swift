@@ -50,7 +50,6 @@ struct RepositoryHealth: Sendable, Hashable {
 }
 
 struct RepositoryHealthEvaluator: Sendable {
-    private static let maximumNamedItems = 6
     private let knowledge: HealthKnowledge?
 
     init(data: Data? = nil) {
@@ -88,17 +87,6 @@ struct RepositoryHealthEvaluator: Sendable {
             items: items,
             complete: knowledge.messages.complete.title, completeDetail: knowledge.messages.complete.detail,
             gaps: knowledge.messages.gaps.title, gapsDetail: knowledge.messages.gaps.detail
-        )
-    }
-
-    /// Fills `%@` in both languages with that language's own item names.
-    static func format(_ template: InsightLocalizedText, names: [InsightLocalizedText]) -> InsightLocalizedText {
-        let shown = Array(names.prefix(maximumNamedItems))
-        let english = shown.map(\.english).joined(separator: ", ")
-        let chinese = shown.map(\.simplifiedChinese).joined(separator: "、")
-        return InsightLocalizedText(
-            english: template.english.replacingOccurrences(of: "%@", with: english),
-            simplifiedChinese: template.simplifiedChinese.replacingOccurrences(of: "%@", with: chinese)
         )
     }
 }

@@ -105,13 +105,13 @@ private struct StructuredTextMetadataExtractor: MetadataExtracting {
         } ?? (",", "Comma")
         let columns = header.split(separator: selected.0, omittingEmptySubsequences: false).count
         guard columns > 0 else { return [] }
-        return [MetadataItem(key: .columns, value: "\(columns)", priority: 100), MetadataItem(key: .delimiter, value: selected.1, priority: 90)]
+        return [MetadataItem(key: .columns, value: "\(columns)", priority: 100), MetadataItem(key: .delimiter, value: MessageCatalog.shared.string(selected.1), priority: 90)]
     }
 
     private static func jsonShape(_ data: Data) -> [MetadataItem] {
         guard let first = data.first(where: { !$0.isASCIIWhitespace }) else { return [] }
         let shape = first == 123 ? "Object" : first == 91 ? "Array" : nil
-        return shape.map { [MetadataItem(key: .jsonShape, value: $0, priority: 100)] } ?? []
+        return shape.map { [MetadataItem(key: .jsonShape, value: MessageCatalog.shared.string($0), priority: 100)] } ?? []
     }
 
     private static func notebook(_ data: Data) -> [MetadataItem] {
@@ -412,22 +412,21 @@ private struct DocumentFormatMetadataExtractor: MetadataExtracting {
             if let expiry = notAfter(of: certificate) {
                 let formatter = DateFormatter(); formatter.dateStyle = .medium; formatter.timeStyle = .none
                 let label = formatter.string(from: expiry)
-                items.append(MetadataItem(key: .expires, value: expiry < Date() ? label + (isChinese ? "（已过期）" : " (expired)") : label, priority: 90))
+                items.append(MetadataItem(key: .expires, value: expiry < Date() ? label + catalog(" (expired)") : label, priority: 90))
             }
         }
         return items
     }
 
-    private static var isChinese: Bool { Locale.current.language.languageCode?.identifier == "zh" }
+    private static func catalog(_ english: String) -> String { MessageCatalog.shared.string(english) }
 
     private static func describe(blockType: String) -> String {
-        let zh = isChinese
         switch blockType {
-        case "CERTIFICATE", "TRUSTED CERTIFICATE": return zh ? "证书" : "Certificate"
-        case "CERTIFICATE REQUEST", "NEW CERTIFICATE REQUEST": return zh ? "证书请求" : "Certificate request"
-        case "PUBLIC KEY", "RSA PUBLIC KEY": return zh ? "公钥" : "Public key"
+        case "CERTIFICATE", "TRUSTED CERTIFICATE": return catalog("Certificate")
+        case "CERTIFICATE REQUEST", "NEW CERTIFICATE REQUEST": return catalog("Certificate request")
+        case "PUBLIC KEY", "RSA PUBLIC KEY": return catalog("Public key")
         case "PRIVATE KEY", "RSA PRIVATE KEY", "EC PRIVATE KEY", "ENCRYPTED PRIVATE KEY", "DSA PRIVATE KEY", "OPENSSH PRIVATE KEY":
-            return zh ? "私钥（不显示）" : "Private key (not shown)"
+            return catalog("Private key (not shown)")
         default: return blockType.capitalized
         }
     }

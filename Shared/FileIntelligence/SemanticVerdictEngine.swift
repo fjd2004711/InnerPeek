@@ -157,13 +157,13 @@ struct SemanticVerdictEngine: Sendable {
             return SemanticVerdict(
                 id: SemanticArchetype.photoCollection.rawValue,
                 archetype: .photoCollection,
-                title: text("Photo collection", "照片集合"),
-                summary: text("RAW/JPEG companion files detected", "检测到 RAW/JPEG 配对文件"),
+                title: text("Photo collection"),
+                summary: text("RAW/JPEG companion files detected"),
                 status: .detected,
                 support: .strong,
                 evidence: pair.map {
                     SemanticEvidence(relativePath: $0.relativePath, kind: .companionFile, sourceID: "raw-jpeg-pair",
-                                     reason: text("RAW/JPEG companion", "RAW/JPEG 配对"))
+                                     reason: text("RAW/JPEG companion"))
                 }
             )
         }
@@ -293,7 +293,7 @@ struct SemanticVerdictEngine: Sendable {
             }), entriesByPath.contains(entry.relativePath) else { continue }
             all.append(SemanticEvidence(relativePath: entry.relativePath, kind: .importantFile,
                                         sourceID: important.reason.rawValue,
-                                        reason: text("Important file", "重要文件")))
+                                        reason: text("Important file")))
         }
         let repositoryPaths = Set(repositoryContext?.evidence.map(\.relativePath) ?? [])
         var paths = Set<String>()
@@ -308,13 +308,13 @@ struct SemanticVerdictEngine: Sendable {
     private func evidence(for member: RelationshipMember, sourceID: String, analysis: FolderAnalysis) -> SemanticEvidence? {
         guard analysis.analyzedEntries.contains(where: { $0.relativePath == member.relativePath }) else { return nil }
         return SemanticEvidence(relativePath: member.relativePath, kind: .relationshipMember, sourceID: sourceID,
-                                reason: text("Detected structure", "检测到的结构"))
+                                reason: text("Detected structure"))
     }
 
     private func evidence(for insight: Insight, analysis: FolderAnalysis) -> [SemanticEvidence] {
         evidencePaths(for: insight, in: analysis).map {
             SemanticEvidence(relativePath: $0, kind: .insight, sourceID: insight.id,
-                             reason: text("Supports insight", "支持该洞察"))
+                             reason: text("Supports insight"))
         }
     }
 
@@ -352,41 +352,41 @@ struct SemanticVerdictEngine: Sendable {
 
     private func archetypeTitle(_ archetype: SemanticArchetype) -> InsightLocalizedText {
         switch archetype {
-        case .transformerModelPackage: return text("Transformer model package", "Transformer 模型包")
-        case .shapefileDataset: return text("Shapefile dataset", "Shapefile 数据集")
-        case .nodeProject: return text("Node.js project", "Node.js 项目")
-        case .pythonProject: return text("Python project", "Python 项目")
-        case .latexResearchProject: return text("LaTeX research project", "LaTeX 研究项目")
-        case .rustPackage: return text("Rust package", "Rust 软件包")
-        case .goModule: return text("Go module", "Go 模块")
-        case .xcodeProject: return text("Xcode project", "Xcode 项目")
-        case .photoCollection: return text("Photo collection", "照片集合")
-        case .gitRepository: return text("Git Repository", "Git 仓库")
-        case .githubRepository: return text("GitHub Repository", "GitHub 仓库")
-        case .gitlabRepository: return text("GitLab Repository", "GitLab 仓库")
-        case .bitbucketRepository: return text("Bitbucket Repository", "Bitbucket 仓库")
-        case .gitMetadata: return text("Git metadata detected", "检测到 Git 元数据")
-        case .githubMetadataProject: return text("GitHub project metadata detected", "检测到 GitHub 项目元数据")
+        case .transformerModelPackage: return text("Transformer model package")
+        case .shapefileDataset: return text("Shapefile dataset")
+        case .nodeProject: return text("Node.js project")
+        case .pythonProject: return text("Python project")
+        case .latexResearchProject: return text("LaTeX research project")
+        case .rustPackage: return text("Rust package")
+        case .goModule: return text("Go module")
+        case .xcodeProject: return text("Xcode project")
+        case .photoCollection: return text("Photo collection")
+        case .gitRepository: return text("Git Repository")
+        case .githubRepository: return text("GitHub Repository")
+        case .gitlabRepository: return text("GitLab Repository")
+        case .bitbucketRepository: return text("Bitbucket Repository")
+        case .gitMetadata: return text("Git metadata detected")
+        case .githubMetadataProject: return text("GitHub project metadata detected")
         }
     }
 
     private func archetypeSummary(_ archetype: SemanticArchetype, status: SemanticVerdictStatus, hasDocker: Bool) -> InsightLocalizedText {
         if status == .warning, archetype == .transformerModelPackage {
-            return text("Possible abnormal model weights", "模型权重可能异常")
+            return text("Possible abnormal model weights")
         }
         if status == .complete {
-            return text("Structure complete", "结构完整")
+            return text("Structure complete")
         }
         if archetype == .nodeProject, hasDocker {
-            return text("Docker configuration detected", "检测到 Docker 配置")
+            return text("Docker configuration detected")
         }
         if archetype == .latexResearchProject {
-            return text("Bibliography and figures detected", "检测到参考文献与图表")
+            return text("Bibliography and figures detected")
         }
-        return text("Related structure detected", "检测到关联结构")
+        return text("Related structure detected")
     }
 
-    private func text(_ english: String, _ chinese: String) -> InsightLocalizedText {
-        InsightLocalizedText(english: english, simplifiedChinese: chinese)
+    private func text(_ english: String) -> InsightLocalizedText {
+        MessageCatalog.shared.text(english)
     }
 }

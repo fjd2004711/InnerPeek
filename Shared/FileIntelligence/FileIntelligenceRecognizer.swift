@@ -56,7 +56,7 @@ struct FileIntelligenceRecognizer: Sendable {
             fileExtension: fileExtension,
             category: .unknown,
             roles: [],
-            typeName: localized("Unknown File", "未知文件"),
+            typeName: MessageCatalog.shared.string("Unknown File", locale: locale),
             purpose: nil,
             systemTypeIdentifier: "public.data",
             confidence: 0.2
@@ -77,10 +77,5 @@ struct FileIntelligenceRecognizer: Sendable {
         if type.conforms(to: .text) { return .document }
         if type.conforms(to: .pdf) { return .document }
         return .unknown
-    }
-
-    private func localized(_ english: String, _ simplifiedChinese: String) -> String {
-        let languageCode = locale.language.languageCode?.identifier ?? "en"
-        return languageCode == "zh" ? simplifiedChinese : english
     }
 }

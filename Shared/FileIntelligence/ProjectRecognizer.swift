@@ -1,15 +1,6 @@
 import Foundation
 
 private struct RecognitionKnowledge: Decodable, Sendable {
-    struct Name: Decodable, Sendable {
-        let english: String
-        let simplifiedChinese: String
-        enum CodingKeys: String, CodingKey {
-            case english = "en"
-            case simplifiedChinese = "zh-Hans"
-        }
-    }
-
     struct Evidence: Decodable, Sendable {
         let type: RecognitionEvidenceType
         let path: String?
@@ -29,7 +20,7 @@ private struct RecognitionKnowledge: Decodable, Sendable {
     struct Fact: Decodable, Sendable {
         let id: String
         let kind: ProjectFactKind
-        let name: Name
+        let name: InsightLocalizedText
         let visual: Visual?
         let group: String?
         let supersedes: [String]
@@ -42,7 +33,7 @@ private struct RecognitionKnowledge: Decodable, Sendable {
             let values = try decoder.container(keyedBy: CodingKeys.self)
             id = try values.decode(String.self, forKey: .id)
             kind = try values.decode(ProjectFactKind.self, forKey: .kind)
-            name = try values.decode(Name.self, forKey: .name)
+            name = try values.decode(InsightLocalizedText.self, forKey: .name)
             visual = try values.decodeIfPresent(Visual.self, forKey: .visual)
             group = try values.decodeIfPresent(String.self, forKey: .group)
             supersedes = try values.decodeIfPresent([String].self, forKey: .supersedes) ?? []
@@ -158,7 +149,7 @@ struct ProjectRecognizer: Sendable {
             if capped.contains(fact.id), confidence == .high { confidence = .medium }
             return DetectedFact(
                 id: fact.id, kind: fact.kind,
-                name: InsightLocalizedText(english: fact.name.english, simplifiedChinese: fact.name.simplifiedChinese),
+                name: fact.name,
                 score: candidate.score, confidence: confidence,
                 role: demoted.contains(fact.id) ? .supporting : .primary,
                 evidence: candidate.evidence, impliedBy: candidate.impliedBy,

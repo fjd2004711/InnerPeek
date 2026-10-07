@@ -46,55 +46,54 @@ struct GitRepositoryContext: Sendable, Hashable {
     var isRepository: Bool { state == .repository }
     var title: InsightLocalizedText {
         switch state {
-        case .metadataDetected: return text("Git metadata detected", "检测到 Git 元数据")
-        case .githubMetadataOnly: return text("GitHub project metadata detected", "检测到 GitHub 项目元数据")
+        case .metadataDetected: return text("Git metadata detected")
+        case .githubMetadataOnly: return text("GitHub project metadata detected")
         case .repository:
             switch remote?.provider {
-            case .github: return text("GitHub Repository", "GitHub 仓库")
-            case .gitlab: return text("GitLab Repository", "GitLab 仓库")
-            case .bitbucket: return text("Bitbucket Repository", "Bitbucket 仓库")
-            default: return text("Git Repository", "Git 仓库")
+            case .github: return text("GitHub Repository")
+            case .gitlab: return text("GitLab Repository")
+            case .bitbucket: return text("Bitbucket Repository")
+            default: return text("Git Repository")
             }
         }
     }
 
     var summary: InsightLocalizedText {
-        var english: [String] = []
-        var chinese: [String] = []
+        var parts: [InsightLocalizedText] = []
         if let identity = remote?.identity {
-            english.append(identity); chinese.append(identity)
+            parts.append(InsightLocalizedText(english: identity))
         } else if let host = remote?.host {
-            english.append(host); chinese.append(host)
+            parts.append(InsightLocalizedText(english: host))
         }
         if case let .branch(branch)? = head {
-            english.append("\(branch) branch"); chinese.append("\(branch) 分支")
+            parts.append(text("%@ branch").formatted([branch]))
         } else if case .detached? = head {
-            english.append("HEAD detached"); chinese.append("HEAD 已分离")
+            parts.append(text("HEAD detached"))
         }
-        if english.isEmpty {
+        if parts.isEmpty {
             return state == .metadataDetected
-                ? text("Local Git metadata could not be validated", "本地 Git 元数据无法验证")
-                : text("Local project structure", "本地项目结构")
+                ? text("Local Git metadata could not be validated")
+                : text("Local project structure")
         }
-        return text(english.joined(separator: " · "), chinese.joined(separator: " · "))
+        return InsightLocalizedText.joined(parts)
     }
 
     var evidence: [GitMetadataItem] {
         var result: [GitMetadataItem] = []
         if isRepository {
-            result.append(GitMetadataItem(relativePath: ".git/HEAD", reason: text("Git HEAD reference", "Git HEAD 引用")))
+            result.append(GitMetadataItem(relativePath: ".git/HEAD", reason: text("Git HEAD reference")))
             if remote != nil {
-                result.append(GitMetadataItem(relativePath: ".git/config", reason: text("Git remote configuration", "Git 远程配置")))
+                result.append(GitMetadataItem(relativePath: ".git/config", reason: text("Git remote configuration")))
             }
         } else if state == .metadataDetected {
-            result.append(GitMetadataItem(relativePath: ".git", reason: text("Git metadata could not be validated", "Git 元数据无法验证")))
+            result.append(GitMetadataItem(relativePath: ".git", reason: text("Git metadata could not be validated")))
         }
         result.append(contentsOf: metadata)
         return result
     }
 
-    private func text(_ english: String, _ chinese: String) -> InsightLocalizedText {
-        InsightLocalizedText(english: english, simplifiedChinese: chinese)
+    private func text(_ english: String) -> InsightLocalizedText {
+        MessageCatalog.shared.text(english)
     }
 }
 
@@ -266,36 +265,35 @@ struct GitRepositoryInspector: Sendable {
     }
 
     private func projectMetadata(in folder: URL) -> [GitMetadataItem] {
-        let descriptions: [String: (String, String)] = [
-            ".github": ("GitHub project metadata", "GitHub 项目元数据"),
-            ".github/workflows": ("GitHub Actions workflows", "GitHub Actions 工作流"),
-            ".github/ISSUE_TEMPLATE": ("GitHub issue templates", "GitHub 问题模板"),
-            ".github/PULL_REQUEST_TEMPLATE": ("GitHub pull request template", "GitHub 拉取请求模板"),
-            ".github/PULL_REQUEST_TEMPLATE.md": ("GitHub pull request template", "GitHub 拉取请求模板"),
-            ".github/dependabot.yml": ("Dependabot configuration", "Dependabot 配置"),
-            ".github/CODEOWNERS": ("Code ownership rules", "代码所有权规则"),
-            "CODEOWNERS": ("Code ownership rules", "代码所有权规则"),
-            "README": ("Project documentation", "项目文档"),
-            "README.md": ("Project documentation", "项目文档"),
-            "README.rst": ("Project documentation", "项目文档"),
-            "LICENSE": ("License file", "许可证文件"),
-            "LICENSE.md": ("License file", "许可证文件"),
-            "COPYING": ("License file", "许可证文件"),
-            "CONTRIBUTING": ("Contribution guide", "贡献指南"),
-            "CONTRIBUTING.md": ("Contribution guide", "贡献指南"),
-            "SECURITY.md": ("Security policy", "安全策略"),
-            "CODE_OF_CONDUCT.md": ("Code of conduct", "行为准则")
+        let descriptions: [String: String] = [
+            ".github": "GitHub project metadata",
+            ".github/workflows": "GitHub Actions workflows",
+            ".github/ISSUE_TEMPLATE": "GitHub issue templates",
+            ".github/PULL_REQUEST_TEMPLATE": "GitHub pull request template",
+            ".github/PULL_REQUEST_TEMPLATE.md": "GitHub pull request template",
+            ".github/dependabot.yml": "Dependabot configuration",
+            ".github/CODEOWNERS": "Code ownership rules",
+            "CODEOWNERS": "Code ownership rules",
+            "README": "Project documentation",
+            "README.md": "Project documentation",
+            "README.rst": "Project documentation",
+            "LICENSE": "License file",
+            "LICENSE.md": "License file",
+            "COPYING": "License file",
+            "CONTRIBUTING": "Contribution guide",
+            "CONTRIBUTING.md": "Contribution guide",
+            "SECURITY.md": "Security policy",
+            "CODE_OF_CONDUCT.md": "Code of conduct"
         ]
         return knowledge.metadataPaths.compactMap { declaration in
             guard let description = descriptions[declaration.path] else { return nil }
             let path = declaration.path
             let directory = declaration.kind == "directory"
-            let (english, chinese) = description
             let url = folder.appendingPathComponent(path)
             let keys: Set<URLResourceKey> = declaration.kind == "any" ? [.isDirectoryKey, .isRegularFileKey] : (directory ? [.isDirectoryKey] : [.isRegularFileKey])
             guard let values = try? url.resourceValues(forKeys: keys),
                   declaration.kind == "any" ? (values.isDirectory == true || values.isRegularFile == true) : (directory ? values.isDirectory == true : values.isRegularFile == true) else { return nil }
-            return GitMetadataItem(relativePath: path, reason: InsightLocalizedText(english: english, simplifiedChinese: chinese))
+            return GitMetadataItem(relativePath: path, reason: MessageCatalog.shared.text(description))
         }
     }
 

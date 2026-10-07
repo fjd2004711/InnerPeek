@@ -54,34 +54,21 @@ struct RecognitionEvidence: Sendable, Hashable {
     /// the rule's key, the path and counts, never from manifest contents.
     var explanation: InsightLocalizedText {
         let key = key ?? ""
+        let catalog = MessageCatalog.shared
         switch type {
-        case .pathExists:
-            return InsightLocalizedText(english: "\(relativePath) is present", simplifiedChinese: "存在 \(relativePath)")
-        case .manifestDependency:
-            return InsightLocalizedText(english: "\(relativePath) depends on \(key)", simplifiedChinese: "\(relativePath) 依赖 \(key)")
-        case .manifestKey:
-            return InsightLocalizedText(english: "\(relativePath) defines \(key)", simplifiedChinese: "\(relativePath) 定义了 \(key)")
-        case .manifestText:
-            return InsightLocalizedText(english: "\(relativePath) mentions \(key)", simplifiedChinese: "\(relativePath) 中提到 \(key)")
+        case .pathExists: return catalog.text("%@ is present").formatted([relativePath])
+        case .manifestDependency: return catalog.text("%@ depends on %@").formatted([relativePath, key])
+        case .manifestKey: return catalog.text("%@ defines %@").formatted([relativePath, key])
+        case .manifestText: return catalog.text("%@ mentions %@").formatted([relativePath, key])
         case .fileMatch:
             let count = matchedFiles ?? 0
-            return InsightLocalizedText(
-                english: "\(count) \(count == 1 ? "file is" : "files are") named like \(key)",
-                simplifiedChinese: "\(count) 个文件命名形如 \(key)"
-            )
+            return catalog.text(count == 1 ? "%@ file is named like %@" : "%@ files are named like %@").formatted(["\(count)", key])
         case .sourceImport:
             let count = matchedFiles ?? 0
-            return InsightLocalizedText(
-                english: "\(count) \(count == 1 ? "file imports" : "files import") \(key)",
-                simplifiedChinese: "\(count) 个文件引入了 \(key)"
-            )
+            return catalog.text(count == 1 ? "%@ file imports %@" : "%@ files import %@").formatted(["\(count)", key])
         case .extensionShare:
             let percent = Int(((share ?? 0) * 100).rounded())
-            let count = matchedFiles ?? 0
-            return InsightLocalizedText(
-                english: "\(percent)% of analysed files are .\(key) (\(count) files)",
-                simplifiedChinese: "已分析文件中 \(percent)% 为 .\(key)（\(count) 个）"
-            )
+            return catalog.text("%@%% of analysed files are .%@ (%@ files)").formatted(["\(percent)", key, "\(matchedFiles ?? 0)"])
         }
     }
 }

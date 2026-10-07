@@ -5,20 +5,7 @@ struct FileTypeDefinition: Codable, Sendable, Hashable {
         let reason: String
         let priority: Int
     }
-    struct LocalizedText: Codable, Sendable, Hashable {
-        let english: String
-        let simplifiedChinese: String
-
-        enum CodingKeys: String, CodingKey {
-            case english = "en"
-            case simplifiedChinese = "zh-Hans"
-        }
-
-        func value(for locale: Locale = .current) -> String {
-            let languageCode = locale.language.languageCode?.identifier ?? "en"
-            return languageCode == "zh" ? simplifiedChinese : english
-        }
-    }
+    typealias LocalizedText = InsightLocalizedText
 
     let id: String
     let extensions: [String]

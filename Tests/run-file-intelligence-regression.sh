@@ -20,6 +20,7 @@ swiftc \
   "$project_root/Shared/FileIntelligence/ProjectRecognizer.swift" \
   "$project_root/Shared/FileIntelligence/IconCatalog.swift" \
   "$project_root/Shared/FileIntelligence/VisualIdentity.swift" \
+  "$project_root/Shared/FileIntelligence/Localization.swift" \
   "$project_root/Shared/FileIntelligence/RepositoryHealth.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \

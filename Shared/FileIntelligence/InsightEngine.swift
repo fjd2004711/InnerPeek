@@ -22,22 +22,6 @@ enum InsightSeverity: String, Codable, Sendable, Hashable {
     }
 }
 
-struct InsightLocalizedText: Codable, Sendable, Hashable {
-    let english: String
-    let simplifiedChinese: String
-
-    enum CodingKeys: String, CodingKey {
-        case english = "en"
-        case simplifiedChinese = "zh-Hans"
-    }
-
-    func value(for locale: Locale = .current, arguments: [String] = []) -> String {
-        let template = locale.language.languageCode?.identifier == "zh" ? simplifiedChinese : english
-        guard !arguments.isEmpty else { return template }
-        return String(format: template, locale: locale, arguments: arguments.map { $0 as CVarArg })
-    }
-}
-
 struct InsightEvidence: Sendable, Hashable {
     let source: String
     let value: String
@@ -162,8 +146,8 @@ struct InsightEngine: Sendable {
         if case .detached? = context.head {
             findings.append(Insight(
                 id: "git-detached-head", kind: .anomaly, severity: .notice,
-                title: text("Detached HEAD detected", "检测到 HEAD 分离状态"),
-                detail: text("No branch name is inferred from the local HEAD.", "不会从本地 HEAD 推断分支名称。"),
+                title: text("Detached HEAD detected"),
+                detail: text("No branch name is inferred from the local HEAD."),
                 detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
                 confidence: 1.0, priority: 760
             ))
@@ -171,7 +155,7 @@ struct InsightEngine: Sendable {
         if context.remote == nil {
             findings.append(Insight(
                 id: "git-no-remote", kind: .completeness, severity: .info,
-                title: text("Git metadata exists but no remote is configured", "存在 Git 元数据，但未配置远程仓库"),
+                title: text("Git metadata exists but no remote is configured"),
                 detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
                 confidence: 1.0, priority: 650
             ))
@@ -187,7 +171,7 @@ struct InsightEngine: Sendable {
             let severity = missing.map(\.missingSeverity).max { $0.rank < $1.rank } ?? .info
             return [Insight(
                 id: "repo-health-gaps", kind: .completeness, severity: severity,
-                title: RepositoryHealthEvaluator.format(result.gaps, names: missing.map(\.name)),
+                title: InsightLocalizedText.fill(result.gaps, names: missing.map(\.name)),
                 detail: result.gapsDetail, detailArguments: [],
                 evidence: missing.map { InsightEvidence(source: "missingPractice", value: $0.id) },
                 confidence: 0.9, priority: 700
@@ -197,7 +181,7 @@ struct InsightEngine: Sendable {
         return [Insight(
             id: "repo-health-complete", kind: .completeness, severity: .positive,
             title: result.complete,
-            detail: RepositoryHealthEvaluator.format(result.completeDetail, names: present.map(\.name)), detailArguments: [],
+            detail: InsightLocalizedText.fill(result.completeDetail, names: present.prefix(6).map(\.name)), detailArguments: [],
             evidence: present.compactMap { item in item.evidencePath.map { InsightEvidence(source: "practice", value: $0) } },
             confidence: 0.9, priority: 640
         )]
@@ -261,8 +245,8 @@ struct InsightEngine: Sendable {
         if !emptyModelWeights.isEmpty {
             findings.append(Insight(
                 id: "empty-model-weights", kind: .anomaly, severity: .warning,
-                title: text("Model weight file is empty", "模型权重文件为空"),
-                detail: text("%@ is empty and may be a placeholder or test file.", "%@ 为空，可能只是占位文件或测试文件。"),
+                title: text("Model weight file is empty"),
+                detail: text("%@ is empty and may be a placeholder or test file."),
                 detailArguments: [emptyModelWeights.map { $0.intelligence.fileName }.joined(separator: ", ")],
                 evidence: emptyModelWeights.map { InsightEvidence(source: "filePath", value: $0.intelligence.fileName) },
                 confidence: 1.0, priority: 980
@@ -273,8 +257,8 @@ struct InsightEngine: Sendable {
             findings.append(Insight(
                 id: "empty-files", kind: .anomaly,
                 severity: emptyModelWeights.isEmpty ? .notice : .info,
-                title: text("Empty files detected", "检测到空文件"),
-                detail: text("%@ files have zero bytes.", "有 %@ 个文件大小为 0 字节。"),
+                title: text("Empty files detected"),
+                detail: text("%@ files have zero bytes."),
                 detailArguments: [String(emptyFiles.count)],
                 evidence: emptyFiles.map { InsightEvidence(source: "filePath", value: $0.intelligence.fileName) },
                 confidence: 1.0, priority: emptyModelWeights.isEmpty ? 850 : 400
@@ -285,8 +269,8 @@ struct InsightEngine: Sendable {
         if !smallModels.isEmpty {
             findings.append(Insight(
                 id: "small-model-weights", kind: .anomaly, severity: .warning,
-                title: text("Model weight file is unusually small", "模型权重文件异常小"),
-                detail: text("%@ may be a placeholder or test file.", "%@ 可能只是占位文件或测试文件。"),
+                title: text("Model weight file is unusually small"),
+                detail: text("%@ may be a placeholder or test file."),
                 detailArguments: [smallModels.map { "\($0.intelligence.fileName) (\(formatBytes($0.size)))" }.joined(separator: ", ")],
                 evidence: smallModels.map { InsightEvidence(source: "fileSize", value: "\($0.intelligence.fileName)=\($0.size)") },
                 confidence: 0.92, priority: 960
@@ -308,8 +292,8 @@ struct InsightEngine: Sendable {
             guard !existing.contains(where: { $0.evidence.contains { $0.value.contains(duplicateKey) } && $0.kind == .anomaly }) else { return [] }
             return [Insight(
                 id: "largest-file-concentration", kind: .storage, severity: .notice,
-                title: text("One file dominates analyzed size", "单个文件占据了大部分已分析空间"),
-                detail: text("%@ accounts for %@ of analyzed size%@.", "%@ 占已分析空间的 %@%@。"),
+                title: text("One file dominates analyzed size"),
+                detail: text("%@ accounts for %@ of analyzed size%@."),
                 detailArguments: [files[0].intelligence.fileName, percentage(topRatio), analysis.scanState.isPartial ? partialSuffix() : ""],
                 evidence: [InsightEvidence(source: "filePath", value: files[0].intelligence.fileName), InsightEvidence(source: "fileSize", value: String(files[0].size))],
                 confidence: 1.0, priority: 560
@@ -321,8 +305,8 @@ struct InsightEngine: Sendable {
         if topThreeRatio >= Self.topThreeConcentrationThreshold {
             return [Insight(
                 id: "top-three-concentration", kind: .storage, severity: .notice,
-                title: text("A few files dominate analyzed size", "少数文件占据了大部分已分析空间"),
-                detail: text("The largest %@ files account for %@ of analyzed size%@.", "最大的 %@ 个文件占已分析空间的 %@%@。"),
+                title: text("A few files dominate analyzed size"),
+                detail: text("The largest %@ files account for %@ of analyzed size%@."),
                 detailArguments: ["3", percentage(topThreeRatio), analysis.scanState.isPartial ? partialSuffix() : ""],
                 evidence: topThree.map { InsightEvidence(source: "filePath", value: $0.intelligence.fileName) },
                 confidence: 1.0, priority: 520
@@ -337,8 +321,8 @@ struct InsightEngine: Sendable {
         guard categoryRatio >= Self.categoryConcentrationThreshold else { return [] }
         return [Insight(
             id: "category-concentration", kind: .storage, severity: .info,
-            title: text("One category dominates analyzed size", "一个类别占据了大部分已分析空间"),
-            detail: text("%@ account for %@ of analyzed size%@.", "%@ 占已分析空间的 %@%@。"),
+            title: text("One category dominates analyzed size"),
+            detail: text("%@ takes up %@ of analyzed size%@."),
             detailArguments: [categoryName(dominantCategory.category), percentage(categoryRatio), analysis.scanState.isPartial ? partialSuffix() : ""],
             evidence: [InsightEvidence(source: "category", value: dominantCategory.category.rawValue)],
             confidence: 1.0, priority: 440
@@ -376,25 +360,21 @@ struct InsightEngine: Sendable {
     }
 
     private func roleDisplayName(_ role: String) -> String {
-        let names: [String: (String, String)] = [
-            "modelWeights": ("model weights", "模型权重"), "configuration": ("configuration", "配置"),
-            "tokenizer": ("tokenizer", "tokenizer"), "geometry": ("geometry", "几何文件"),
-            "index": ("index", "索引"), "attributeTable": ("attribute table", "属性表"),
-            "projection": ("projection", "投影文件"), "manifest": ("manifest", "项目清单"),
-            "lockfile": ("lockfile", "锁定文件")
+        let names: [String: String] = [
+            "modelWeights": "model weights", "configuration": "configuration", "tokenizer": "tokenizer",
+            "geometry": "geometry", "index": "index", "attributeTable": "attribute table",
+            "projection": "projection", "manifest": "manifest", "lockfile": "lockfile"
         ]
-        let pair = names[role] ?? (role, role)
-        return Locale.current.language.languageCode?.identifier == "zh" ? pair.1 : pair.0
+        return MessageCatalog.shared.string(names[role] ?? role)
     }
 
     private func categoryName(_ category: FileCategory) -> String {
-        let english: [FileCategory: String] = [.document: "Documents", .spreadsheet: "Spreadsheets", .image: "Images", .rawImage: "RAW images", .audio: "Audio", .video: "Videos", .archive: "Archives", .sourceCode: "Source Code", .configuration: "Configuration", .database: "Databases", .scientificData: "Scientific Data", .aiModel: "AI models", .threeD: "3D & CAD", .font: "Fonts", .executable: "Executables", .project: "Projects", .unknown: "Other"]
-        let chinese: [FileCategory: String] = [.document: "文档", .spreadsheet: "电子表格", .image: "图像", .rawImage: "RAW 图像", .audio: "音频", .video: "视频", .archive: "归档", .sourceCode: "源代码", .configuration: "配置", .database: "数据库", .scientificData: "科学数据", .aiModel: "AI 模型", .threeD: "3D 与 CAD", .font: "字体", .executable: "可执行文件", .project: "项目", .unknown: "其他"]
-        return Locale.current.language.languageCode?.identifier == "zh" ? (chinese[category] ?? category.rawValue) : (english[category] ?? category.rawValue)
+        let names: [FileCategory: String] = [.document: "Documents", .spreadsheet: "Spreadsheets", .image: "Images", .rawImage: "RAW images", .audio: "Audio", .video: "Videos", .archive: "Archives", .sourceCode: "Source Code", .configuration: "Configuration", .database: "Databases", .scientificData: "Scientific Data", .aiModel: "AI models", .threeD: "3D & CAD", .font: "Fonts", .executable: "Executables", .project: "Projects", .unknown: "Other"]
+        return MessageCatalog.shared.string(names[category] ?? category.rawValue)
     }
 
-    private func text(_ english: String, _ chinese: String) -> InsightLocalizedText {
-        InsightLocalizedText(english: english, simplifiedChinese: chinese)
+    private func text(_ english: String) -> InsightLocalizedText {
+        MessageCatalog.shared.text(english)
     }
 
     private func formatBytes(_ size: Int64) -> String {
@@ -404,5 +384,5 @@ struct InsightEngine: Sendable {
     }
 
     private func percentage(_ ratio: Double) -> String { "\(Int((ratio * 100).rounded()))%" }
-    private func partialSuffix() -> String { Locale.current.language.languageCode?.identifier == "zh" ? "（仅限已分析项目）" : " (analyzed items only)" }
+    private func partialSuffix() -> String { MessageCatalog.shared.string(" (analyzed items only)") }
 }

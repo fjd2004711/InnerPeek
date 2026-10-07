@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "messages": {
+    " (analyzed items only)": {
+      "zh-Hans": "（仅限已分析项目）"
+    },
+    " (expired)": {
+      "zh-Hans": "（已过期）"
+    },
+    "%@ accounts for %@ of analyzed size%@.": {
+      "zh-Hans": "%@ 占已分析空间的 %@%@。"
+    },
+    "%@ branch": {
+      "zh-Hans": "%@ 分支"
+    },
+    "%@ defines %@": {
+      "zh-Hans": "%@ 定义了 %@"
+    },
+    "%@ depends on %@": {
+      "zh-Hans": "%@ 依赖 %@"
+    },
+    "%@ file imports %@": {
+      "zh-Hans": "%@ 个文件引入了 %@"
+    },
+    "%@ file is named like %@": {
+      "zh-Hans": "%@ 个文件命名形如 %@"
+    },
+    "%@ files are named like %@": {
+      "zh-Hans": "%@ 个文件命名形如 %@"
+    },
+    "%@ files have zero bytes.": {
+      "zh-Hans": "有 %@ 个文件大小为 0 字节。"
+    },
+    "%@ files import %@": {
+      "zh-Hans": "%@ 个文件引入了 %@"
+    },
+    "%@ is empty and may be a placeholder or test file.": {
+      "zh-Hans": "%@ 为空，可能只是占位文件或测试文件。"
+    },
+    "%@ is present": {
+      "zh-Hans": "存在 %@"
+    },
+    "%@ may be a placeholder or test file.": {
+      "zh-Hans": "%@ 可能只是占位文件或测试文件。"
+    },
+    "%@ mentions %@": {
+      "zh-Hans": "%@ 中提到 %@"
+    },
+    "%@ takes up %@ of analyzed size%@.": {
+      "zh-Hans": "%@ 占已分析空间的 %@%@。"
+    },
+    "%@%% of analysed files are .%@ (%@ files)": {
+      "zh-Hans": "已分析文件中 %@%% 为 .%@（%@ 个）"
+    },
+    "3D & CAD": {
+      "zh-Hans": "3D 与 CAD"
+    },
+    "A few files dominate analyzed size": {
+      "zh-Hans": "少数文件占据了大部分已分析空间"
+    },
+    "AI models": {
+      "zh-Hans": "AI 模型"
+    },
+    "Archives": {
+      "zh-Hans": "归档"
+    },
+    "Array": {
+      "zh-Hans": "数组"
+    },
+    "Audio": {
+      "zh-Hans": "音频"
+    },
+    "Bibliography and figures detected": {
+      "zh-Hans": "检测到参考文献与图表"
+    },
+    "Bitbucket Repository": {
+      "zh-Hans": "Bitbucket 仓库"
+    },
+    "Certificate": {
+      "zh-Hans": "证书"
+    },
+    "Certificate request": {
+      "zh-Hans": "证书请求"
+    },
+    "Code of conduct": {
+      "zh-Hans": "行为准则"
+    },
+    "Code ownership rules": {
+      "zh-Hans": "代码所有权规则"
+    },
+    "Comma": {
+      "zh-Hans": "逗号"
+    },
+    "Configuration": {
+      "zh-Hans": "配置"
+    },
+    "Contribution guide": {
+      "zh-Hans": "贡献指南"
+    },
+    "Databases": {
+      "zh-Hans": "数据库"
+    },
+    "Dependabot configuration": {
+      "zh-Hans": "Dependabot 配置"
+    },
+    "Detached HEAD detected": {
+      "zh-Hans": "检测到 HEAD 分离状态"
+    },
+    "Detected structure": {
+      "zh-Hans": "检测到的结构"
+    },
+    "Docker configuration detected": {
+      "zh-Hans": "检测到 Docker 配置"
+    },
+    "Documents": {
+      "zh-Hans": "文档"
+    },
+    "Empty files detected": {
+      "zh-Hans": "检测到空文件"
+    },
+    "Executables": {
+      "zh-Hans": "可执行文件"
+    },
+    "Fonts": {
+      "zh-Hans": "字体"
+    },
+    "Git HEAD reference": {
+      "zh-Hans": "Git HEAD 引用"
+    },
+    "Git Repository": {
+      "zh-Hans": "Git 仓库"
+    },
+    "Git metadata could not be validated": {
+      "zh-Hans": "Git 元数据无法验证"
+    },
+    "Git metadata detected": {
+      "zh-Hans": "检测到 Git 元数据"
+    },
+    "Git metadata exists but no remote is configured": {
+      "zh-Hans": "存在 Git 元数据，但未配置远程仓库"
+    },
+    "Git remote configuration": {
+      "zh-Hans": "Git 远程配置"
+    },
+    "GitHub Actions workflows": {
+      "zh-Hans": "GitHub Actions 工作流"
+    },
+    "GitHub Repository": {
+      "zh-Hans": "GitHub 仓库"
+    },
+    "GitHub issue templates": {
+      "zh-Hans": "GitHub 问题模板"
+    },
+    "GitHub project metadata": {
+      "zh-Hans": "GitHub 项目元数据"
+    },
+    "GitHub project metadata detected": {
+      "zh-Hans": "检测到 GitHub 项目元数据"
+    },
+    "GitHub pull request template": {
+      "zh-Hans": "GitHub 拉取请求模板"
+    },
+    "GitLab Repository": {
+      "zh-Hans": "GitLab 仓库"
+    },
+    "Go module": {
+      "zh-Hans": "Go 模块"
+    },
+    "HEAD detached": {
+      "zh-Hans": "HEAD 已分离"
+    },
+    "Images": {
+      "zh-Hans": "图像"
+    },
+    "Important file": {
+      "zh-Hans": "重要文件"
+    },
+    "LaTeX research project": {
+      "zh-Hans": "LaTeX 研究项目"
+    },
+    "License file": {
+      "zh-Hans": "许可证文件"
+    },
+    "Local Git metadata could not be validated": {
+      "zh-Hans": "本地 Git 元数据无法验证"
+    },
+    "Local project structure": {
+      "zh-Hans": "本地项目结构"
+    },
+    "Model weight file is empty": {
+      "zh-Hans": "模型权重文件为空"
+    },
+    "Model weight file is unusually small": {
+      "zh-Hans": "模型权重文件异常小"
+    },
+    "No branch name is inferred from the local HEAD.": {
+      "zh-Hans": "不会从本地 HEAD 推断分支名称。"
+    },
+    "Node.js project": {
+      "zh-Hans": "Node.js 项目"
+    },
+    "Object": {
+      "zh-Hans": "对象"
+    },
+    "One category dominates analyzed size": {
+      "zh-Hans": "一个类别占据了大部分已分析空间"
+    },
+    "One file dominates analyzed size": {
+      "zh-Hans": "单个文件占据了大部分已分析空间"
+    },
+    "Other": {
+      "zh-Hans": "其他"
+    },
+    "Photo collection": {
+      "zh-Hans": "照片集合"
+    },
+    "Pipe": {
+      "zh-Hans": "竖线"
+    },
+    "Possible abnormal model weights": {
+      "zh-Hans": "模型权重可能异常"
+    },
+    "Private key (not shown)": {
+      "zh-Hans": "私钥（不显示）"
+    },
+    "Project documentation": {
+      "zh-Hans": "项目文档"
+    },
+    "Projects": {
+      "zh-Hans": "项目"
+    },
+    "Public key": {
+      "zh-Hans": "公钥"
+    },
+    "Python project": {
+      "zh-Hans": "Python 项目"
+    },
+    "RAW images": {
+      "zh-Hans": "RAW 图像"
+    },
+    "RAW/JPEG companion": {
+      "zh-Hans": "RAW/JPEG 配对"
+    },
+    "RAW/JPEG companion files detected": {
+      "zh-Hans": "检测到 RAW/JPEG 配对文件"
+    },
+    "Related structure detected": {
+      "zh-Hans": "检测到关联结构"
+    },
+    "Rust package": {
+      "zh-Hans": "Rust 软件包"
+    },
+    "Scientific Data": {
+      "zh-Hans": "科学数据"
+    },
+    "Security policy": {
+      "zh-Hans": "安全策略"
+    },
+    "Semicolon": {
+      "zh-Hans": "分号"
+    },
+    "Shapefile dataset": {
+      "zh-Hans": "Shapefile 数据集"
+    },
+    "Source Code": {
+      "zh-Hans": "源代码"
+    },
+    "Spreadsheets": {
+      "zh-Hans": "电子表格"
+    },
+    "Structure complete": {
+      "zh-Hans": "结构完整"
+    },
+    "Supports insight": {
+      "zh-Hans": "支持该洞察"
+    },
+    "Tab": {
+      "zh-Hans": "制表符"
+    },
+    "The largest %@ files account for %@ of analyzed size%@.": {
+      "zh-Hans": "最大的 %@ 个文件占已分析空间的 %@%@。"
+    },
+    "Transformer model package": {
+      "zh-Hans": "Transformer 模型包"
+    },
+    "Unknown File": {
+      "zh-Hans": "未知文件"
+    },
+    "Videos": {
+      "zh-Hans": "视频"
+    },
+    "Xcode project": {
+      "zh-Hans": "Xcode 项目"
+    },
+    "attribute table": {
+      "zh-Hans": "属性表"
+    },
+    "configuration": {
+      "zh-Hans": "配置"
+    },
+    "geometry": {
+      "zh-Hans": "几何文件"
+    },
+    "index": {
+      "zh-Hans": "索引"
+    },
+    "lockfile": {
+      "zh-Hans": "锁定文件"
+    },
+    "manifest": {
+      "zh-Hans": "项目清单"
+    },
+    "model weights": {
+      "zh-Hans": "模型权重"
+    },
+    "projection": {
+      "zh-Hans": "投影文件"
+    },
+    "tokenizer": {
+      "zh-Hans": "tokenizer"
+    }
+  }
+}
