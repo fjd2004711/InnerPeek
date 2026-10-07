@@ -79,6 +79,38 @@ enum FileIntelligenceRegression {
             try expect(intelligence.typeName == typeName, "filename semantic \(fileName)")
         }
 
+        // Coverage added in the knowledge audit: category, role and the .ts correction.
+        let roleCases: [(String, FileCategory, SemanticRole?)] = [
+            ("main.ts", .sourceCode, .sourceCode), ("video.m2ts", .video, nil), ("clip.mov", .video, nil),
+            (".DS_Store", .configuration, .generated), ("Thumbs.db", .configuration, .generated),
+            (".gitignore", .configuration, .configuration), (".editorconfig", .configuration, .configuration),
+            ("package-lock.json", .configuration, .lockfile), ("Cargo.lock", .configuration, .lockfile), ("yarn.lock", .configuration, .lockfile),
+            ("Gemfile", .project, .manifest), ("Jenkinsfile", .project, .buildConfig), ("build.bzl", .project, .buildConfig),
+            ("photo.psd", .image, .image), ("icon.eps", .image, .image), ("shot.exr", .image, .image),
+            ("report.docm", .document, .document), ("slides.pptm", .document, .document), ("paper.tex", .document, .document),
+            ("refs.bib", .document, .bibliography), ("movie.srt", .document, .sidecar), ("invite.ics", .document, .document), ("mail.eml", .document, .document),
+            ("cert.pem", .configuration, .configuration), ("keys.p12", .configuration, .configuration),
+            ("app.dmg", .archive, .archive), ("mod.pyc", .executable, .generated), ("lib.wasm", .executable, .generated),
+            ("deploy.tf", .sourceCode, .configuration), ("api.proto", .sourceCode, .configuration), ("kernel.metal", .sourceCode, .sourceCode),
+            ("model.keras", .aiModel, .modelWeights), ("data.pkl", .scientificData, .dataset), ("reads.fastq", .scientificData, .dataset),
+            ("Main.storyboard", .project, .configuration), ("App.entitlements", .project, .configuration), ("song.mid", .audio, nil)
+        ]
+        for (fileName, category, role) in roleCases {
+            let found = recognizer.intelligence(for: URL(fileURLWithPath: "/tmp/\(fileName)"))
+            try expect(found.category == category, "category of \(fileName): \(found.category)")
+            if let role { try expect(found.roles.contains(role), "role of \(fileName)") }
+            try expect(found.confidence == 1.0, "\(fileName) is registered, not a system guess")
+        }
+        // Every registered extension and filename must resolve to exactly one definition.
+        var claimed: [String: String] = [:]
+        for definition in registry.definitions {
+            for key in definition.extensions.map({ "ext:" + $0.lowercased() }) + definition.filenames.map({ "name:" + $0.lowercased() }) {
+                try expect(claimed[key] == nil || claimed[key] == definition.id, "ambiguous registration \(key)")
+                claimed[key] = definition.id
+            }
+        }
+        try expect(registry.definitions.count >= 90, "registry breadth")
+
         try runFolderAnalysisRegression(using: registry)
         try runRelationshipRegression(using: recognizer)
         try runInsightRegression(using: recognizer)

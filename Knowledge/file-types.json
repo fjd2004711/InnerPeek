@@ -28,9 +28,15 @@
     "id": "word-document",
     "extensions": [
       "doc",
+      "docm",
       "docx",
+      "dot",
+      "dotm",
+      "dotx",
       "odt",
-      "pages"
+      "pages",
+      "wpd",
+      "wps"
     ],
     "category": "document",
     "name": {
@@ -88,6 +94,8 @@
     "extensions": [
       "azw",
       "azw3",
+      "chm",
+      "djvu",
       "epub",
       "fb2",
       "mobi"
@@ -116,8 +124,15 @@
     "id": "presentation",
     "extensions": [
       "key",
+      "odg",
       "odp",
+      "pot",
+      "potx",
+      "pps",
+      "ppsm",
+      "ppsx",
       "ppt",
+      "pptm",
       "pptx"
     ],
     "category": "document",
@@ -148,7 +163,10 @@
       "xls",
       "xlsb",
       "xlsm",
-      "xlsx"
+      "xlsx",
+      "xlt",
+      "xltm",
+      "xltx"
     ],
     "category": "spreadsheet",
     "name": {
@@ -352,17 +370,34 @@
     "id": "mp3",
     "extensions": [
       "aac",
+      "ac3",
       "aif",
+      "aifc",
       "aiff",
       "alac",
+      "amr",
+      "ape",
+      "au",
+      "caf",
+      "dts",
       "flac",
       "m4a",
+      "m4b",
+      "m4r",
+      "mid",
+      "midi",
+      "mka",
       "mp2",
       "mp3",
+      "oga",
       "ogg",
       "opus",
+      "ra",
+      "sf2",
       "wav",
-      "wma"
+      "weba",
+      "wma",
+      "wv"
     ],
     "category": "audio",
     "name": {
@@ -388,15 +423,28 @@
     "id": "video",
     "extensions": [
       "3gp",
+      "asf",
       "avi",
+      "braw",
+      "divx",
+      "f4v",
       "flv",
+      "m2ts",
+      "m2v",
       "m4v",
+      "mk3d",
       "mkv",
       "mov",
       "mp4",
       "mpeg",
       "mpg",
-      "ts",
+      "mpv",
+      "mxf",
+      "ogv",
+      "r3d",
+      "rm",
+      "rmvb",
+      "vob",
       "webm",
       "wmv"
     ],
@@ -488,11 +536,17 @@
     "id": "other-archive",
     "extensions": [
       "7z",
+      "ace",
       "arj",
       "cab",
       "iso",
+      "lz4",
       "lzh",
-      "rar"
+      "rar",
+      "sit",
+      "sitx",
+      "z",
+      "zpaq"
     ],
     "category": "archive",
     "name": {
@@ -600,6 +654,7 @@
     "extensions": [
       "cts",
       "mts",
+      "ts",
       "tsx"
     ],
     "category": "sourceCode",
@@ -847,10 +902,13 @@
     "extensions": [
       "cfg",
       "conf",
+      "har",
       "ini",
       "json",
       "json5",
       "jsonc",
+      "jsonl",
+      "ndjson",
       "plist",
       "properties",
       "toml",
@@ -910,11 +968,17 @@
       "accdb",
       "db",
       "db3",
+      "ldf",
+      "lmdb",
       "mdb",
+      "mdf",
+      "ndf",
+      "rdb",
       "realm",
       "sdb",
       "sqlite",
-      "sqlite3"
+      "sqlite3",
+      "sqlitedb"
     ],
     "category": "database",
     "name": {
@@ -966,21 +1030,31 @@
     "id": "scientific-data",
     "extensions": [
       "arrow",
+      "avro",
       "cdf",
       "dta",
       "feather",
       "fit",
       "fits",
+      "grb",
+      "grib",
+      "grib2",
       "h5",
       "hdf",
       "hdf5",
+      "jld2",
       "mat",
+      "msgpack",
       "nc",
+      "orc",
       "parquet",
+      "por",
       "rdata",
       "rds",
       "sas7bdat",
-      "sav"
+      "sav",
+      "tfrecord",
+      "xpt"
     ],
     "category": "scientificData",
     "name": {
@@ -1056,16 +1130,24 @@
     "id": "ml-model",
     "extensions": [
       "bin",
+      "caffemodel",
       "ckpt",
+      "engine",
       "ggml",
       "gguf",
+      "keras",
       "mlmodel",
       "mlpackage",
       "model",
+      "ort",
       "pb",
+      "pdmodel",
+      "pdparams",
       "pt",
+      "pte",
       "pth",
-      "tflite"
+      "tflite",
+      "trt"
     ],
     "category": "aiModel",
     "name": {
@@ -1119,17 +1201,22 @@
       "3ds",
       "3mf",
       "abc",
+      "bvh",
       "dae",
       "fbx",
       "glb",
       "gltf",
+      "ifc",
+      "ms3d",
       "obj",
+      "off",
       "ply",
       "stl",
       "usd",
       "usda",
       "usdc",
       "usdz",
+      "vrm",
       "x3d"
     ],
     "category": "threeD",
@@ -1189,8 +1276,13 @@
   {
     "id": "font",
     "extensions": [
+      "bdf",
+      "dfont",
       "eot",
+      "fon",
       "otf",
+      "pfa",
+      "pfb",
       "ttc",
       "ttf",
       "woff",
@@ -1508,7 +1600,10 @@
       "Package.swift",
       "pom.xml",
       "build.gradle",
-      "build.gradle.kts"
+      "build.gradle.kts",
+      "Gemfile",
+      "composer.json",
+      "Podfile"
     ],
     "category": "project",
     "name": {
@@ -1624,5 +1719,1269 @@
     "roles": [
       "configuration"
     ]
+  },
+  {
+    "id": "functional-language",
+    "extensions": [
+      "cl",
+      "clj",
+      "cljc",
+      "cljs",
+      "edn",
+      "el",
+      "elm",
+      "hs",
+      "lhs",
+      "lisp",
+      "lsp",
+      "ml",
+      "mli",
+      "purs",
+      "rkt",
+      "scm"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Functional language source",
+      "zh-Hans": "函数式语言源代码"
+    },
+    "description": {
+      "en": "Source code in Haskell, OCaml, Clojure, Elm, Scheme, Lisp and related languages.",
+      "zh-Hans": "Haskell、OCaml、Clojure、Elm、Scheme、Lisp 等语言的源代码。"
+    },
+    "purpose": {
+      "en": "Used for programs written in functional or Lisp-family languages.",
+      "zh-Hans": "用于函数式或 Lisp 系语言编写的程序。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "hardware-description",
+    "extensions": [
+      "sv",
+      "svh",
+      "v",
+      "vhd",
+      "vhdl"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Hardware description source",
+      "zh-Hans": "硬件描述语言源码"
+    },
+    "description": {
+      "en": "Verilog, SystemVerilog or VHDL design source.",
+      "zh-Hans": "Verilog、SystemVerilog 或 VHDL 设计源码。"
+    },
+    "purpose": {
+      "en": "Used to describe digital circuits for FPGAs and chips.",
+      "zh-Hans": "用于描述 FPGA 与芯片中的数字电路。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "assembly-source",
+    "extensions": [
+      "asm",
+      "nasm",
+      "s",
+      "wat"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Assembly source",
+      "zh-Hans": "汇编源码"
+    },
+    "description": {
+      "en": "Assembly language or WebAssembly text source.",
+      "zh-Hans": "汇编语言或 WebAssembly 文本源码。"
+    },
+    "purpose": {
+      "en": "Used for low-level machine or WebAssembly code.",
+      "zh-Hans": "用于底层机器码或 WebAssembly 代码。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "smart-contract",
+    "extensions": [
+      "sol"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Solidity contract",
+      "zh-Hans": "Solidity 合约"
+    },
+    "description": {
+      "en": "Solidity smart-contract source.",
+      "zh-Hans": "Solidity 智能合约源码。"
+    },
+    "purpose": {
+      "en": "Used for contracts that run on Ethereum-compatible chains.",
+      "zh-Hans": "用于运行在以太坊兼容链上的合约。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "infrastructure-code",
+    "extensions": [
+      "bicep",
+      "hcl",
+      "nomad",
+      "tf",
+      "tfvars"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Infrastructure as code",
+      "zh-Hans": "基础设施即代码"
+    },
+    "description": {
+      "en": "Terraform, HCL or Bicep configuration that provisions infrastructure.",
+      "zh-Hans": "用于创建基础设施的 Terraform、HCL 或 Bicep 配置。"
+    },
+    "purpose": {
+      "en": "Used to describe cloud resources declaratively.",
+      "zh-Hans": "用于以声明方式描述云资源。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration",
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "task-runner-file",
+    "extensions": [
+      "bazel",
+      "bzl",
+      "sbt"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Build or task script",
+      "zh-Hans": "构建或任务脚本"
+    },
+    "description": {
+      "en": "A build-rule or task-runner definition such as Bazel, sbt, Rake, Just or a Jenkins pipeline.",
+      "zh-Hans": "Bazel、sbt、Rake、Just 或 Jenkins 流水线等构建规则或任务定义。"
+    },
+    "purpose": {
+      "en": "Used to automate building, testing and deployment.",
+      "zh-Hans": "用于自动化构建、测试与部署。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "buildConfig"
+    ],
+    "filenames": [
+      "Jenkinsfile",
+      "Vagrantfile",
+      "Procfile",
+      "Justfile",
+      "Rakefile",
+      "Brewfile",
+      "Tiltfile",
+      "Fastfile",
+      "Gruntfile.js",
+      "gulpfile.js"
+    ]
+  },
+  {
+    "id": "schema-definition",
+    "extensions": [
+      "avsc",
+      "gql",
+      "graphql",
+      "proto",
+      "wsdl",
+      "xsd",
+      "xsl",
+      "xslt"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Schema definition",
+      "zh-Hans": "数据结构定义"
+    },
+    "description": {
+      "en": "Protocol Buffers, GraphQL, XML Schema or similar interface definitions.",
+      "zh-Hans": "Protocol Buffers、GraphQL、XML Schema 等接口或数据结构定义。"
+    },
+    "purpose": {
+      "en": "Used to define the shape of data exchanged between programs.",
+      "zh-Hans": "用于定义程序之间交换数据的结构。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "template-language",
+    "extensions": [
+      "astro",
+      "ejs",
+      "erb",
+      "haml",
+      "hbs",
+      "j2",
+      "jade",
+      "jinja",
+      "liquid",
+      "mdx",
+      "mustache",
+      "njk",
+      "pug",
+      "slim",
+      "twig"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Template or component",
+      "zh-Hans": "模板或组件"
+    },
+    "description": {
+      "en": "A template or component file that is rendered into HTML or text.",
+      "zh-Hans": "会被渲染成 HTML 或文本的模板或组件文件。"
+    },
+    "purpose": {
+      "en": "Used to generate pages from data.",
+      "zh-Hans": "用于根据数据生成页面。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "automation-script",
+    "extensions": [
+      "applescript",
+      "awk",
+      "bat",
+      "cmd",
+      "command",
+      "psd1",
+      "psm1",
+      "rexx",
+      "scpt",
+      "scptd",
+      "tcl",
+      "tool",
+      "vbs",
+      "vim",
+      "workflow"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Automation script",
+      "zh-Hans": "自动化脚本"
+    },
+    "description": {
+      "en": "A Windows batch, VBScript, AppleScript, awk, Tcl or Vim script.",
+      "zh-Hans": "Windows 批处理、VBScript、AppleScript、awk、Tcl 或 Vim 脚本。"
+    },
+    "purpose": {
+      "en": "Used to automate tasks on a computer.",
+      "zh-Hans": "用于自动化计算机上的任务。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "other-language",
+    "extensions": [
+      "ada",
+      "adb",
+      "ads",
+      "cbl",
+      "cob",
+      "coffee",
+      "cr",
+      "f",
+      "f77",
+      "f90",
+      "f95",
+      "for",
+      "nix",
+      "pas",
+      "prolog"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Other language source",
+      "zh-Hans": "其他语言源码"
+    },
+    "description": {
+      "en": "Source in Crystal, COBOL, Pascal, Fortran, Ada, Prolog, CoffeeScript, Nix or a similar language.",
+      "zh-Hans": "Crystal、COBOL、Pascal、Fortran、Ada、Prolog、CoffeeScript、Nix 等语言的源码。"
+    },
+    "purpose": {
+      "en": "Used for programs in less common languages.",
+      "zh-Hans": "用于不太常见语言编写的程序。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "shader-source",
+    "extensions": [
+      "cg",
+      "frag",
+      "fx",
+      "glsl",
+      "hlsl",
+      "metal",
+      "shader",
+      "vert",
+      "wgsl"
+    ],
+    "category": "sourceCode",
+    "name": {
+      "en": "Shader source",
+      "zh-Hans": "着色器源码"
+    },
+    "description": {
+      "en": "GPU shader code such as Metal, GLSL, HLSL or WGSL.",
+      "zh-Hans": "Metal、GLSL、HLSL、WGSL 等 GPU 着色器代码。"
+    },
+    "purpose": {
+      "en": "Used to run graphics and compute work on the GPU.",
+      "zh-Hans": "用于在 GPU 上执行图形和计算任务。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "lockfile",
+    "extensions": [
+      "lock"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Dependency lockfile",
+      "zh-Hans": "依赖锁定文件"
+    },
+    "description": {
+      "en": "A file that pins exact dependency versions.",
+      "zh-Hans": "记录依赖精确版本的文件。"
+    },
+    "purpose": {
+      "en": "Used to make installs reproducible.",
+      "zh-Hans": "用于让安装结果可复现。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "lockfile"
+    ],
+    "filenames": [
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml",
+      "Cargo.lock",
+      "poetry.lock",
+      "uv.lock",
+      "go.sum",
+      "Gemfile.lock",
+      "Podfile.lock",
+      "Package.resolved",
+      "composer.lock",
+      "bun.lock",
+      "Pipfile.lock"
+    ]
+  },
+  {
+    "id": "ignore-file",
+    "extensions": [],
+    "category": "configuration",
+    "name": {
+      "en": "Ignore rules",
+      "zh-Hans": "忽略规则"
+    },
+    "description": {
+      "en": "A file that lists paths a tool should skip.",
+      "zh-Hans": "列出工具应忽略的路径的文件。"
+    },
+    "purpose": {
+      "en": "Used by Git, Docker and linters to exclude files.",
+      "zh-Hans": "供 Git、Docker 和代码检查工具排除文件。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": [
+      ".gitignore",
+      ".gitattributes",
+      ".gitmodules",
+      ".gitkeep",
+      ".dockerignore",
+      ".npmignore",
+      ".eslintignore",
+      ".prettierignore"
+    ]
+  },
+  {
+    "id": "tool-configuration",
+    "extensions": [],
+    "category": "configuration",
+    "name": {
+      "en": "Tool configuration",
+      "zh-Hans": "工具配置"
+    },
+    "description": {
+      "en": "A dotfile that configures an editor, linter, formatter or version manager.",
+      "zh-Hans": "用于配置编辑器、代码检查、格式化或版本管理工具的点文件。"
+    },
+    "purpose": {
+      "en": "Used to keep tool behaviour consistent in a project.",
+      "zh-Hans": "用于保持项目内工具行为一致。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": [
+      ".editorconfig",
+      ".npmrc",
+      ".nvmrc",
+      ".prettierrc",
+      ".eslintrc",
+      ".babelrc",
+      ".browserslistrc",
+      ".python-version",
+      ".ruby-version",
+      ".tool-versions",
+      ".swiftlint.yml",
+      ".swift-version",
+      ".clang-format",
+      ".flake8",
+      ".pylintrc"
+    ]
+  },
+  {
+    "id": "system-metadata",
+    "extensions": [],
+    "category": "configuration",
+    "name": {
+      "en": "System folder metadata",
+      "zh-Hans": "系统文件夹元数据"
+    },
+    "description": {
+      "en": "A file the operating system creates to remember folder view settings or thumbnails.",
+      "zh-Hans": "操作系统用来记录文件夹视图设置或缩略图的文件。"
+    },
+    "purpose": {
+      "en": "Created automatically; usually safe to ignore.",
+      "zh-Hans": "由系统自动创建，通常可忽略。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "generated"
+    ],
+    "filenames": [
+      ".DS_Store",
+      ".localized",
+      "Thumbs.db",
+      "desktop.ini"
+    ]
+  },
+  {
+    "id": "apple-development-resource",
+    "extensions": [
+      "entitlements",
+      "intentdefinition",
+      "mobileprovision",
+      "nib",
+      "pbxproj",
+      "provisionprofile",
+      "storyboard",
+      "strings",
+      "stringsdict",
+      "tbd",
+      "xcassets",
+      "xcdatamodel",
+      "xcdatamodeld",
+      "xcscheme",
+      "xcstrings",
+      "xib"
+    ],
+    "category": "project",
+    "name": {
+      "en": "Apple development resource",
+      "zh-Hans": "Apple 开发资源"
+    },
+    "description": {
+      "en": "An Xcode resource such as a storyboard, string table, entitlement or provisioning profile.",
+      "zh-Hans": "Xcode 资源，例如故事板、字符串表、权限声明或描述文件。"
+    },
+    "purpose": {
+      "en": "Used to build and sign Apple platform apps.",
+      "zh-Hans": "用于构建并签名 Apple 平台应用。"
+    },
+    "isText": false,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "certificate",
+    "extensions": [
+      "cer",
+      "crl",
+      "crt",
+      "csr",
+      "der",
+      "p7b",
+      "pem"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Certificate",
+      "zh-Hans": "证书"
+    },
+    "description": {
+      "en": "An X.509 certificate or certificate request.",
+      "zh-Hans": "X.509 证书或证书请求。"
+    },
+    "purpose": {
+      "en": "Used to prove identity in TLS and code signing.",
+      "zh-Hans": "用于 TLS 和代码签名中证明身份。"
+    },
+    "isText": false,
+    "isBinary": false,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "key-material",
+    "extensions": [
+      "asc",
+      "gpg",
+      "jks",
+      "kdb",
+      "kdbx",
+      "keystore",
+      "p12",
+      "pfx",
+      "pgp"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Key or credential store",
+      "zh-Hans": "密钥或凭据库"
+    },
+    "description": {
+      "en": "A private key, keystore or password database. It may contain secrets.",
+      "zh-Hans": "私钥、密钥库或密码数据库，可能包含机密信息。"
+    },
+    "purpose": {
+      "en": "Used for signing, encryption or storing credentials; handle with care.",
+      "zh-Hans": "用于签名、加密或保存凭据，请谨慎处理。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "configuration"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "internet-shortcut",
+    "extensions": [
+      "alias",
+      "desktop",
+      "fileloc",
+      "inetloc",
+      "lnk",
+      "shortcut",
+      "url",
+      "webloc"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Shortcut or link",
+      "zh-Hans": "快捷方式或链接"
+    },
+    "description": {
+      "en": "A file that points to a website, application or another file.",
+      "zh-Hans": "指向网站、应用或其他文件的文件。"
+    },
+    "purpose": {
+      "en": "Used to open something quickly.",
+      "zh-Hans": "用于快速打开某个目标。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "metadata"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "backup-or-temp",
+    "extensions": [
+      "bak",
+      "crdownload",
+      "old",
+      "orig",
+      "part",
+      "swo",
+      "swp",
+      "temp",
+      "tmp"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Backup or temporary file",
+      "zh-Hans": "备份或临时文件"
+    },
+    "description": {
+      "en": "A backup, editor swap file or unfinished download.",
+      "zh-Hans": "备份文件、编辑器交换文件或未完成的下载。"
+    },
+    "purpose": {
+      "en": "Usually safe to remove once the original is fine.",
+      "zh-Hans": "原文件无误后通常可以删除。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "cache"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "torrent",
+    "extensions": [
+      "magnet",
+      "torrent"
+    ],
+    "category": "configuration",
+    "name": {
+      "en": "Torrent file",
+      "zh-Hans": "种子文件"
+    },
+    "description": {
+      "en": "A BitTorrent descriptor.",
+      "zh-Hans": "BitTorrent 描述文件。"
+    },
+    "purpose": {
+      "en": "Used to download files over peer-to-peer networks.",
+      "zh-Hans": "用于通过点对点网络下载文件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "metadata"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "latex-source",
+    "extensions": [
+      "cls",
+      "dtx",
+      "ltx",
+      "sty",
+      "tex"
+    ],
+    "category": "document",
+    "name": {
+      "en": "LaTeX source",
+      "zh-Hans": "LaTeX 源文件"
+    },
+    "description": {
+      "en": "A LaTeX document, style or class file.",
+      "zh-Hans": "LaTeX 文档、样式或文档类文件。"
+    },
+    "purpose": {
+      "en": "Used to typeset papers and books.",
+      "zh-Hans": "用于排版论文和书籍。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document",
+      "sourceCode"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "bibliography-file",
+    "extensions": [
+      "bbl",
+      "bib",
+      "bst"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Bibliography",
+      "zh-Hans": "参考文献库"
+    },
+    "description": {
+      "en": "A BibTeX bibliography or style file.",
+      "zh-Hans": "BibTeX 参考文献库或样式文件。"
+    },
+    "purpose": {
+      "en": "Used to manage citations in LaTeX.",
+      "zh-Hans": "用于管理 LaTeX 中的引用。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "bibliography"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "markup-document",
+    "extensions": [
+      "adoc",
+      "asciidoc"
+    ],
+    "category": "document",
+    "name": {
+      "en": "AsciiDoc document",
+      "zh-Hans": "AsciiDoc 文档"
+    },
+    "description": {
+      "en": "A document written in AsciiDoc markup.",
+      "zh-Hans": "使用 AsciiDoc 标记语言编写的文档。"
+    },
+    "purpose": {
+      "en": "Used for documentation and books.",
+      "zh-Hans": "用于编写文档和书籍。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "subtitle",
+    "extensions": [
+      "ass",
+      "sbv",
+      "srt",
+      "ssa",
+      "sub",
+      "vtt"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Subtitles",
+      "zh-Hans": "字幕"
+    },
+    "description": {
+      "en": "Timed subtitle or caption text for a video.",
+      "zh-Hans": "视频的带时间轴字幕文本。"
+    },
+    "purpose": {
+      "en": "Used to show captions while a video plays.",
+      "zh-Hans": "用于在视频播放时显示字幕。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "sidecar"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "email-message",
+    "extensions": [
+      "eml",
+      "emlx",
+      "mbox",
+      "msg",
+      "pst"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Email message or mailbox",
+      "zh-Hans": "邮件或邮箱文件"
+    },
+    "description": {
+      "en": "A saved email message or mailbox archive.",
+      "zh-Hans": "保存的邮件或邮箱归档。"
+    },
+    "purpose": {
+      "en": "Used to store or move email.",
+      "zh-Hans": "用于保存或迁移邮件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "calendar-contact",
+    "extensions": [
+      "ics",
+      "vcf"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Calendar or contact",
+      "zh-Hans": "日历或联系人"
+    },
+    "description": {
+      "en": "An iCalendar event or vCard contact.",
+      "zh-Hans": "iCalendar 日程或 vCard 联系人。"
+    },
+    "purpose": {
+      "en": "Used to share events and contacts between apps.",
+      "zh-Hans": "用于在应用之间分享日程和联系人。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "office-diagram",
+    "extensions": [
+      "pub",
+      "vsd",
+      "vsdx",
+      "xps"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Diagram or publication",
+      "zh-Hans": "图表或排版文档"
+    },
+    "description": {
+      "en": "A Visio diagram, Publisher document or XPS page.",
+      "zh-Hans": "Visio 图表、Publisher 文档或 XPS 页面。"
+    },
+    "purpose": {
+      "en": "Used for diagrams and fixed-layout publications.",
+      "zh-Hans": "用于图表和固定版式出版物。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "web-archive",
+    "extensions": [
+      "mht",
+      "mhtml",
+      "webarchive"
+    ],
+    "category": "document",
+    "name": {
+      "en": "Saved web page",
+      "zh-Hans": "保存的网页"
+    },
+    "description": {
+      "en": "A web page saved with its resources in one file.",
+      "zh-Hans": "连同资源保存为单个文件的网页。"
+    },
+    "purpose": {
+      "en": "Used to keep a page for offline reading.",
+      "zh-Hans": "用于离线保存网页。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "document"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "design-file",
+    "extensions": [
+      "afdesign",
+      "afphoto",
+      "ai",
+      "cdr",
+      "clip",
+      "eps",
+      "fig",
+      "idml",
+      "indd",
+      "kra",
+      "psb",
+      "psd",
+      "sketch",
+      "xcf",
+      "xd"
+    ],
+    "category": "image",
+    "name": {
+      "en": "Design file",
+      "zh-Hans": "设计文件"
+    },
+    "description": {
+      "en": "A layered or vector design file from Photoshop, Illustrator, Sketch, Figma and similar tools.",
+      "zh-Hans": "来自 Photoshop、Illustrator、Sketch、Figma 等工具的分层或矢量设计文件。"
+    },
+    "purpose": {
+      "en": "Used as the editable source of artwork.",
+      "zh-Hans": "用作图稿的可编辑源文件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "specialist-image",
+    "extensions": [
+      "cur",
+      "dds",
+      "dib",
+      "emf",
+      "exr",
+      "hdr",
+      "j2k",
+      "jp2",
+      "jxl",
+      "pbm",
+      "pcx",
+      "pgm",
+      "pict",
+      "pnm",
+      "ppm",
+      "tga",
+      "wbmp",
+      "wmf"
+    ],
+    "category": "image",
+    "name": {
+      "en": "Specialist image",
+      "zh-Hans": "专业图像格式"
+    },
+    "description": {
+      "en": "An image in a format used for games, film, scanning or legacy software.",
+      "zh-Hans": "用于游戏、影视、扫描或旧软件的图像格式。"
+    },
+    "purpose": {
+      "en": "Used where common formats lack depth or features.",
+      "zh-Hans": "用于常见格式不够用的场景。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "image"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "disk-image",
+    "extensions": [
+      "dmg",
+      "img",
+      "ova",
+      "ovf",
+      "qcow2",
+      "sparsebundle",
+      "sparseimage",
+      "vhdx",
+      "vmdk"
+    ],
+    "category": "archive",
+    "name": {
+      "en": "Disk image",
+      "zh-Hans": "磁盘镜像"
+    },
+    "description": {
+      "en": "A container that holds a whole disk or volume.",
+      "zh-Hans": "包含整个磁盘或卷的容器。"
+    },
+    "purpose": {
+      "en": "Used to distribute software and run virtual machines.",
+      "zh-Hans": "用于分发软件和运行虚拟机。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "archive",
+      "installer"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "language-package",
+    "extensions": [
+      "aar",
+      "appimage",
+      "crx",
+      "ear",
+      "egg",
+      "flatpak",
+      "gem",
+      "nupkg",
+      "snap",
+      "war",
+      "whl",
+      "xar"
+    ],
+    "category": "archive",
+    "name": {
+      "en": "Package archive",
+      "zh-Hans": "软件包"
+    },
+    "description": {
+      "en": "A packaged library, extension or application.",
+      "zh-Hans": "打包好的库、扩展或应用。"
+    },
+    "purpose": {
+      "en": "Used to install software through a package manager.",
+      "zh-Hans": "用于通过包管理器安装软件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "archive",
+      "installer"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "compiled-code",
+    "extensions": [
+      "a",
+      "bc",
+      "class",
+      "dex",
+      "lib",
+      "o",
+      "pyc",
+      "pyo",
+      "rlib",
+      "wasm"
+    ],
+    "category": "executable",
+    "name": {
+      "en": "Compiled code",
+      "zh-Hans": "编译产物"
+    },
+    "description": {
+      "en": "Bytecode, object code or a static library produced by a compiler.",
+      "zh-Hans": "编译器生成的字节码、目标文件或静态库。"
+    },
+    "purpose": {
+      "en": "A build output; normally regenerated from source.",
+      "zh-Hans": "属于构建产物，通常可由源码重新生成。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "generated"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "serialized-object",
+    "extensions": [
+      "joblib",
+      "pickle",
+      "pkl"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "Serialized object",
+      "zh-Hans": "序列化对象"
+    },
+    "description": {
+      "en": "A Python object saved with pickle or joblib. Loading untrusted files can run code.",
+      "zh-Hans": "用 pickle 或 joblib 保存的 Python 对象，加载不可信文件可能执行代码。"
+    },
+    "purpose": {
+      "en": "Used to save models, datasets and caches between runs.",
+      "zh-Hans": "用于在多次运行之间保存模型、数据集和缓存。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "bio-chemistry-data",
+    "extensions": [
+      "bam",
+      "bed",
+      "cif",
+      "fa",
+      "fasta",
+      "fastq",
+      "fq",
+      "gff",
+      "gtf",
+      "mol",
+      "sam",
+      "sdf",
+      "xyz"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "Biology or chemistry data",
+      "zh-Hans": "生物或化学数据"
+    },
+    "description": {
+      "en": "Sequence, alignment, annotation or molecular structure data.",
+      "zh-Hans": "序列、比对、注释或分子结构数据。"
+    },
+    "purpose": {
+      "en": "Used in genomics and computational chemistry.",
+      "zh-Hans": "用于基因组学和计算化学。"
+    },
+    "isText": true,
+    "isBinary": false,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "medical-imaging",
+    "extensions": [
+      "dcm",
+      "nii"
+    ],
+    "category": "scientificData",
+    "name": {
+      "en": "Medical image",
+      "zh-Hans": "医学影像"
+    },
+    "description": {
+      "en": "A DICOM or NIfTI scan.",
+      "zh-Hans": "DICOM 或 NIfTI 扫描影像。"
+    },
+    "purpose": {
+      "en": "Used for clinical and neuroscience imaging. May contain personal data.",
+      "zh-Hans": "用于临床和神经科学影像，可能包含个人信息。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "dataset"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "point-cloud",
+    "extensions": [
+      "e57",
+      "las",
+      "laz",
+      "pcd"
+    ],
+    "category": "threeD",
+    "name": {
+      "en": "Point cloud",
+      "zh-Hans": "点云"
+    },
+    "description": {
+      "en": "A 3D scan stored as points.",
+      "zh-Hans": "以点集形式保存的三维扫描。"
+    },
+    "purpose": {
+      "en": "Used for surveying and 3D capture.",
+      "zh-Hans": "用于测绘和三维采集。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "geometry"
+    ],
+    "filenames": []
+  },
+  {
+    "id": "3d-application-file",
+    "extensions": [
+      "3dm",
+      "c4d",
+      "dwf",
+      "fcstd",
+      "lwo",
+      "ma",
+      "max",
+      "mb"
+    ],
+    "category": "threeD",
+    "name": {
+      "en": "3D application project",
+      "zh-Hans": "三维软件工程文件"
+    },
+    "description": {
+      "en": "A project file from 3ds Max, Cinema 4D, Maya, Rhino, FreeCAD or similar.",
+      "zh-Hans": "来自 3ds Max、Cinema 4D、Maya、Rhino、FreeCAD 等软件的工程文件。"
+    },
+    "purpose": {
+      "en": "Used as the editable source of 3D work.",
+      "zh-Hans": "用作三维作品的可编辑源文件。"
+    },
+    "isText": false,
+    "isBinary": true,
+    "roles": [
+      "geometry"
+    ],
+    "filenames": []
   }
 ]
