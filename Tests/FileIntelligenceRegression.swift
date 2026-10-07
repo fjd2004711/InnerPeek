@@ -126,6 +126,8 @@ enum FileIntelligenceRegression {
         try runVisualIdentityRegression()
         try runRepositoryHealthRegression()
         try runLocalizationRegression()
+        try runSettingsRegression()
+        try runDiagnosticsRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -954,6 +956,116 @@ enum FileIntelligenceRegression {
         try expect(MessageCatalog(data: Data("garbage".utf8)).string("Hello") == "Hello", "a broken catalog degrades to English")
         try expect(FileIntelligenceRecognizer(locale: Locale(identifier: "zh-Hans")).intelligence(for: URL(fileURLWithPath: "/tmp/a.zzzunknown")).typeName == "未知文件", "bundled Chinese catalog entry")
         try expect(FileIntelligenceRecognizer(locale: Locale(identifier: "fr")).intelligence(for: URL(fileURLWithPath: "/tmp/a.zzzunknown")).typeName == "Unknown File", "untranslated language shows English")
+    }
+
+    /// Settings are validated on read, so corrupt or hand-edited preferences cannot break a preview.
+    private static func runSettingsRegression() throws {
+        let domain = "com.innerpeek.regression.\(UUID().uuidString)"
+        defer {
+            for key in [PreviewSettings.Key.showSummary, PreviewSettings.Key.showInsights, PreviewSettings.Key.showTechStack, PreviewSettings.Key.showBrandIcons,
+                        PreviewSettings.Key.showHiddenFiles, PreviewSettings.Key.expandReasons, PreviewSettings.Key.scanDepth, PreviewSettings.Key.maximumEntries,
+                        PreviewSettings.Key.language, PreviewSettings.Key.iconStyle] { CFPreferencesSetAppValue(key as CFString, nil, domain as CFString) }
+            CFPreferencesAppSynchronize(domain as CFString)
+            try? FileManager.default.removeItem(at: FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Preferences/\(domain).plist"))
+        }
+        func set(_ key: String, _ value: CFPropertyList?) { CFPreferencesSetAppValue(key as CFString, value, domain as CFString) }
+
+        try expect(PreviewSettings.load(domain: domain) == PreviewSettings.standard, "unset preferences give the defaults")
+        let defaults = PreviewSettings.standard
+        try expect(defaults.showSummary && defaults.showInsights && defaults.showTechStack && defaults.showBrandIcons && !defaults.showHiddenFiles
+                   && defaults.scanDepth == 2 && defaults.maximumEntries == 2_000 && defaults.language == .system && defaults.iconStyle == .brandColor, "default values")
+        try expect(defaults.analysisLimits == FolderAnalysisLimits.standard, "default settings equal the built-in analysis limits")
+
+        set(PreviewSettings.Key.showSummary, false as CFBoolean); set(PreviewSettings.Key.showHiddenFiles, true as CFBoolean)
+        set(PreviewSettings.Key.scanDepth, 3 as CFNumber); set(PreviewSettings.Key.maximumEntries, 5_000 as CFNumber)
+        set(PreviewSettings.Key.language, "zh-Hans" as CFString); set(PreviewSettings.Key.iconStyle, "monochrome" as CFString)
+        let custom = PreviewSettings.load(domain: domain)
+        try expect(!custom.showSummary && custom.showHiddenFiles && custom.scanDepth == 3 && custom.maximumEntries == 5_000
+                   && custom.language == .simplifiedChinese && custom.iconStyle == .monochrome, "stored values are read")
+        try expect(custom.analysisLimits.maximumDepth == 3 && custom.analysisLimits.maximumEntries == 5_000, "limits follow the settings")
+        try expect(PreviewLanguage.simplifiedChinese.locale?.identifier == "zh-Hans" && PreviewLanguage.system.locale == nil, "language to locale")
+
+        set(PreviewSettings.Key.scanDepth, 99 as CFNumber); set(PreviewSettings.Key.maximumEntries, 1_234 as CFNumber)
+        var hostile = PreviewSettings.load(domain: domain)
+        try expect(hostile.scanDepth == 4 && hostile.maximumEntries == 1_000, "out-of-range numbers are clamped and snapped")
+        set(PreviewSettings.Key.scanDepth, -5 as CFNumber); set(PreviewSettings.Key.maximumEntries, 999_999_999 as CFNumber)
+        hostile = PreviewSettings.load(domain: domain)
+        try expect(hostile.scanDepth == 1 && hostile.maximumEntries == 10_000, "extreme values cannot request an unbounded scan")
+        set(PreviewSettings.Key.language, "klingon" as CFString); set(PreviewSettings.Key.iconStyle, 7 as CFNumber); set(PreviewSettings.Key.showInsights, "no" as CFString)
+        hostile = PreviewSettings.load(domain: domain)
+        try expect(hostile.language == .system && hostile.iconStyle == .brandColor && hostile.showInsights, "wrong types and unknown values fall back to defaults")
+    }
+
+    /// Parsing real `pluginkit` output, judging health, planning a repair and writing a safe report.
+    private static func runDiagnosticsRegression() throws {
+        let id = ExtensionDiagnostics.extensionIdentifier
+        let current = "/Applications/InnerPeek.app/Contents/PlugIns/InnerPeekQL.appex"
+        let ghost = "/private/tmp/InnerPeek-old/InnerPeek.app/Contents/PlugIns/InnerPeekQL.appex"
+        let copy = "/Users/someone/Downloads/InnerPeek.app/Contents/PlugIns/InnerPeekQL.appex"
+        let output = """
+        +    \(id)(1.0.6)\t6D6D837B-6190-4293-BBF6-DD31341D0D01\t2026-10-07 09:43:52 +0000\t\(current)
+             \(id)(1.0.5)\t11111111-6190-4293-BBF6-DD31341D0D01\t2026-09-01 09:43:52 +0000\t\(ghost)
+        -    \(id)(1.0.6)\t22222222-6190-4293-BBF6-DD31341D0D01\t2026-10-01 09:43:52 +0000\t\(copy)
+         (3 plug-ins)
+        """
+        let registrations = ExtensionDiagnostics.parse(output)
+        try expect(registrations.count == 3, "three registrations parsed, summary line ignored")
+        try expect(registrations[0].election == "+" && registrations[0].version == "1.0.6" && registrations[0].path == current, "elected registration")
+        try expect(registrations[1].election == nil && registrations[1].version == "1.0.5", "default election has no marker")
+        try expect(registrations[2].isIgnored && registrations[2].appPath == "/Users/someone/Downloads/InnerPeek.app", "ignored registration and its app path")
+        try expect(ExtensionDiagnostics.parse("").isEmpty && ExtensionDiagnostics.parse("garbage\nmore garbage").isEmpty, "unparseable output yields nothing")
+
+        let exists: (String) -> Bool = { $0 == current || $0 == copy }
+        try expect(ExtensionDiagnostics.health(of: registrations, installedExtensionPath: current, fileExists: exists) == .needsCleanup(stale: 1, otherCopies: 1), "stale record and a second copy are reported")
+        try expect(ExtensionDiagnostics.health(of: [registrations[0]], installedExtensionPath: current, fileExists: exists) == .healthy, "a single registration is healthy")
+        try expect(ExtensionDiagnostics.health(of: [registrations[1]], installedExtensionPath: current, fileExists: exists) == .registeredElsewhere, "registered, but not at this copy")
+        let disabled = ExtensionRegistration(election: "-", identifier: id, version: "1.0.6", path: current)
+        try expect(ExtensionDiagnostics.health(of: [disabled], installedExtensionPath: current, fileExists: exists) == .disabled, "ignored extension is disabled")
+        try expect(ExtensionDiagnostics.health(of: [], installedExtensionPath: current, fileExists: exists) == .notRegistered, "no registrations")
+
+        let plan = ExtensionDiagnostics.repairPlan(registrations: registrations, installedExtensionPath: current, fileExists: exists).map(\.display)
+        try expect(plan.contains("pluginkit -r \(ghost)"), "stale extension record is unregistered")
+        try expect(plan.contains("lsregister -u /private/tmp/InnerPeek-old/InnerPeek.app"), "stale app record is unregistered")
+        try expect(!plan.contains { $0.contains(copy) || $0.contains("Downloads") }, "an existing second copy is left alone")
+        try expect(!plan.contains { $0.contains("/private/tmp/InnerPeek-old/InnerPeek.app/Contents") && $0.hasPrefix("lsregister") }, "only the app bundle path is passed to lsregister")
+        try expect(Array(plan.suffix(4)) == ["pluginkit -a \(current)", "pluginkit -e use -i \(id)", "qlmanage -r", "qlmanage -r cache"], "register, enable and reset caches come last")
+        try expect(plan.firstIndex(of: "pluginkit -r \(ghost)")! < plan.firstIndex(of: "pluginkit -a \(current)")!, "cleanup happens before registering")
+
+        // LaunchServices keeps records pluginkit has already dropped; those are the ones that confuse Finder.
+        let dump = """
+        path:                       /Applications/InnerPeek.app (0x8008)
+        path:                       /Applications/InnerPeek.app/Contents/PlugIns/InnerPeekQL.appex (0x8020)
+        path:                       /private/tmp/InnerPeek-Stage5-Build/Build/Products/Debug/InnerPeek.app (0x45a8)
+        path:                       /private/tmp/InnerPeek-Stage5-Build/Build/Products/Debug/InnerPeek.app (0x45a9)
+        path:                       /Users/someone/.Trash/InnerPeek 18.59.07.app (0x4d9c)
+        path:                       /Volumes/InnerPeek 1.0.6 (0x1)
+        path:                       /Applications/Other.app (0x2)
+        """
+        let records = ExtensionDiagnostics.parseLaunchServices(dump)
+        try expect(records == ["/Applications/InnerPeek.app", "/private/tmp/InnerPeek-Stage5-Build/Build/Products/Debug/InnerPeek.app", "/Users/someone/.Trash/InnerPeek 18.59.07.app"],
+                   "LaunchServices records: only InnerPeek apps, deduplicated, no mounted volumes, no extension paths")
+        let liveOnly: (String) -> Bool = { $0 == current || $0 == "/Applications/InnerPeek.app" }
+        try expect(ExtensionDiagnostics.health(of: [registrations[0]], installedExtensionPath: current, launchServicesApps: records, fileExists: liveOnly) == .needsCleanup(stale: 2, otherCopies: 0),
+                   "stale LaunchServices records are detected even when pluginkit lists only one registration")
+        try expect(ExtensionDiagnostics.health(of: [registrations[0]], installedExtensionPath: current, launchServicesApps: ["/Applications/InnerPeek.app"], fileExists: liveOnly) == .healthy,
+                   "the installed app itself is never stale")
+        let lsPlan = ExtensionDiagnostics.repairPlan(registrations: [registrations[0]], installedExtensionPath: current, launchServicesApps: records, fileExists: liveOnly).map(\.display)
+        try expect(lsPlan.contains("lsregister -u /private/tmp/InnerPeek-Stage5-Build/Build/Products/Debug/InnerPeek.app") && lsPlan.contains("lsregister -u /Users/someone/.Trash/InnerPeek 18.59.07.app"),
+                   "repair unregisters stale LaunchServices apps")
+        try expect(!lsPlan.contains("lsregister -u /Applications/InnerPeek.app"), "repair never unregisters the installed app")
+
+        // An app that still exists but sits in the Trash is stale as well (record only; the file is never touched).
+        let everythingExists: (String) -> Bool = { _ in true }
+        try expect(ExtensionDiagnostics.health(of: [registrations[0]], installedExtensionPath: current, launchServicesApps: ["/Users/someone/.Trash/InnerPeek.app"], fileExists: everythingExists) == .needsCleanup(stale: 1, otherCopies: 0),
+                   "a trashed copy counts as stale even though its file exists")
+        try expect(ExtensionDiagnostics.repairPlan(registrations: [registrations[0]], installedExtensionPath: current, launchServicesApps: ["/Users/someone/.Trash/InnerPeek.app"], fileExists: everythingExists).map(\.display).contains("lsregister -u /Users/someone/.Trash/InnerPeek.app"),
+                   "repair unregisters a trashed copy without deleting it")
+
+        var tweaked = PreviewSettings.standard; tweaked.language = .english
+        let report = ExtensionDiagnostics.report(appVersion: "1.1.0", systemVersion: "27.0.1", architecture: "arm64", appPath: "/Users/someone/Applications/InnerPeek.app",
+                                                 registrations: registrations, health: .needsCleanup(stale: 1, otherCopies: 1), fullDiskAccess: false, settings: tweaked, homeDirectory: "/Users/someone")
+        try expect(report.contains("~/Downloads/InnerPeek.app") && report.contains("~/Applications/InnerPeek.app") && !report.contains("/Users/someone"), "the home folder is shortened in reports")
+        try expect(report.contains("needs cleanup (1 stale, 1 other copies)") && report.contains("language=en") && report.contains("Full Disk Access: not detected"), "report states health, settings and permission")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {

@@ -21,6 +21,9 @@ swiftc \
   "$project_root/Shared/FileIntelligence/IconCatalog.swift" \
   "$project_root/Shared/FileIntelligence/VisualIdentity.swift" \
   "$project_root/Shared/FileIntelligence/Localization.swift" \
+  "$project_root/Shared/PreviewSettings.swift" \
+  "$project_root/Shared/FileIntelligence/PreviewSettings+Analysis.swift" \
+  "$project_root/Shared/ExtensionDiagnostics.swift" \
   "$project_root/Shared/FileIntelligence/RepositoryHealth.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \

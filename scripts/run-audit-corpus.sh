@@ -26,6 +26,9 @@ swiftc -parse-as-library \
   "$repo_root/Shared/FileIntelligence/IconCatalog.swift" \
   "$repo_root/Shared/FileIntelligence/VisualIdentity.swift" \
   "$repo_root/Shared/FileIntelligence/Localization.swift" \
+  "$repo_root/Shared/PreviewSettings.swift" \
+  "$repo_root/Shared/FileIntelligence/PreviewSettings+Analysis.swift" \
+  "$repo_root/Shared/ExtensionDiagnostics.swift" \
   "$repo_root/Shared/FileIntelligence/RepositoryHealth.swift" \
   "$repo_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$repo_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
