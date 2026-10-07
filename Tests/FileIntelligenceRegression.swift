@@ -654,6 +654,7 @@ enum FileIntelligenceRegression {
         try expect(next.primaryIconKey == "brand.nextjs", "primary icon is the primary framework")
         try expect(next.secondaryIconKeys == ["brand.typescript", "brand.pnpm", "brand.turborepo", "brand.github"], "secondary icons: other primary technologies then the host, no superseded React")
 
+        try expect(next.technologyIconKey == "brand.nextjs" && next.repositoryIconKey == "brand.github", "technology and repository icons are separate")
         let swift = resolver.resolve(try identity(["Package.swift": "//", "App.xcodeproj/project.pbxproj": "x"]))
         try expect(swift.primaryIconKey == "brand.swift" && swift.secondaryIconKeys.contains("brand.xcode"), "Swift project shows Swift, Xcode is a badge")
 
@@ -661,6 +662,7 @@ enum FileIntelligenceRegression {
         try expect(django.primaryIconKey == "brand.django", "Django outranks Python")
 
         let gitOnly = resolver.resolve(try identity(["notes.txt": "x"], remote: "https://gitlab.com/example/x.git"))
+        try expect(gitOnly.technologyIconKey == nil && gitOnly.repositoryIconKey == "brand.gitlab", "a host logo is never reported as the technology")
         try expect(gitOnly.primaryIconKey == "brand.gitlab" && gitOnly.secondaryIconKeys.isEmpty, "repository host logo for a project without recognised technology")
         let customHost = resolver.resolve(try identity(["notes.txt": "x"], remote: "https://git.example.test/team/x.git"))
         try expect(customHost.primaryIconKey == "brand.git", "unknown host falls back to the Git logo")
@@ -688,7 +690,7 @@ enum FileIntelligenceRegression {
         try expect(catalog.entries.values.contains { !$0.monochrome } && catalog.entries.values.contains { $0.monochrome }, "catalog has coloured and template icons")
         try expect(registry.brandImage(for: "brand.does-not-exist") == nil, "unknown brand key yields no image")
         for fallback in [VisualFallback.kind(.framework), .kind(.language), .kind(.buildSystem), .kind(.packageManager), .kind(.projectKind), .repository, .generic] {
-            let visual = VisualIdentity(primaryIconKey: "brand.missing", fallback: fallback, secondaryIconKeys: [])
+            let visual = VisualIdentity(primaryIconKey: "brand.missing", fallback: fallback, technologyIconKey: nil, repositoryIconKey: nil, secondaryIconKeys: [])
             try expect(registry.image(for: visual).size.width > 0, "fallback image always exists")
             try expect(NSImage(systemSymbolName: IconCatalog.fallbackSymbol(for: fallback), accessibilityDescription: nil) != nil, "fallback SF Symbol exists: \(IconCatalog.fallbackSymbol(for: fallback))")
         }

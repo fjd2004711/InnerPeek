@@ -12,6 +12,10 @@ struct VisualIdentity: Sendable, Hashable {
     /// Registry key of the main logo, or `nil` when `fallback` should be drawn instead.
     let primaryIconKey: String?
     let fallback: VisualFallback
+    /// Logo of the project's own technology (framework, specialised kind, language); never a repository host.
+    let technologyIconKey: String?
+    /// Logo of the repository host, when the remote is recognised.
+    let repositoryIconKey: String?
     /// Small badges for the other primary technologies and the repository host.
     let secondaryIconKeys: [String]
 }
@@ -40,6 +44,7 @@ struct VisualIdentityResolver: Sendable {
         for fact in tiers.flatMap({ $0 }) {
             if let key = icon(fact) { primaryKey = key; break }
         }
+        let technologyKey = primaryKey
         if primaryKey == nil {
             // No logo among the technologies: a repository host logo beats a bare glyph,
             // but a recognised technology without a logo still gets its kind glyph.
@@ -60,6 +65,7 @@ struct VisualIdentityResolver: Sendable {
             secondary.append(key)
         }
         return VisualIdentity(primaryIconKey: primaryKey, fallback: fallback,
+                              technologyIconKey: technologyKey, repositoryIconKey: repositoryKey,
                               secondaryIconKeys: Array(secondary.prefix(Self.maximumSecondaryIcons)))
     }
 }

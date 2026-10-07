@@ -21,7 +21,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var headerIconView: NSImageView!
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
-    private var badgeStack: NSStackView!
     private let iconRegistry = IconRegistry()
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
@@ -270,39 +269,20 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
     }
 
-    /// Renders the resolved visual identity: the main logo in the header and
-    /// small badges for the other technologies. Archives and unrecognised
-    /// folders keep their existing glyph.
-    private func presentVisualIdentity(for analysis: FolderAnalysis) {
-        guard analysis.sourceKind == .filesystem else { return }
+    /// Brand logos for the summary rows. Archives and folders without a
+    /// recognised technology or host keep the neutral row glyph.
+    private func visualIdentity(for analysis: FolderAnalysis) -> VisualIdentity? {
+        guard analysis.sourceKind == .filesystem else { return nil }
         let identity = ProjectIdentityResolver().resolve(
             folderName: titleLabel.stringValue,
             repositoryContext: analysis.repositoryContext,
             recognition: analysis.projectRecognition
         )
-        let visual = VisualIdentityResolver().resolve(identity)
-        guard visual.primaryIconKey != nil || visual.fallback != .generic else { return }
-        let mainImage = iconRegistry.image(for: visual)
-        headerIconView.image = mainImage
-        headerIconView.contentTintColor = mainImage.isTemplate ? .labelColor : nil
-        for key in visual.secondaryIconKeys {
-            guard let image = iconRegistry.brandImage(for: key) else { continue }
-            let badge = NSImageView(image: image)
-            badge.imageScaling = .scaleProportionallyUpOrDown
-            badge.contentTintColor = image.isTemplate ? .secondaryLabelColor : nil
-            badge.translatesAutoresizingMaskIntoConstraints = false
-            badge.toolTip = IconCatalog().entry(for: key)?.upstream
-            NSLayoutConstraint.activate([
-                badge.widthAnchor.constraint(equalToConstant: 16),
-                badge.heightAnchor.constraint(equalToConstant: 16)
-            ])
-            badgeStack.addArrangedSubview(badge)
-        }
-        badgeStack.isHidden = badgeStack.arrangedSubviews.isEmpty
+        return VisualIdentityResolver().resolve(identity)
     }
 
     private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
-        presentVisualIdentity(for: analysis)
+        let visual = visualIdentity(for: analysis)
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
@@ -328,7 +308,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 whatsInsideRows.addArrangedSubview(makeAnalysisRow(for: statistic))
             }
         }
-        presentVerdict(decision.verdict, repositoryContext: decision.repositoryContext)
+        presentVerdict(decision.verdict, repositoryContext: decision.repositoryContext, visual: visual)
         presentInsights(decision.insights)
         // The evidence model remains unchanged. Presentation is deliberately
         // compact so it cannot compete with the verdict and insights for the
@@ -364,7 +344,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         view.needsLayout = true
     }
 
-    private func presentVerdict(_ verdict: SemanticVerdict?, repositoryContext: GitRepositoryContext?) {
+    private func presentVerdict(_ verdict: SemanticVerdict?, repositoryContext: GitRepositoryContext?, visual: VisualIdentity?) {
         verdictRows.arrangedSubviews.forEach {
             verdictRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -373,22 +353,37 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             verdictSection.isHidden = true
             return
         }
-        addVerdictRow(title: verdict.localizedTitle(), summary: verdict.localizedSummary(), status: verdict.status)
+        addVerdictRow(title: verdict.localizedTitle(), summary: verdict.localizedSummary(), status: verdict.status,
+                      brandKey: verdict.status == .detected ? brandKey(for: verdict.archetype, visual: visual) : nil)
         if let repositoryContext {
             // Repository context is intentionally subordinate to the primary
             // domain verdict, retaining the compact Stage 9A summary layout.
-            addVerdictRow(title: repositoryContext.title.value(), summary: repositoryContext.summary.value(), status: .detected)
+            addVerdictRow(title: repositoryContext.title.value(), summary: repositoryContext.summary.value(), status: .detected,
+                          brandKey: repositoryContext.isRepository ? visual?.repositoryIconKey : nil)
         }
         verdictSection.isHidden = false
     }
 
-    private func addVerdictRow(title titleText: String, summary summaryText: String, status: SemanticVerdictStatus) {
+    /// A repository verdict is illustrated by the host logo, any other verdict by the project's technology.
+    private func brandKey(for archetype: SemanticArchetype, visual: VisualIdentity?) -> String? {
+        switch archetype {
+        case .gitRepository, .githubRepository, .gitlabRepository, .bitbucketRepository: return visual?.repositoryIconKey
+        default: return visual?.technologyIconKey
+        }
+    }
+
+    private func addVerdictRow(title titleText: String, summary summaryText: String, status: SemanticVerdictStatus, brandKey: String? = nil) {
         let icon = NSImageView()
         let symbol = status == .warning ? "exclamationmark.triangle" :
             status == .complete ? "checkmark.seal" : "folder.badge.gearshape"
         icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
         icon.contentTintColor = status == .warning ? .systemOrange :
             status == .complete ? .systemGreen : PreviewVisuals.secondaryLabelColor
+        if let brandKey, let logo = iconRegistry.brandImage(for: brandKey) {
+            // Coloured logos keep their brand colour; near-black ones follow the label colour.
+            icon.image = logo
+            icon.contentTintColor = logo.isTemplate ? .labelColor : nil
+        }
         icon.translatesAutoresizingMaskIntoConstraints = false
 
         let title = NSTextField(labelWithString: titleText)
@@ -752,11 +747,6 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private func resetAnalysisPresentation() {
-        badgeStack?.arrangedSubviews.forEach {
-            badgeStack.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-        badgeStack?.isHidden = true
         verdictRows?.arrangedSubviews.forEach {
             verdictRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -852,12 +842,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         countLabel.lineBreakMode = .byTruncatingTail
         countLabel.maximumNumberOfLines = 1
 
-        badgeStack = NSStackView()
-        badgeStack.orientation = .horizontal
-        badgeStack.spacing = 6
-        badgeStack.isHidden = true
-
-        let titleStack = NSStackView(views: [titleLabel, countLabel, badgeStack])
+        let titleStack = NSStackView(views: [titleLabel, countLabel])
         titleStack.orientation = .vertical
         titleStack.alignment = .leading
         titleStack.spacing = PreviewVisuals.headerTextSpacing
