@@ -109,6 +109,7 @@ private struct InsightRule: Decodable, Sendable {
 struct InsightEngine: Sendable {
     static let maximumVisibleInsights = 3
     static let smallModelWeightThreshold: Int64 = 1_024
+    static let minimumFilesForConcentration = 4
     static let singleFileConcentrationThreshold = 0.60
     static let topThreeConcentrationThreshold = 0.80
     static let categoryConcentrationThreshold = 0.75
@@ -298,7 +299,8 @@ struct InsightEngine: Sendable {
 
     private func storageInsights(analysis: FolderAnalysis, existing: [Insight]) -> [Insight] {
         let files = analysis.analyzedFiles.filter { $0.size > 0 }.sorted { $0.size > $1.size }
-        guard files.count > 1, analysis.totalKnownFileSize > 0 else { return [] }
+        // With only a few files some file is always the biggest; that is not a finding.
+        guard files.count >= Self.minimumFilesForConcentration, analysis.totalKnownFileSize > 0 else { return [] }
         let total = Double(analysis.totalKnownFileSize)
         let topRatio = Double(files[0].size) / total
         if topRatio >= Self.singleFileConcentrationThreshold {
@@ -316,7 +318,7 @@ struct InsightEngine: Sendable {
 
         let topThree = files.prefix(3)
         let topThreeRatio = Double(topThree.reduce(Int64(0), { $0 + $1.size })) / total
-        if files.count >= 4, topThreeRatio >= Self.topThreeConcentrationThreshold {
+        if topThreeRatio >= Self.topThreeConcentrationThreshold {
             return [Insight(
                 id: "top-three-concentration", kind: .storage, severity: .notice,
                 title: text("A few files dominate analyzed size", "少数文件占据了大部分已分析空间"),

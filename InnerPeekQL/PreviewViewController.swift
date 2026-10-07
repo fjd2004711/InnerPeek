@@ -329,6 +329,9 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         // reserves blank space above the browser.
         whatsInsideHeader.isHidden = !showContents
         whatsInsideRows.isHidden = !showContents
+        // With no summary and no overview the left column is empty; hide it so the
+        // insights take the full width instead of sitting in the right half.
+        semanticLeftColumn.isHidden = !showContents && !rows
         whatsInsideSection.isHidden = false
         view.needsLayout = true
     }
@@ -695,6 +698,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         insightSection?.isHidden = true
         verdictSection?.isHidden = true
         fileDetailSection?.isHidden = true
+        semanticLeftColumn?.isHidden = false
         whatsInsideSection?.isHidden = true
         contentTopToAnalysis?.isActive = false
         analysisTopToHeader?.isActive = false

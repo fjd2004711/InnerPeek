@@ -39,6 +39,7 @@ write "$out/synthetic/generic-mixed/opaque.zzz" 20
 write "$out/synthetic/storage-concentration/large.dat" 800
 write "$out/synthetic/storage-concentration/a.txt" 100
 write "$out/synthetic/storage-concentration/b.txt" 100
+write "$out/synthetic/storage-concentration/c.txt" 100
 for i in {0..3}; do write "$out/synthetic/balanced/file-$i.txt" 250; done
 
 # Stage 10A: deterministic local-only Git metadata fixtures. None invokes Git
