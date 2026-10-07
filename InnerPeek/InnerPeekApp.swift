@@ -8,11 +8,14 @@ struct InnerPeekApp: App {
             SetupGuideView()
         }
         .windowResizability(.contentSize)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
 private struct SetupGuideView: View {
-    private let isChinese = Locale.preferredLanguages.first?.hasPrefix("zh") == true
     @Environment(\.scenePhase) private var scenePhase
     @State private var permissionGranted = false
     @State private var permissionChecked = false
@@ -80,6 +83,12 @@ private struct SetupGuideView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .font(.title3.weight(.semibold))
+            }
+            .buttonStyle(.plain)
+            .help(text("设置", "Settings"))
             Button {
                 openGitHub()
             } label: {
@@ -153,9 +162,7 @@ private struct SetupGuideView: View {
         }
     }
 
-    private func text(_ chinese: String, _ english: String) -> String {
-        isChinese ? chinese : english
-    }
+    private func text(_ chinese: String, _ english: String) -> String { appText(chinese, english) }
 
     private func openFullDiskAccessSettings() {
         let urls = [
@@ -170,21 +177,7 @@ private struct SetupGuideView: View {
     }
 
     private func checkFullDiskAccess() {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let protectedLocations = [
-            home.appendingPathComponent("Library/Mail"),
-            home.appendingPathComponent("Library/Safari"),
-            home.appendingPathComponent("Library/Messages")
-        ]
-        let canReadProtectedLocation = protectedLocations.contains { location in
-            do {
-                _ = try FileManager.default.contentsOfDirectory(at: location, includingPropertiesForKeys: nil)
-                return true
-            } catch {
-                return false
-            }
-        }
-        permissionGranted = canReadProtectedLocation
+        permissionGranted = FullDiskAccess.isGranted()
         permissionChecked = true
     }
 
