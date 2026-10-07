@@ -134,6 +134,22 @@ mkdir -p $p $out/synthetic/proj-symlink-target
 put $out/synthetic/proj-symlink-target/real.json '{"dependencies":{"next":"1","react":"1"}}'
 ln -s ../proj-symlink-target/real.json $p/package.json
 
+# Stage 10C-5: extension-share evidence (language from source files, no manifest needed).
+p=$(proj proj-swift-sources)
+mkdir -p $p/App.xcodeproj
+for f in A B C D; do put $p/App/$f.swift "// $f"; done
+put $p/README.md '# demo'
+p=$(proj proj-few-sources)
+put $p/a.swift '//'
+put $p/b.swift '//'
+p=$(proj proj-diluted-sources)
+for f in a b c; do put $p/scripts/$f.py '#'; done
+for i in {1..20}; do put $p/notes/n$i.txt 'x'; done
+p=$(proj proj-cpp-cmake)
+put $p/CMakeLists.txt 'project(x)'
+for f in a b c d; do put $p/src/$f.cpp '//'; done
+put $p/src/a.hpp '//'
+
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30
 write "$out/semi-realistic/messy-python/uv.lock" 30

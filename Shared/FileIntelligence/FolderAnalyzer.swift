@@ -48,13 +48,13 @@ struct FolderAnalyzer: Sendable {
         // preview's policy of skipping every other hidden entry.
         let options: FileManager.DirectoryEnumerationOptions = []
         let repositoryContext = GitRepositoryInspector().inspect(folderURL: folderURL)
-        let projectRecognition = ProjectRecognizer().recognize(folderURL: folderURL)
         guard let enumerator = FileManager.default.enumerator(
             at: folderURL,
             includingPropertiesForKeys: Array(keys),
             options: options,
             errorHandler: { _, _ in true }
         ) else {
+            let emptyRecognition = ProjectRecognizer().recognize(folderURL: folderURL)
             return FolderAnalysis(
                 analyzedFileCount: 0,
                 analyzedDirectoryCount: 0,
@@ -66,7 +66,7 @@ struct FolderAnalyzer: Sendable {
                 analyzedEntries: [],
                 scanState: .complete,
                 repositoryContext: repositoryContext,
-            projectRecognition: projectRecognition
+            projectRecognition: emptyRecognition
             )
         }
 
@@ -155,6 +155,7 @@ struct FolderAnalyzer: Sendable {
             ExtensionStatistic(fileExtension: $0.key, fileCount: $0.value.fileCount, totalKnownSize: $0.value.totalKnownSize)
         }.sorted(by: Self.sort)
 
+        let projectRecognition = ProjectRecognizer().recognize(folderURL: folderURL, entries: analyzedEntries)
         return FolderAnalysis(
             analyzedFileCount: fileCount,
             analyzedDirectoryCount: directoryCount,

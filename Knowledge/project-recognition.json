@@ -106,6 +106,15 @@
           "type": "path_exists",
           "path": ".swiftlint.yml",
           "weight": 0.5
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "swift"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.2,
+          "weight": 0.7
         }
       ]
     },
@@ -136,6 +145,15 @@
           "type": "path_exists",
           "path": "Pipfile",
           "weight": 0.85
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "py"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -151,6 +169,18 @@
           "type": "path_exists",
           "path": "package.json",
           "weight": 0.7
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "js",
+            "mjs",
+            "cjs",
+            "jsx"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -175,6 +205,16 @@
           "file": "package.json",
           "key": "typescript",
           "weight": 0.8
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "ts",
+            "tsx"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -190,6 +230,15 @@
           "type": "path_exists",
           "path": "Cargo.toml",
           "weight": 0.95
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "rs"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -205,6 +254,15 @@
           "type": "path_exists",
           "path": "go.mod",
           "weight": 0.95
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "go"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -231,6 +289,15 @@
           "file": "build.gradle",
           "contains": "java",
           "weight": 0.4
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "java"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },
@@ -267,6 +334,165 @@
           "file": "pom.xml",
           "contains": "kotlin-maven-plugin",
           "weight": 0.8
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "kt",
+            "kts"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "id": "language.c",
+      "kind": "language",
+      "name": {
+        "en": "C",
+        "zh-Hans": "C"
+      },
+      "evidence": [
+        {
+          "type": "extension_share",
+          "extensions": [
+            "c",
+            "h"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.7
+        }
+      ]
+    },
+    {
+      "id": "language.cpp",
+      "kind": "language",
+      "name": {
+        "en": "C++",
+        "zh-Hans": "C++"
+      },
+      "evidence": [
+        {
+          "type": "extension_share",
+          "extensions": [
+            "cpp",
+            "cc",
+            "cxx",
+            "hpp",
+            "hh"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "CMakeLists.txt",
+          "weight": 0.3
+        }
+      ]
+    },
+    {
+      "id": "language.csharp",
+      "kind": "language",
+      "name": {
+        "en": "C#",
+        "zh-Hans": "C#"
+      },
+      "evidence": [
+        {
+          "type": "extension_share",
+          "extensions": [
+            "cs"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "*.csproj",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "*.sln",
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "id": "language.dart",
+      "kind": "language",
+      "name": {
+        "en": "Dart",
+        "zh-Hans": "Dart"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pubspec.yaml",
+          "weight": 0.85
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "dart"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "id": "language.ruby",
+      "kind": "language",
+      "name": {
+        "en": "Ruby",
+        "zh-Hans": "Ruby"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Gemfile",
+          "weight": 0.85
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "rb"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "id": "language.php",
+      "kind": "language",
+      "name": {
+        "en": "PHP",
+        "zh-Hans": "PHP"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "composer.json",
+          "weight": 0.85
+        },
+        {
+          "type": "extension_share",
+          "extensions": [
+            "php"
+          ],
+          "minimumFiles": 3,
+          "minimumShare": 0.3,
+          "weight": 0.6
         }
       ]
     },

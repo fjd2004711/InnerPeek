@@ -589,6 +589,22 @@ enum FileIntelligenceRegression {
         try expect(ProjectRecognizer().recognize(folderURL: root.appendingPathComponent("does-not-exist")) == .empty
                    || ProjectRecognizer().recognize(folderURL: root.appendingPathComponent("does-not-exist")).facts.isEmpty, "missing folder yields no facts")
 
+        // extension_share consumes the analyzer's bounded file list, honours both thresholds, and stays traceable.
+        let shareRule = #"{"id":"language.lang","kind":"language","name":{"en":"L","zh-Hans":"L"},"evidence":[{"type":"extension_share","extensions":["foo"],"minimumFiles":2,"minimumShare":0.5,"weight":0.7}]}"#
+        let shareJSON = Data(#"{"version":1,"detectionThreshold":0.5,"conflictMargin":0.05,"facts":[\#(shareRule)]}"#.utf8)
+        func shareFacts(_ files: [String]) throws -> [DetectedFact] {
+            let url = try folder("share-\(UUID().uuidString)", [:])
+            for file in files { try "x".write(to: url.appendingPathComponent(file), atomically: true, encoding: .utf8) }
+            let analysis = try FolderAnalyzer().analyze(folderURL: url)
+            return ProjectRecognizer(data: shareJSON).recognize(folderURL: url, entries: analysis.analyzedEntries).facts
+        }
+        let enough = try shareFacts(["a.foo", "b.FOO", "c.txt"])
+        try expect(enough.map(\.id) == ["language.lang"] && enough[0].evidence[0].relativePath == "a.foo" && enough[0].evidence[0].key == "foo", "extension_share match is case-insensitive and traceable")
+        let sparse = try shareFacts(["a.foo", "b.txt", "c.txt"])
+        try expect(sparse.isEmpty, "extension_share respects minimumFiles and minimumShare")
+        let none = try shareFacts([])
+        try expect(none.isEmpty, "extension_share on an empty folder")
+
         // Identity aggregation: confidence is the stronger of repository and best primary fact.
         let identityFolder = try folder("identity", ["package.json": #"{"dependencies":{"next":"1","react":"1"}}"#, "tsconfig.json": "{}", "pnpm-lock.yaml": "x"])
         let recognition = ProjectRecognizer().recognize(folderURL: identityFolder)

@@ -53,6 +53,10 @@
     {"id":"proj-credential-manifest","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-credential-manifest","requiredFacts":["framework.nextjs:primary"],"forbiddenText":["npm_FAKEsecretTOKEN0123","ghp_FAKEsecretGITHUB","_authToken"]},
     {"id":"proj-oversize-manifest","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-oversize-manifest","forbiddenFacts":["framework.nextjs"]},
     {"id":"proj-symlink-manifest","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-symlink-manifest","forbiddenFacts":["framework.nextjs","framework.react"]},
+    {"id":"proj-swift-sources","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-swift-sources","requiredFacts":["language.swift:primary:medium","projectKind.xcode-project:primary"],"forbiddenFacts":["packageManager.swiftpm"]},
+    {"id":"proj-few-sources","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-few-sources","forbiddenFacts":["language.swift"],"expectNoFacts":true},
+    {"id":"proj-diluted-sources","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-diluted-sources","forbiddenFacts":["language.python"],"expectNoFacts":true},
+    {"id":"proj-cpp-cmake","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-cpp-cmake","requiredFacts":["language.cpp:primary:medium","buildSystem.cmake:primary"]},
     {"id":"git-github-transformer","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-transformer","requiredRelationships":["transformer"],"expectedVerdict":"transformerModelPackage","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"},
     {"id":"git-github-node","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-node","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"}
     ,{"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"}

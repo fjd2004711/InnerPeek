@@ -22,6 +22,7 @@ enum RecognitionEvidenceType: String, Codable, Sendable, Hashable {
     case manifestDependency = "manifest_dependency"
     case manifestKey = "manifest_key"
     case manifestText = "manifest_text"
+    case extensionShare = "extension_share"
 }
 
 /// One matched rule. `key` always comes from the knowledge rule, never from

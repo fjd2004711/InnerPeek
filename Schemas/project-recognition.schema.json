@@ -50,6 +50,18 @@
                 },
                 {
                   "type": "object",
+                  "required": ["type", "extensions", "weight"],
+                  "properties": {
+                    "type": {"const": "extension_share"},
+                    "extensions": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z0-9]+$"}},
+                    "minimumFiles": {"type": "integer", "minimum": 1},
+                    "minimumShare": {"type": "number", "minimum": 0, "maximum": 1},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
                   "required": ["type", "file", "contains", "weight"],
                   "properties": {
                     "type": {"const": "manifest_text"},

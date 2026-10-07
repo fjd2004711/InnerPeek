@@ -16,6 +16,9 @@ private struct RecognitionKnowledge: Decodable, Sendable {
         let file: String?
         let key: String?
         let contains: String?
+        let extensions: [String]?
+        let minimumFiles: Int?
+        let minimumShare: Double?
         let weight: Double
     }
 
@@ -74,9 +77,14 @@ struct ProjectRecognizer: Sendable {
         } ?? .empty
     }
 
-    func recognize(folderURL: URL) -> ProjectRecognition {
+    /// `entries` is the bounded file list the folder analysis already collected;
+    /// extension evidence reuses it so recognition never walks the folder again.
+    func recognize(folderURL: URL, entries: [AnalyzedEntry] = []) -> ProjectRecognition {
         guard !knowledge.facts.isEmpty else { return .empty }
-        let workspace = RecognitionWorkspace(root: folderURL, maximumEntries: Self.maximumRootEntries, maximumBytes: Self.maximumManifestBytes)
+        let workspace = RecognitionWorkspace(
+            root: folderURL, maximumEntries: Self.maximumRootEntries, maximumBytes: Self.maximumManifestBytes,
+            analyzedFiles: entries.filter { !$0.isDirectory }.map { ($0.relativePath, ($0.intelligence?.fileExtension ?? "").lowercased()) }
+        )
         let definitions = Dictionary(knowledge.facts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         struct Candidate {
@@ -180,6 +188,12 @@ struct ProjectRecognizer: Sendable {
                   let actual = workspace.actualName(of: file),
                   workspace.text(of: actual)?.range(of: needle, options: .caseInsensitive) != nil else { return nil }
             return RecognitionEvidence(type: rule.type, relativePath: actual, key: needle, weight: rule.weight)
+        case .extensionShare:
+            guard let extensions = rule.extensions, !extensions.isEmpty,
+                  let match = workspace.extensionMatch(extensions: Set(extensions.map { $0.lowercased() }),
+                                                       minimumFiles: rule.minimumFiles ?? 1,
+                                                       minimumShare: rule.minimumShare ?? 0) else { return nil }
+            return RecognitionEvidence(type: rule.type, relativePath: match.path, key: match.extension, weight: rule.weight)
         }
     }
 }
@@ -193,8 +207,10 @@ private final class RecognitionWorkspace {
     private var texts: [String: String?] = [:]
     private var dependencyNames: [String: Set<String>?] = [:]
     private var keyNames: [String: Set<String>?] = [:]
+    private let analyzedFiles: [(path: String, ext: String)]
 
-    init(root: URL, maximumEntries: Int, maximumBytes: Int) {
+    init(root: URL, maximumEntries: Int, maximumBytes: Int, analyzedFiles: [(String, String)]) {
+        self.analyzedFiles = analyzedFiles.sorted { $0.0 < $1.0 }.map { (path: $0.0, ext: $0.1) }
         self.root = root
         self.maximumBytes = maximumBytes
         let names = ((try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []).sorted()
@@ -204,6 +220,15 @@ private final class RecognitionWorkspace {
 
     static func normalize(_ name: String) -> String {
         name.lowercased().replacingOccurrences(of: "_", with: "-").replacingOccurrences(of: ".", with: "-")
+    }
+
+    /// Succeeds when enough of the analysed files carry one of `extensions`;
+    /// reports the first such file (by path) so the evidence stays traceable.
+    func extensionMatch(extensions: Set<String>, minimumFiles: Int, minimumShare: Double) -> (path: String, extension: String)? {
+        let matches = analyzedFiles.filter { extensions.contains($0.ext) }
+        guard let first = matches.first, matches.count >= minimumFiles,
+              Double(matches.count) / Double(analyzedFiles.count) >= minimumShare else { return nil }
+        return (first.path, first.ext)
     }
 
     func actualName(of file: String) -> String? { lowered[file.lowercased()] }
