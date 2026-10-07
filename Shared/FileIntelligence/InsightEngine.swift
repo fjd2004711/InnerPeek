@@ -114,6 +114,7 @@ struct InsightEngine: Sendable {
     static let categoryConcentrationThreshold = 0.75
 
     private let rules: [InsightRule]
+    private let health = RepositoryHealthEvaluator()
 
     init(data: Data) {
         rules = (try? JSONDecoder().decode([InsightRule].self, from: data)) ?? []
@@ -140,6 +141,7 @@ struct InsightEngine: Sendable {
         findings += anomalyInsights(analysis: analysis, importantFiles: importantFiles)
         findings += storageInsights(analysis: analysis, existing: findings)
         findings += repositoryInsights(analysis.repositoryContext)
+        findings += healthInsights(analysis)
 
         var seen = Set<String>()
         return findings
@@ -173,31 +175,31 @@ struct InsightEngine: Sendable {
                 confidence: 1.0, priority: 650
             ))
         }
-        if context.hasGitHubActions {
-            findings.append(Insight(
-                id: "github-actions-workflow", kind: .completeness, severity: .positive,
-                title: text("GitHub Actions workflow detected", "检测到 GitHub Actions 工作流"),
-                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".github/workflows")],
-                confidence: 1.0, priority: 630
-            ))
-        }
-        if !context.hasReadme {
-            findings.append(Insight(
-                id: "git-missing-readme", kind: .completeness, severity: .notice,
-                title: text("Repository does not contain a README", "仓库不包含 README"),
-                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
-                confidence: 1.0, priority: 600
-            ))
-        }
-        if !context.hasLicense {
-            findings.append(Insight(
-                id: "git-missing-license", kind: .completeness, severity: .notice,
-                title: text("Repository does not contain a license", "仓库不包含许可证"),
-                detail: nil, detailArguments: [], evidence: [InsightEvidence(source: "gitMetadata", value: ".git/HEAD")],
-                confidence: 1.0, priority: 590
-            ))
-        }
         return findings
+    }
+
+    /// One finding about missing basics, or one positive when the basics are all there.
+    private func healthInsights(_ analysis: FolderAnalysis) -> [Insight] {
+        guard let result = health.evaluate(recognition: analysis.projectRecognition, repositoryContext: analysis.repositoryContext) else { return [] }
+        let missing = result.missingCore
+        if !missing.isEmpty {
+            let severity = missing.map(\.missingSeverity).max { $0.rank < $1.rank } ?? .info
+            return [Insight(
+                id: "repo-health-gaps", kind: .completeness, severity: severity,
+                title: RepositoryHealthEvaluator.format(result.gaps, names: missing.map(\.name)),
+                detail: result.gapsDetail, detailArguments: [],
+                evidence: missing.map { InsightEvidence(source: "missingPractice", value: $0.id) },
+                confidence: 0.9, priority: 700
+            )]
+        }
+        let present = result.presentCore + result.presentExtras
+        return [Insight(
+            id: "repo-health-complete", kind: .completeness, severity: .positive,
+            title: result.complete,
+            detail: RepositoryHealthEvaluator.format(result.completeDetail, names: present.map(\.name)), detailArguments: [],
+            evidence: present.compactMap { item in item.evidencePath.map { InsightEvidence(source: "practice", value: $0) } },
+            confidence: 0.9, priority: 640
+        )]
     }
 
     private func completenessInsights(analysis: FolderAnalysis, relationships: [DetectedRelationship]) -> [Insight] {

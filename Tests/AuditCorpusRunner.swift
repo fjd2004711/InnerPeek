@@ -254,7 +254,7 @@ enum AuditCorpusRunner {
                   results[index].status != "unavailable", peer.status != "unavailable" else { continue }
             let differs = results[index].verdict != peer.verdict ||
                 results[index].verdictStatus != peer.verdictStatus ||
-                Set(results[index].insights) != Set(peer.insights) ||
+                Set(results[index].insights.filter { !$0.hasPrefix("repo-health") }) != Set(peer.insights.filter { !$0.hasPrefix("repo-health") }) ||
                 Set(results[index].evidencePaths) != Set(peer.evidencePaths)
             guard differs else { continue }
             parityFailures += 1

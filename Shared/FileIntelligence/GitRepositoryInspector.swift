@@ -44,15 +44,6 @@ struct GitRepositoryContext: Sendable, Hashable {
     let metadata: [GitMetadataItem]
 
     var isRepository: Bool { state == .repository }
-    var hasReadme: Bool { metadata.contains { $0.relativePath.lowercased().hasPrefix("readme") } }
-    var hasLicense: Bool {
-        metadata.contains {
-            let path = $0.relativePath.lowercased()
-            return path.hasPrefix("license") || path == "copying"
-        }
-    }
-    var hasGitHubActions: Bool { metadata.contains { $0.relativePath == ".github/workflows" } }
-
     var title: InsightLocalizedText {
         switch state {
         case .metadataDetected: return text("Git metadata detected", "检测到 Git 元数据")

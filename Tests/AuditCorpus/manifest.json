@@ -72,23 +72,30 @@
     {"id":"proj-flutter","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-flutter","requiredFacts":["framework.flutter:primary:high","language.dart:primary"]},
     {"id":"proj-electron","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-electron","requiredFacts":["framework.electron:primary"]},
     {"id":"proj-docker-compose","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-docker-compose","requiredFacts":["buildSystem.docker:primary:high"]},
+    {"id":"health-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-complete","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"health-gaps-code","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-gaps-code","requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"health-no-repo-complete","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-no-repo-complete","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"health-license-missing","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-license-missing","requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"health-not-applicable","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-not-applicable","forbiddenInsights":["repo-health-gaps","repo-health-complete"]},
+    {"id":"health-tests-by-name","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-tests-by-name","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"health-extras","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/health-extras","requiredInsights":["repo-health-complete"]},
     {"id":"git-github-transformer","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-transformer","requiredRelationships":["transformer"],"expectedVerdict":"transformerModelPackage","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"},
-    {"id":"git-github-node","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-node","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"}
-    ,{"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"}
-    ,{"id":"realworld-hello-gitworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-gitworld"}
-    ,{"id":"realworld-click","kind":"real-world","sourceKind":"filesystem","path":"real-world/click"}
-    ,{"id":"realworld-ripgrep","kind":"real-world","sourceKind":"filesystem","path":"real-world/ripgrep"}
-    ,{"id":"realworld-pyproject","kind":"real-world","sourceKind":"filesystem","path":"real-world/pyproject"}
-    ,{"id":"realworld-markdown","kind":"real-world","sourceKind":"filesystem","path":"real-world/markdown"}
-    ,{"id":"realworld-djangox","kind":"real-world","sourceKind":"filesystem","path":"real-world/djangox","requiredFacts":["framework.django:primary","packageManager.uv:primary"]}
-    ,{"id":"realworld-nextjs-subscription-payments","kind":"real-world","sourceKind":"filesystem","path":"real-world/nextjs-subscription-payments","requiredFacts":["framework.nextjs:primary","framework.react:supporting","packageManager.pnpm:primary"]}
-    ,{"id":"realworld-svelte-realworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/svelte-realworld","requiredFacts":["framework.sveltekit:primary"]}
-    ,{"id":"realworld-spring-petclinic","kind":"real-world","sourceKind":"filesystem","path":"real-world/spring-petclinic","requiredFacts":["framework.springboot:primary","language.java:primary"]}
-    ,{"id":"realworld-nanogpt","kind":"real-world","sourceKind":"filesystem","path":"real-world/nanogpt","requiredFacts":["framework.pytorch:primary"]}
-    ,{"id":"realworld-electron-quick-start","kind":"real-world","sourceKind":"filesystem","path":"real-world/electron-quick-start","requiredFacts":["framework.electron:primary"]}
-    ,{"id":"realworld-swift-argument-parser","kind":"real-world","sourceKind":"filesystem","path":"real-world/swift-argument-parser","requiredFacts":["language.swift:primary","packageManager.swiftpm:primary"],"forbiddenFacts":["framework.swiftui"]}
-    ,{"id":"realworld-swiftui-clean-architecture","kind":"real-world","sourceKind":"filesystem","path":"real-world/swiftui-clean-architecture","requiredFacts":["framework.swiftui:primary"]}
-    ,{"id":"realworld-voting-app","kind":"real-world","sourceKind":"filesystem","path":"real-world/voting-app","requiredFacts":["buildSystem.docker:primary"]}
-    ,{"id":"realworld-flask","kind":"real-world","sourceKind":"filesystem","path":"real-world/flask","requiredFacts":["language.python:primary"]}
+    {"id":"git-github-node","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-node","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"},
+    {"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"},
+    {"id":"realworld-hello-gitworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-gitworld","requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"realworld-click","kind":"real-world","sourceKind":"filesystem","path":"real-world/click","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-ripgrep","kind":"real-world","sourceKind":"filesystem","path":"real-world/ripgrep","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-pyproject","kind":"real-world","sourceKind":"filesystem","path":"real-world/pyproject","requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-markdown","kind":"real-world","sourceKind":"filesystem","path":"real-world/markdown"},
+    {"id":"realworld-djangox","kind":"real-world","sourceKind":"filesystem","path":"real-world/djangox","requiredFacts":["framework.django:primary","packageManager.uv:primary"],"requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-nextjs-subscription-payments","kind":"real-world","sourceKind":"filesystem","path":"real-world/nextjs-subscription-payments","requiredFacts":["framework.nextjs:primary","framework.react:supporting","packageManager.pnpm:primary"],"requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"realworld-svelte-realworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/svelte-realworld","requiredFacts":["framework.sveltekit:primary"],"requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"realworld-spring-petclinic","kind":"real-world","sourceKind":"filesystem","path":"real-world/spring-petclinic","requiredFacts":["framework.springboot:primary","language.java:primary"],"requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-nanogpt","kind":"real-world","sourceKind":"filesystem","path":"real-world/nanogpt","requiredFacts":["framework.pytorch:primary"],"requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"realworld-electron-quick-start","kind":"real-world","sourceKind":"filesystem","path":"real-world/electron-quick-start","requiredFacts":["framework.electron:primary"],"requiredInsights":["repo-health-gaps"],"forbiddenInsights":["repo-health-complete"]},
+    {"id":"realworld-swift-argument-parser","kind":"real-world","sourceKind":"filesystem","path":"real-world/swift-argument-parser","requiredFacts":["language.swift:primary","packageManager.swiftpm:primary"],"forbiddenFacts":["framework.swiftui"],"requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-swiftui-clean-architecture","kind":"real-world","sourceKind":"filesystem","path":"real-world/swiftui-clean-architecture","requiredFacts":["framework.swiftui:primary"],"requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]},
+    {"id":"realworld-voting-app","kind":"real-world","sourceKind":"filesystem","path":"real-world/voting-app","requiredFacts":["buildSystem.docker:primary"]},
+    {"id":"realworld-flask","kind":"real-world","sourceKind":"filesystem","path":"real-world/flask","requiredFacts":["language.python:primary"],"requiredInsights":["repo-health-complete"],"forbiddenInsights":["repo-health-gaps"]}
   ]
 }

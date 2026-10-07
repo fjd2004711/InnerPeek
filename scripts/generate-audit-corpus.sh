@@ -197,6 +197,27 @@ p=$(proj proj-docker-compose)
 put $p/Dockerfile 'FROM scratch'
 put $p/docker-compose.yml 'services: {}'
 
+# Stage 10D: repository health fixtures.
+p=$(proj health-complete)
+mkdir -p $p/.git $p/.github/workflows; print -r -- "ref: refs/heads/main" > $p/.git/HEAD
+put $p/README.md '# demo'; put $p/LICENSE 'MIT'; put $p/pyproject.toml $'[project]\nname = "x"\n'
+put $p/tests/test_a.py 'def test_a(): pass'; put $p/.github/workflows/ci.yml 'on: push'
+p=$(proj health-gaps-code)
+put $p/pyproject.toml $'[project]\nname = "x"\n'; put $p/src/main.py 'print(1)'
+p=$(proj health-no-repo-complete)
+put $p/package.json '{"name":"x"}'; put $p/README.md '# x'; put $p/LICENSE 'MIT'; put $p/tests/a.test.js 'test()'
+p=$(proj health-license-missing)
+mkdir -p $p/.git $p/.github/workflows; print -r -- "ref: refs/heads/main" > $p/.git/HEAD
+put $p/README.md '# x'; put $p/pyproject.toml $'[project]\nname = "x"\n'; put $p/tests/test_a.py 'x'; put $p/.github/workflows/ci.yml 'on: push'
+p=$(proj health-not-applicable)
+put $p/README.md '# notes'; put $p/LICENSE 'text'; put $p/notes.txt 'x'
+p=$(proj health-tests-by-name)
+put $p/pyproject.toml $'[project]\nname = "x"\n'; put $p/README.md '# x'; put $p/LICENSE 'MIT'; put $p/pages/tests.py 'x'
+p=$(proj health-extras)
+mkdir -p $p/.git; print -r -- "ref: refs/heads/main" > $p/.git/HEAD; mkdir -p $p/.github/workflows
+put $p/README.md '# x'; put $p/LICENSE 'MIT'; put $p/pyproject.toml $'[project]\nname = "x"\n'; put $p/tests/test_a.py 'x'
+put $p/.github/workflows/ci.yml 'on: push'; put $p/CONTRIBUTING.md 'x'; put $p/SECURITY.md 'x'; put $p/CHANGELOG.md 'x'; put $p/docs/index.md 'x'
+
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30
 write "$out/semi-realistic/messy-python/uv.lock" 30

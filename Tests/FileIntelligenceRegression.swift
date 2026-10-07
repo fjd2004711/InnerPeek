@@ -86,6 +86,7 @@ enum FileIntelligenceRegression {
         try runProjectIdentityRegression()
         try runProjectRecognitionRegression()
         try runVisualIdentityRegression()
+        try runRepositoryHealthRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -727,6 +728,61 @@ enum FileIntelligenceRegression {
             try expect(registry.image(for: visual).size.width > 0, "fallback image always exists")
             try expect(NSImage(systemSymbolName: IconCatalog.fallbackSymbol(for: fallback), accessibilityDescription: nil) != nil, "fallback SF Symbol exists: \(IconCatalog.fallbackSymbol(for: fallback))")
         }
+    }
+
+    /// Health judges expected practices from recognised facts and speaks in both languages.
+    private static func runRepositoryHealthRegression() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-Health-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        func insights(_ files: [String], repository: Bool = false) throws -> [Insight] {
+            let url = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try makeDirectory(url)
+            if repository {
+                try makeDirectory(url.appendingPathComponent(".git"))
+                try "ref: refs/heads/main\n".write(to: url.appendingPathComponent(".git/HEAD"), atomically: true, encoding: .utf8)
+            }
+            for file in files {
+                let target = url.appendingPathComponent(file)
+                try makeDirectory(target.deletingLastPathComponent())
+                try (file == "pyproject.toml" ? "[project]\nname = \"x\"\n" : "x").write(to: target, atomically: true, encoding: .utf8)
+            }
+            let analysis = try FolderAnalyzer().analyze(folderURL: url)
+            return InsightEngine().generate(for: analysis, relationships: [], importantFiles: [])
+        }
+        func health(_ insights: [Insight]) -> Insight? { insights.first { $0.id.hasPrefix("repo-health") } }
+        let en = Locale(identifier: "en"), zh = Locale(identifier: "zh-Hans")
+
+        let gaps = health(try insights(["pyproject.toml", "src/main.py"]))
+        try expect(gaps?.id == "repo-health-gaps" && gaps?.severity == .notice, "missing README and tests is a notice")
+        try expect(gaps?.localizedTitle(for: en) == "Not found: README, License, Tests" && gaps?.localizedTitle(for: zh) == "未发现：README、许可证、测试", "gap title lists missing items in each language")
+
+        let licenceOnly = health(try insights(["pyproject.toml", "README.md", "tests/test_a.py", ".github/workflows/ci.yml"], repository: true))
+        try expect(licenceOnly?.id == "repo-health-gaps" && licenceOnly?.severity == .info, "a missing licence alone is informational")
+        try expect(licenceOnly?.localizedTitle(for: en) == "Not found: License", "licence gap title")
+
+        let complete = health(try insights(["pyproject.toml", "README.md", "LICENSE", "tests/test_a.py", ".github/workflows/ci.yml", "CONTRIBUTING.md", "docs/index.md"], repository: true))
+        try expect(complete?.id == "repo-health-complete" && complete?.severity == .positive, "all basics present is positive")
+        try expect(complete?.localizedDetail(for: zh) == "已具备：README、许可证、测试、持续集成、贡献指南、文档目录", "complete detail names core then extras")
+
+        let withoutRepository = health(try insights(["package.json", "README.md", "LICENSE", "tests/a.test.js"]))
+        try expect(withoutRepository?.id == "repo-health-complete", "CI is not demanded outside a repository")
+        let presentCI = health(try insights(["package.json", "README.md", "LICENSE", "tests/a.test.js", ".github/workflows/ci.yml"]))
+        try expect(presentCI?.localizedDetail(for: en)?.contains("CI") == true, "CI is shown when present even without a repository")
+
+        let byName = health(try insights(["pyproject.toml", "README.md", "LICENSE", "pages/tests.py"]))
+        try expect(byName?.id == "repo-health-complete", "tests recognised by file name")
+        let plain = health(try insights(["README.md", "LICENSE", "notes.txt"]))
+        try expect(plain == nil, "a plain folder is not graded")
+        let opaque = health(try insights(["a.zzz"]))
+        try expect(opaque == nil, "a folder with no README or code is not graded")
+
+        // Declarative: names, severities and applicability come from data.
+        let data = Data(#"{"version":1,"appliesWhenAny":["language"],"minimumCoreChecks":1,"checks":[{"id":"health.readme","practice":"practice.readme","name":{"en":"Readme","zh-Hans":"自述"},"importance":"core","missingSeverity":"warning"}],"messages":{"complete":{"title":{"en":"ok","zh-Hans":"好"},"detail":{"en":"Has %@","zh-Hans":"有%@"}},"gaps":{"title":{"en":"No %@","zh-Hans":"无%@"},"detail":{"en":"d","zh-Hans":"d"}}}}"#.utf8)
+        let custom = RepositoryHealthEvaluator(data: data)
+        let recognition = ProjectRecognition(facts: [], conflicts: [])
+        try expect(custom.evaluate(recognition: recognition, repositoryContext: nil) == nil, "custom knowledge: not applicable without a language")
+        try expect(RepositoryHealthEvaluator(data: Data("nope".utf8)).evaluate(recognition: recognition, repositoryContext: nil) == nil, "malformed health knowledge yields nothing")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {
