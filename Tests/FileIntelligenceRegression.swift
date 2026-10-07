@@ -82,6 +82,7 @@ enum FileIntelligenceRegression {
         try runRelationshipRegression(using: recognizer)
         try runInsightRegression(using: recognizer)
         try runGitRepositoryRegression()
+        try runProjectIdentityRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -458,6 +459,49 @@ enum FileIntelligenceRegression {
         } else {
             try expect(context?.head == .detached, "real local Git detached HEAD")
         }
+    }
+
+    /// The identity object is what presentation renders: it must carry the remote
+    /// repository name over a renamed folder, grade confidence by evidence, and
+    /// never expose a URL or credential.
+    private static func runProjectIdentityRegression() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-Identity-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        func repository(_ name: String, remote: String?) throws -> URL {
+            let folder = root.appendingPathComponent(name, isDirectory: true)
+            let git = folder.appendingPathComponent(".git", isDirectory: true)
+            try makeDirectory(git)
+            try "ref: refs/heads/main\n".write(to: git.appendingPathComponent("HEAD"), atomically: true, encoding: .utf8)
+            if let remote {
+                try "[remote \"origin\"]\n\turl = \(remote)\n".write(to: git.appendingPathComponent("config"), atomically: true, encoding: .utf8)
+            }
+            return folder
+        }
+        let resolver = ProjectIdentityResolver()
+        let inspector = GitRepositoryInspector()
+
+        let renamed = try repository("renamed-checkout", remote: "https://user:fake-token@github.com/example/real-name.git")
+        let identity = resolver.resolve(folderName: "renamed-checkout", repositoryContext: inspector.inspect(folderURL: renamed))
+        try expect(identity.name == "real-name", "identity prefers remote repository name")
+        try expect(identity.repository?.provider == .github && identity.repository?.slug == "example/real-name", "identity repository")
+        try expect(identity.confidence == .high, "identity confidence with remote")
+        try expect(!String(reflecting: identity).contains("fake-token"), "identity omits credentials")
+
+        let local = try repository("local-only", remote: nil)
+        let localIdentity = resolver.resolve(folderName: "local-only", repositoryContext: inspector.inspect(folderURL: local))
+        try expect(localIdentity.name == "local-only" && localIdentity.confidence == .medium, "identity without remote")
+        try expect(localIdentity.repository?.slug == nil, "identity without remote has no slug")
+
+        let plain = root.appendingPathComponent("plain", isDirectory: true)
+        try makeDirectory(plain)
+        let plainIdentity = resolver.resolve(folderName: "plain", repositoryContext: inspector.inspect(folderURL: plain))
+        try expect(plainIdentity.repository == nil && plainIdentity.confidence == .low, "identity of a plain folder")
+
+        let metadataOnly = root.appendingPathComponent("metadata-only", isDirectory: true)
+        try makeDirectory(metadataOnly.appendingPathComponent(".github/workflows", isDirectory: true))
+        let metadataIdentity = resolver.resolve(folderName: "metadata-only", repositoryContext: inspector.inspect(folderURL: metadataOnly))
+        try expect(metadataIdentity.repository == nil && metadataIdentity.confidence == .low, "identity from GitHub metadata only")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {

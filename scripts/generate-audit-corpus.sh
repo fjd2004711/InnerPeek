@@ -60,6 +60,18 @@ print -r -- "ref: refs/heads/worktree" > "$out/synthetic/git-worktree-pointer/li
 print -r -- $'[remote "upstream"]\n\turl = https://github.com/example/worktree.git' > "$out/synthetic/git-worktree-pointer/linked-git/config"
 git_fixture credential-bearing-remote "ref: refs/heads/main" "https://username:fake-token@github.com/example/demo.git"
 mkdir -p "$out/synthetic/generic-folder"
+git_fixture credential-bearing-scp "ref: refs/heads/main" "ghp_fakeusertoken:x-oauth-basic@github.com:example/demo.git"
+git_fixture git-gitlab-subgroup "ref: refs/heads/main" "https://gitlab.com/group/sub/demo.git"
+git_fixture git-ssh-port "ref: refs/heads/main" "ssh://git@github.com:22/example/demo.git"
+git_fixture git-bitbucket-ssh "ref: refs/heads/main" "git@bitbucket.org:example/demo.git"
+git_fixture git-uppercase-host "ref: refs/heads/main" "https://GitHub.com/example/demo.git"
+# Linked worktree: HEAD lives in the worktree directory, remotes in the common directory.
+mkdir -p "$out/synthetic/git-linked-worktree/main-repo/.git/worktrees/wt" "$out/synthetic/git-linked-worktree/wt"
+print -r -- "ref: refs/heads/main" > "$out/synthetic/git-linked-worktree/main-repo/.git/HEAD"
+print -r -- $'[remote "origin"]\n\turl = https://github.com/example/linked.git' > "$out/synthetic/git-linked-worktree/main-repo/.git/config"
+print -r -- "ref: refs/heads/feature" > "$out/synthetic/git-linked-worktree/main-repo/.git/worktrees/wt/HEAD"
+print -r -- "../.." > "$out/synthetic/git-linked-worktree/main-repo/.git/worktrees/wt/commondir"
+print -r -- "gitdir: ../main-repo/.git/worktrees/wt" > "$out/synthetic/git-linked-worktree/wt/.git"
 git_fixture git-github-transformer "ref: refs/heads/main" "https://github.com/example/model.git"
 write "$out/synthetic/git-github-transformer/config.json" 3
 write "$out/synthetic/git-github-transformer/tokenizer.json" 3

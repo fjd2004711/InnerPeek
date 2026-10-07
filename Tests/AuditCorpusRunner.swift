@@ -24,11 +24,12 @@ struct AuditCase: Decodable {
     let expectedRemoteHost: String?
     let expectedRemoteIdentity: String?
     let expectedBranch: String?
+    let forbiddenText: [String]
 
     enum CodingKeys: String, CodingKey {
         case id, kind, sourceKind, path, requiredRelationships, forbiddenRelationships
         case requiredInsights, forbiddenInsights, maxInsights, expectedVerdict, expectedVerdictStatus
-        case forbiddenVerdicts, requiredEvidence, parityWith, expectedRepositoryState, expectedRemoteHost, expectedRemoteIdentity, expectedBranch
+        case forbiddenVerdicts, requiredEvidence, parityWith, expectedRepositoryState, expectedRemoteHost, expectedRemoteIdentity, expectedBranch, forbiddenText
     }
 
     init(from decoder: Decoder) throws {
@@ -51,6 +52,7 @@ struct AuditCase: Decodable {
         expectedRemoteHost = try c.decodeIfPresent(String.self, forKey: .expectedRemoteHost)
         expectedRemoteIdentity = try c.decodeIfPresent(String.self, forKey: .expectedRemoteIdentity)
         expectedBranch = try c.decodeIfPresent(String.self, forKey: .expectedBranch)
+        forbiddenText = try c.decodeIfPresent([String].self, forKey: .forbiddenText) ?? []
     }
 }
 
@@ -171,6 +173,10 @@ enum AuditCorpusRunner {
                 let remoteHostFailure = item.expectedRemoteHost.map { context?.remote?.host != $0 } ?? false
                 let remoteIdentityFailure = item.expectedRemoteIdentity.map { context?.remote?.identity != $0 } ?? false
                 let branchFailure = item.expectedBranch.map { branch != $0 } ?? false
+                // Everything the engines produced (verdict, insights, evidence, repository
+                // context) must be free of text that only a credential could contribute.
+                let producedText = String(reflecting: decision) + String(reflecting: context as Any)
+                let leakedText = item.forbiddenText.filter { producedText.contains($0) }
                 let failures = missingRelationships.map { "missing relationship \($0)" }
                     + forbiddenRelationships.map { "forbidden relationship \($0)" }
                     + missingInsights.map { "missing insight \($0)" }
@@ -186,6 +192,7 @@ enum AuditCorpusRunner {
                     + (remoteHostFailure ? ["unexpected remote host"] : [])
                     + (remoteIdentityFailure ? ["unexpected remote identity"] : [])
                     + (branchFailure ? ["unexpected branch"] : [])
+                    + leakedText.map { _ in "forbidden text present in output" }
                 results.append(CaseResult(id: item.id, kind: item.kind, sourceKind: item.sourceKind,
                                           status: failures.isEmpty ? "pass" : "review", relationships: relationships,
                                           insights: insights, verdict: verdict?.archetype.rawValue,

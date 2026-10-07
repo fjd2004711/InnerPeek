@@ -129,6 +129,7 @@ private struct GitRecognitionKnowledge: Decodable, Sendable {
 /// invokes Git, follows history, touches objects, or contacts a remote host.
 struct GitRepositoryInspector: Sendable {
     private static let maximumMetadataBytes = 64 * 1_024
+    private static let remoteSchemes: Set<String> = ["https", "http", "ssh", "git", "git+ssh", "ssh+git"]
     private let knowledge: GitRecognitionKnowledge
 
     init(data: Data? = nil) {
@@ -155,7 +156,10 @@ struct GitRepositoryInspector: Sendable {
               let head = readHead(at: gitDirectory.appendingPathComponent("HEAD")) else {
             return GitRepositoryContext(state: .metadataDetected, head: nil, remote: nil, metadata: metadata)
         }
-        let remote = readRemote(at: gitDirectory.appendingPathComponent("config"))
+        // A linked worktree keeps HEAD in its own directory but shares the
+        // repository configuration (and therefore the remotes) with the main one.
+        let configDirectory = resolveCommonDirectory(of: gitDirectory) ?? gitDirectory
+        let remote = readRemote(at: configDirectory.appendingPathComponent("config"))
         return GitRepositoryContext(state: .repository, head: head, remote: remote, metadata: metadata)
     }
 
@@ -172,6 +176,19 @@ struct GitRepositoryInspector: Sendable {
         } else {
             candidate = dotGit.deletingLastPathComponent().appendingPathComponent(path)
         }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: candidate.standardizedFileURL.path, isDirectory: &isDirectory),
+              isDirectory.boolValue else { return nil }
+        return candidate.standardizedFileURL
+    }
+
+    private func resolveCommonDirectory(of gitDirectory: URL) -> URL? {
+        guard let pointer = readText(at: gitDirectory.appendingPathComponent("commondir")) else { return nil }
+        let lines = pointer.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+        guard lines.count == 1, let path = lines.first, !path.isEmpty, !path.contains("\0") else { return nil }
+        let candidate = path.hasPrefix("/")
+            ? URL(fileURLWithPath: path)
+            : gitDirectory.appendingPathComponent(path)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: candidate.standardizedFileURL.path, isDirectory: &isDirectory),
               isDirectory.boolValue else { return nil }
@@ -235,7 +252,7 @@ struct GitRepositoryInspector: Sendable {
         let host: String
         let path: String
         if let components = URLComponents(string: value),
-           let scheme = components.scheme?.lowercased(), ["https", "http", "ssh"].contains(scheme),
+           let scheme = components.scheme?.lowercased(), Self.remoteSchemes.contains(scheme),
            let parsedHost = components.host {
             host = parsedHost
             path = components.path

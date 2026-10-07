@@ -15,6 +15,7 @@ swiftc \
   "$project_root/Shared/FileIntelligence/FileIntelligenceRecognizer.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalysis.swift" \
   "$project_root/Shared/FileIntelligence/GitRepositoryInspector.swift" \
+  "$project_root/Shared/FileIntelligence/ProjectIdentity.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
   "$project_root/Shared/FileIntelligence/MetadataItem.swift" \
