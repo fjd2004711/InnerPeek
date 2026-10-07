@@ -4,109 +4,128 @@
 
 <h1 align="center">InnerPeek</h1>
 
-<p align="center"><strong>在 Finder 里按下空格，看清文件夹与 ZIP 的内容。</strong></p>
+<p align="center"><strong>在 Finder 里按下空格，看清一个文件夹或 ZIP 是什么。</strong></p>
 
 <p align="center">
   <a href="https://github.com/fjd2004711/InnerPeek/releases/latest">下载最新版</a> ·
   <a href="#安装">安装</a> ·
+  <a href="#常见问题">常见问题</a> ·
   <a href="#从源码构建">构建</a> ·
+  <a href="CONTRIBUTING.md">参与贡献</a> ·
   <a href="README_EN.md">English</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/fjd2004711/InnerPeek/releases/latest"><img src="https://img.shields.io/github/v/release/fjd2004711/InnerPeek?display_name=tag&sort=semver" alt="最新版本"></a>
-  <img src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white" alt="推荐 macOS 26 及以上">
+  <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14 及以上">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/fjd2004711/InnerPeek" alt="MIT 许可"></a>
 </p>
 
-InnerPeek 是一个轻量的 macOS Quick Look 扩展。选中文件夹或 ZIP 压缩包，按下空格，即可在 Finder 的原生预览窗口中浏览目录树，无需打开新应用，也无需先解压。
+InnerPeek 是一个 macOS Quick Look 扩展。选中文件夹或 ZIP，按下空格，就能在 Finder 原生的预览窗口里看到目录树，以及一份简短的判断：这是什么项目、用了什么技术、有没有值得注意的问题。不用打开新应用，不用先解压。
 
 ## 预览
 
-| 文件夹 | ZIP 压缩包 |
+下面的图片由真实的预览组件渲染，内容是虚构的演示项目。
+
+| Next.js 项目：技术栈与仓库健康度 | Python 服务：发现隐患与缺项 |
 | :---: | :---: |
-| <img src="docs/demo/innerpeek-folder-light-preview.png" width="420" alt="InnerPeek 文件夹预览"> | <img src="docs/demo/innerpeek-zip-light-preview.png" width="420" alt="InnerPeek ZIP 预览"> |
+| <img src="docs/screenshots/zh-Hans/web-project.png" width="420" alt="Next.js 项目的预览：识别出 Next.js、TypeScript、npm、Docker，仓库基础设施齐全"> | <img src="docs/screenshots/zh-Hans/python-service.png" width="420" alt="Python 服务的预览：提示 .env 未被忽略、缺少许可证和测试"> |
 
-截图来自 Finder 中的实际预览。仓库还提供了可直接试用的[示例文件夹](docs/demo/InnerPeek-Demo)和[对应的 ZIP](docs/demo/InnerPeek-Demo/InnerPeek-ZIP-Demo.zip)。
+| 模型包：结构完整性 | ZIP：不解压就能提醒 |
+| :---: | :---: |
+| <img src="docs/screenshots/zh-Hans/model-package.png" width="420" alt="Transformer 模型包的预览：权重、配置与 tokenizer 均存在"> | <img src="docs/screenshots/zh-Hans/zip-archive.png" width="420" alt="ZIP 的预览：提示压缩包中包含 .env"> |
 
-## 功能
+<details>
+<summary>深色模式</summary>
 
-- **树形浏览**：逐层展开或收起文件夹与 ZIP 内的目录。
-- **关键信息一目了然**：显示名称、文件大小、修改时间和文件类型图标。
-- **ZIP 无需解压**：只读取 ZIP 的目录索引，不读取文件正文，也不在磁盘上生成解压副本。
-- **内容结构提示**：基于本地规则和文件知识识别常见项目、模型包、文档集合与照片配对结构，并展示可核对的文件依据。
-- **值得注意的内容**：在有限扫描范围内提示组件完整性、异常小或空的模型权重，以及明显的空间集中情况。
-- **按需加载**：文件夹仅在展开时读取，系统文件图标在后台获取并缓存。
-- **原生体验**：基于 Quick Look 和 AppKit `NSOutlineView`，保留 Finder 熟悉的列表交互。
-- **本地且只读**：预览过程不上传内容、不修改源文件，也没有常驻后台服务。
+<img src="docs/screenshots/zh-Hans/web-project-dark.png" width="640" alt="深色模式下的 Next.js 项目预览">
+
+</details>
+
+## 它能告诉你什么
+
+- **这是什么**：根据文件结构识别项目类型（Next.js、Django、Spring Boot、Flutter、模型包、Shapefile……），并列出语言、框架、包管理器和构建系统。识别带有可核对的依据，点击摘要行即可展开。
+- **仓库信息**：是否是 Git 仓库、远程来自 GitHub 还是其他托管方、当前分支。远程地址里的账号和令牌不会被保留或显示。
+- **仓库健康度**：README、许可证、测试、持续集成是否齐全。齐全时只给一句肯定，缺项时才提示。
+- **隐患提醒**：未被 `.gitignore` 覆盖的 `.env`、私钥、npm 令牌、凭据文件、`node_modules` 等；ZIP 里同样会提醒。文案只写文件名，不写内容。
+- **缺项和冲突**：缺锁定文件、同时存在多个锁定文件、有 Dockerfile 却没有 `.dockerignore` 等。
+- **结构完整性**：模型包缺权重或配置、Shapefile 缺伴随文件等。
+- **文件树**：逐层展开，显示大小、修改时间和类型图标。ZIP 只读取目录索引，不解压，也不会在磁盘上留下临时文件。
+- **中文和英文**：预览语言可跟随系统，也可以在设置里固定。
+
+洞察最多显示三条，按严重程度排序；没有值得说的就不说。
+
+## 隐私与安全
+
+- 全部在本机完成，**没有网络访问**，也没有常驻后台服务。
+- **只读**：不会修改、移动或删除你的文件。
+- 扩展运行在 App Sandbox 中，只能读取你正在预览的位置。
+- 扫描有界：默认最多分析 2 层目录、2000 个条目；单个清单文件最多读 256 KB。
+- 为了读取设置，扩展声明了一个沙盒例外，只读访问 InnerPeek 自己的偏好设置，详见 [设置与诊断](docs/settings.md)。
+- 识别结论是基于文件名、清单和少量内容的启发式判断，**不是**安全审计、病毒或恶意软件检测。
 
 ## 系统要求
 
-- 推荐 macOS 26 或更高版本
-- Apple Silicon 或 Intel Mac
+- macOS 14 或更高版本（Quick Look 预览扩展）。
+- Apple Silicon 或 Intel Mac。
+- 开发和验证主要在 macOS 27 上进行，较早的系统还没有逐一验证。如果你在其他版本上遇到问题，欢迎提 Issue 并附上[诊断信息](docs/troubleshooting.md#提交-issue-时附上诊断信息)。
 
 ## 安装
 
-1. 从 [GitHub Releases](https://github.com/fjd2004711/InnerPeek/releases/latest) 下载最新 DMG。
-2. 打开 DMG，将 `InnerPeek.app` 拖入「应用程序」。
-3. 打开一次 InnerPeek，让 macOS 注册 Quick Look 扩展。
-4. 在 Finder 中选中文件夹或 ZIP，按空格开始预览。
+1. 从 [GitHub Releases](https://github.com/fjd2004711/InnerPeek/releases/latest) 下载最新的 DMG，并可用同一页面的 `SHA256SUMS` 校验。
+2. 打开 DMG，把 `InnerPeek.app` 拖进「应用程序」。
+3. **第一次打开**：当前发布的应用使用 ad-hoc 签名，没有经过 Apple 公证，macOS 会提示无法验证开发者。请在「应用程序」里**右键 InnerPeek → 打开 → 打开**；或前往 系统设置 → 隐私与安全性，点击页面底部的「仍要打开」。
+4. 打开一次 InnerPeek，让系统注册扩展。如有需要，到 系统设置 → 通用 → 登录项与扩展 → 快速查看，确认 InnerPeek 已开启（不同系统版本的菜单路径略有差异）。
+5. 在 Finder 中选中文件夹或 ZIP，按空格。
 
-点击文件夹整行或左侧箭头可以展开、收起目录；再次按空格即可关闭预览。
+想从源码自行构建并签名，见 [从源码构建](#从源码构建)。
 
 ### 访问受保护的位置
 
-普通目录不需要额外授权。若要预览桌面、文稿、下载、邮件资料或其他受 macOS 保护的位置，请前往：
+普通目录不需要额外授权。若要预览桌面、文稿、下载等受 macOS 保护的位置，请前往：
 
 **系统设置 → 隐私与安全性 → 完全磁盘访问权限 → “+” → 选择 `/Applications/InnerPeek.app` → 打开开关**
 
-授权后重新打开 Finder 预览。完全磁盘访问并非日常使用的必需条件；InnerPeek 只用它读取你主动预览的内容。
+授权后重新打开预览。完全磁盘访问并非日常使用的必需条件。
 
-## 工作原理
+## 设置
 
-InnerPeek 的目标是缩短“按空格看一眼”的路径：
+打开 InnerPeek，点击右上角的齿轮（或按 ⌘,）：
 
-| 场景 | 实现方式 |
-| --- | --- |
-| 文件夹 | 首次只读取当前层级；展开子目录时再按需读取，并跳过隐藏文件。 |
-| ZIP | 直接解析 central directory，在内存中建立目录树，不解压文件。 |
-| 内容判断 | 仅使用已分析的文件名、类型、角色和结构规则；结论附带已分析范围内的相对路径依据。 |
-| 文件图标 | 先显示轻量类型图标，再异步获取磁盘文件的 Finder 图标并缓存。 |
-| 界面 | Quick Look 扩展承载原生 `NSOutlineView`，负责选择、展开和滚动。 |
+- **显示**：摘要、技术栈、洞察、品牌图标、隐藏文件、默认展开识别依据。
+- **分析**：扫描深度（1–4 层）和最多分析的条目数（500–10000）。
+- **语言与外观**：预览语言（跟随系统 / 简体中文 / English）、图标样式（品牌彩色 / 统一单色）。
+- **诊断**：检查扩展是否正确注册，一键修复，并可复制不含任何文件内容的诊断信息。
 
-这些设计避免了完整解压、一次性遍历整棵目录树以及在主线程同步查询大量图标。
-
-内容分析完全在本机进行，由规则和知识文件驱动，保持有界且只读。它可以帮助快速理解常见结构，但不会声称理解任意文件夹，也不提供安全、病毒或恶意软件判断。
-
-## 当前限制
-
-- 目前只支持文件夹和普通单卷 ZIP 的目录预览。
-- ZIP64 与分卷 ZIP 暂不支持；旧编码 ZIP 中的非 UTF-8 文件名可能无法正确显示。
-- ZIP 内的单个文件不能在预览中打开或导出。
-- 文件夹预览默认不显示隐藏文件。
-
-InnerPeek 专注于快速确认内容结构，不替代完整的文件管理或压缩工具。
+设置在下一次打开预览时生效，无需重启。详见 [设置与诊断](docs/settings.md)。
 
 ## 常见问题
 
 <details>
-<summary><strong>安装后按空格仍然看不到目录树？</strong></summary>
+<summary><strong>按空格后看到的是系统自带的文件夹卡片，而不是 InnerPeek？</strong></summary>
 
-确认应用已经移动到「应用程序」并至少打开过一次，然后关闭当前 Quick Look 窗口再重新预览。若目标位于受保护目录，请检查完全磁盘访问权限。
+通常是 LaunchServices 里残留了旧版本的注册记录。先打开 InnerPeek → 设置 → 诊断，点击「修复 Quick Look」。如果仍不行，见 [故障排查](docs/troubleshooting.md)。
 
 </details>
 
 <details>
 <summary><strong>预览 ZIP 会产生临时解压文件吗？</strong></summary>
 
-不会。InnerPeek 只读取 ZIP central directory 中的名称、层级、大小和日期等元数据。
+不会。InnerPeek 只读取 ZIP central directory 中的名称、层级、大小和日期。
 
 </details>
 
 <details>
-<summary><strong>为什么 ZIP 中的文件图标和磁盘文件略有不同？</strong></summary>
+<summary><strong>为什么有些文件夹没有摘要，只有文件列表？</strong></summary>
 
-ZIP 条目没有可交给 Finder 的真实文件路径。InnerPeek 会根据扩展名和文件类型显示并缓存系统类型图标，从而避免为图标创建临时文件。
+InnerPeek 只在有足够依据时才下结论。普通文件夹、照片目录等没有明确结构的内容，只显示文件树。
+
+</details>
+
+<details>
+<summary><strong>洞察判断错了怎么办？</strong></summary>
+
+请开一个 Issue，附上文件夹的大致结构（不要上传私人文件）。识别规则是 [数据文件](Knowledge)，大多数修正只需要改 JSON。
 
 </details>
 
@@ -114,36 +133,55 @@ ZIP 条目没有可交给 Finder 的真实文件路径。InnerPeek 会根据扩�
 
 项目没有第三方运行时依赖。
 
-1. 克隆仓库并使用 Xcode 15 或更高版本打开 [`InnerPeek.xcodeproj`](InnerPeek.xcodeproj)。
-2. 选择 `InnerPeek` scheme 和 `My Mac` 作为运行目标。
-3. 如果 Xcode 提示签名问题，在两个 target 中选择你自己的开发团队。
-4. 构建并运行主应用一次，然后在 Finder 中测试 Quick Look。
-
-项目由三部分组成：
+1. 克隆仓库，用较新的 Xcode（开发使用 Xcode 27）打开 [`InnerPeek.xcodeproj`](InnerPeek.xcodeproj)。
+2. 选择 `InnerPeek` scheme 和 `My Mac`。
+3. 在两个 target 的 Signing 中选择你自己的开发团队（没有的话可使用 ad-hoc 签名）。
+4. 构建并运行一次，然后在 Finder 中测试 Quick Look。
 
 | 路径 | 作用 |
 | --- | --- |
-| [`InnerPeek/`](InnerPeek) | SwiftUI 设置与权限引导应用。 |
-| [`InnerPeekQL/`](InnerPeekQL) | Quick Look 扩展及 AppKit 预览界面。 |
-| [`Shared/`](Shared) | 文件夹与 ZIP 的只读内容提供器和共享模型。 |
+| [`InnerPeek/`](InnerPeek) | SwiftUI 主应用：引导、设置、诊断。 |
+| [`InnerPeekQL/`](InnerPeekQL) | Quick Look 扩展与 AppKit 预览界面。 |
+| [`Shared/`](Shared) | 内容提供器、分析与识别引擎。 |
+| [`Knowledge/`](Knowledge) | 识别规则、文件类型、洞察、翻译（JSON）。 |
+| [`Schemas/`](Schemas) | 上述 JSON 的结构说明。 |
+| [`Tests/`](Tests)、[`scripts/`](scripts) | 回归测试、审计语料和校验脚本。 |
 
-推送 `v*` 标签后，[GitHub Actions](https://github.com/fjd2004711/InnerPeek/actions) 会构建 DMG、生成 `SHA256SUMS`，并发布到 Releases。
+常用命令：
+
+```sh
+scripts/validate-knowledge.sh                 # 校验知识文件（需要 jq）
+Tests/run-file-intelligence-regression.sh     # 回归测试
+scripts/run-audit-corpus.sh                   # 审计语料
+scripts/render-screenshots.sh                 # 重新生成 README 截图
+```
+
+推送 `v*` 标签后，GitHub Actions 会构建 DMG、生成 `SHA256SUMS` 并发布 Release。
 
 ## 参与贡献
 
-欢迎提交 [Issue](https://github.com/fjd2004711/InnerPeek/issues) 和 Pull Request。报告问题时，请附上 macOS 版本、InnerPeek 版本、文件类型和可复现步骤；请勿上传包含私人内容的文件。
+欢迎提交 Issue 和 Pull Request。最容易上手的是**补充数据**：新的文件类型、识别规则、洞察规则和翻译都是 JSON，不需要写 Swift。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-如果准备实现较大的功能，建议先开 Issue 讨论范围，尤其是新的归档格式或可能影响 Quick Look 启动速度的改动。
+安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+## 当前限制
+
+- 只支持文件夹和普通单卷 ZIP；ZIP64、分卷 ZIP 暂不支持，旧编码 ZIP 里的非 UTF-8 文件名可能显示不正确。
+- ZIP 目前只显示文件列表和隐患提醒，不做项目识别和仓库健康判断。
+- ZIP 内的单个文件不能在预览里打开或导出。
+- 表头右上角和滚动条的颜色在个别外观下可能略有差异。
+- 设置窗口本身只有中文和英文；预览的语言可以通过翻译文件扩展，见 [本地化](docs/localization.md)。
+
+InnerPeek 专注于快速确认内容结构，不替代文件管理或压缩工具。
+
+## 第三方内容
+
+- 品牌图标来自 [Simple Icons](https://simpleicons.org)（CC0 1.0），许可证与免责声明见 [`Knowledge/Icons`](Knowledge/Icons)。品牌名称和标志归各自权利人所有，在这里仅用于指代对应的技术。
 
 ## 许可
 
 InnerPeek 采用 [MIT License](LICENSE)。
 
-## 普通文件夹预览（legacy Quick Look generator）
+## 旧版 Quick Look generator（实验性）
 
-macOS 不会把 `public.folder` 分派给 App Extension，因此普通文件夹的预览由 `Generator/` 下的 legacy generator 提供（输出 HTML，复用同一套分析引擎）。
-
-```sh
-scripts/build-generator.sh --install   # 构建、签名（ad-hoc）、安装到 ~/Library/QuickLook 并重置 Quick Look
-qlmanage -p /path/to/folder            # 或在 Finder 选中文件夹后按空格
-```
+[`Generator/`](Generator) 是早期为 macOS 14 及更早系统编写的 `.qlgenerator`。macOS 15 起系统不再加载这类插件，现在的文件夹预览由扩展直接提供，因此**不需要**安装它。详见 [`Generator/README.md`](Generator/README.md)。

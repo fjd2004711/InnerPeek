@@ -1,0 +1,45 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  knowledge-and-tests:
+    name: Knowledge, regression and audit
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Make sure jq is available
+        run: command -v jq >/dev/null || brew install jq
+
+      - name: Validate knowledge files
+        run: scripts/validate-knowledge.sh
+
+      - name: Regression tests
+        run: Tests/run-file-intelligence-regression.sh
+
+      - name: Audit corpus
+        # Real-world repositories are downloaded when the network allows; cases that cannot be fetched are reported as unavailable.
+        run: scripts/run-audit-corpus.sh
+
+      - name: Build app and extension
+        run: |
+          xcodebuild \
+            -project InnerPeek.xcodeproj \
+            -scheme InnerPeek \
+            -configuration Debug \
+            -sdk macosx \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_REQUIRED=NO \
+            build

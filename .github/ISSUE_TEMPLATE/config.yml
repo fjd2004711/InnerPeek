@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability / 安全漏洞
+    url: https://github.com/fjd2004711/InnerPeek/security/advisories/new
+    about: Please report security problems privately. / 请私下报告安全问题。
