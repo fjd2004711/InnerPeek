@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import CoreGraphics
 
@@ -84,6 +85,7 @@ enum FileIntelligenceRegression {
         try runGitRepositoryRegression()
         try runProjectIdentityRegression()
         try runProjectRecognitionRegression()
+        try runVisualIdentityRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -616,6 +618,79 @@ enum FileIntelligenceRegression {
         try expect(identity.confidence == .high && identity.repository == nil, "identity confidence from facts without a repository")
         let bare = ProjectIdentityResolver().resolve(folderName: "bare", repositoryContext: nil)
         try expect(bare.facts.isEmpty && bare.confidence == .low, "identity without recognition stays low")
+    }
+
+    /// Icon choice is data-driven: keys come from the knowledge, priority is fixed,
+    /// and every failure mode degrades to a glyph instead of throwing.
+    private static func runVisualIdentityRegression() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-Visual-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let catalog = IconCatalog()
+        let resolver = VisualIdentityResolver(catalog: catalog)
+
+        func identity(_ files: [String: String], remote: String? = nil) throws -> ProjectIdentity {
+            let url = root.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try makeDirectory(url)
+            for (name, text) in files {
+                let file = url.appendingPathComponent(name)
+                try makeDirectory(file.deletingLastPathComponent())
+                try text.write(to: file, atomically: true, encoding: .utf8)
+            }
+            if let remote {
+                try makeDirectory(url.appendingPathComponent(".git"))
+                try "ref: refs/heads/main\n".write(to: url.appendingPathComponent(".git/HEAD"), atomically: true, encoding: .utf8)
+                try "[remote \"origin\"]\n\turl = \(remote)\n".write(to: url.appendingPathComponent(".git/config"), atomically: true, encoding: .utf8)
+            }
+            let analysis = try FolderAnalyzer().analyze(folderURL: url)
+            return ProjectIdentityResolver().resolve(folderName: "p", repositoryContext: analysis.repositoryContext, recognition: analysis.projectRecognition)
+        }
+
+        let next = resolver.resolve(try identity([
+            "package.json": #"{"dependencies":{"next":"1","react":"1"},"devDependencies":{"typescript":"5"}}"#,
+            "pnpm-lock.yaml": "x", "turbo.json": "{}", "tsconfig.json": "{}"
+        ], remote: "https://github.com/example/web.git"))
+        try expect(next.primaryIconKey == "brand.nextjs", "primary icon is the primary framework")
+        try expect(next.secondaryIconKeys == ["brand.typescript", "brand.pnpm", "brand.turborepo", "brand.github"], "secondary icons: other primary technologies then the host, no superseded React")
+
+        let swift = resolver.resolve(try identity(["Package.swift": "//", "App.xcodeproj/project.pbxproj": "x"]))
+        try expect(swift.primaryIconKey == "brand.swift" && swift.secondaryIconKeys.contains("brand.xcode"), "Swift project shows Swift, Xcode is a badge")
+
+        let django = resolver.resolve(try identity(["requirements.txt": "Django==5\n", "manage.py": "x"]))
+        try expect(django.primaryIconKey == "brand.django", "Django outranks Python")
+
+        let gitOnly = resolver.resolve(try identity(["notes.txt": "x"], remote: "https://gitlab.com/example/x.git"))
+        try expect(gitOnly.primaryIconKey == "brand.gitlab" && gitOnly.secondaryIconKeys.isEmpty, "repository host logo for a project without recognised technology")
+        let customHost = resolver.resolve(try identity(["notes.txt": "x"], remote: "https://git.example.test/team/x.git"))
+        try expect(customHost.primaryIconKey == "brand.git", "unknown host falls back to the Git logo")
+
+        let csharp = resolver.resolve(try identity(["App.csproj": "<Project/>"]))
+        try expect(csharp.primaryIconKey == nil && csharp.fallback == .kind(.language), "recognised technology without a logo gets its glyph")
+        let plain = resolver.resolve(try identity(["notes.txt": "x"]))
+        try expect(plain.primaryIconKey == nil && plain.fallback == .generic && plain.secondaryIconKeys.isEmpty, "unrecognised folder is generic")
+
+        // Registry mismatch: a fact pointing at a key the catalog does not know is ignored.
+        let broken = IconCatalog(data: Data(#"{"version":1,"icons":{},"repositoryProviders":{"github":"brand.github","gitlab":"brand.gitlab","bitbucket":"brand.bitbucket","other":"brand.git"}}"#.utf8))
+        let degraded = VisualIdentityResolver(catalog: broken).resolve(next.primaryIconKey == nil ? try identity([:]) : try identity(["package.json": #"{"dependencies":{"next":"1"}}"#]))
+        try expect(degraded.primaryIconKey == nil && degraded.secondaryIconKeys.isEmpty && degraded.fallback == .kind(.framework), "unknown registry keys degrade to a glyph")
+        try expect(IconCatalog(data: Data("not json".utf8)).entries.isEmpty, "malformed icon registry yields an empty catalog")
+
+        // Every key referenced by knowledge resolves to a decodable bundled SVG.
+        let knowledgeBundle = Bundle(path: repositoryRoot.appendingPathComponent("Knowledge").path)!
+        let registry = IconRegistry(catalog: catalog, bundle: knowledgeBundle)
+        try expect(catalog.entries.count >= 30, "icon catalog is populated")
+        for key in catalog.entries.keys.sorted() {
+            guard let image = registry.brandImage(for: key), image.size.width > 0, image.isTemplate else {
+                throw RegressionFailure.failed("brand image decodes: \(key)")
+            }
+        }
+        try expect(registry.brandImage(for: "brand.does-not-exist") == nil, "unknown brand key yields no image")
+        for fallback in [VisualFallback.kind(.framework), .kind(.language), .kind(.buildSystem), .kind(.packageManager), .kind(.projectKind), .repository, .generic] {
+            let visual = VisualIdentity(primaryIconKey: "brand.missing", fallback: fallback, secondaryIconKeys: [])
+            try expect(registry.image(for: visual).size.width > 0, "fallback image always exists")
+            try expect(NSImage(systemSymbolName: IconCatalog.fallbackSymbol(for: fallback), accessibilityDescription: nil) != nil, "fallback SF Symbol exists: \(IconCatalog.fallbackSymbol(for: fallback))")
+        }
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {

@@ -45,6 +45,8 @@ struct DetectedFact: Sendable, Hashable {
     let evidence: [RecognitionEvidence]
     /// Fact ids that caused this fact through an `implies` declaration.
     let impliedBy: [String]
+    /// Stable visual key from the knowledge (`brand.nextjs`), resolved later by the icon layer.
+    let iconKey: String?
 }
 
 /// Facts of one exclusive group whose scores are too close to pick a winner.

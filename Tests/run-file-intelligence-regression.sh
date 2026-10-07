@@ -18,6 +18,8 @@ swiftc \
   "$project_root/Shared/FileIntelligence/ProjectIdentity.swift" \
   "$project_root/Shared/FileIntelligence/DetectedFact.swift" \
   "$project_root/Shared/FileIntelligence/ProjectRecognizer.swift" \
+  "$project_root/Shared/FileIntelligence/IconCatalog.swift" \
+  "$project_root/Shared/FileIntelligence/VisualIdentity.swift" \
   "$project_root/Shared/FileIntelligence/FolderAnalyzer.swift" \
   "$project_root/Shared/FileIntelligence/ImportantFileDetector.swift" \
   "$project_root/Shared/FileIntelligence/MetadataItem.swift" \
@@ -29,6 +31,7 @@ swiftc \
   "$project_root/Shared/PreviewItem.swift" \
   "$project_root/Shared/PreviewContentProvider.swift" \
   "$project_root/Shared/ZIPContentProvider.swift" \
+  "$project_root/InnerPeekQL/IconRegistry.swift" \
   "$project_root/Tests/FileIntelligenceRegression.swift" \
   -framework AppKit -framework ImageIO -framework AVFoundation -framework PDFKit \
   -o "$binary_path"

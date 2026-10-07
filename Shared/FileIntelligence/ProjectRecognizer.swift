@@ -22,22 +22,26 @@ private struct RecognitionKnowledge: Decodable, Sendable {
         let weight: Double
     }
 
+    struct Visual: Decodable, Sendable { let icon: String }
+
     struct Fact: Decodable, Sendable {
         let id: String
         let kind: ProjectFactKind
         let name: Name
+        let visual: Visual?
         let group: String?
         let supersedes: [String]
         let implies: [String]
         let evidence: [Evidence]
 
-        enum CodingKeys: String, CodingKey { case id, kind, name, group, supersedes, implies, evidence }
+        enum CodingKeys: String, CodingKey { case id, kind, name, visual, group, supersedes, implies, evidence }
 
         init(from decoder: Decoder) throws {
             let values = try decoder.container(keyedBy: CodingKeys.self)
             id = try values.decode(String.self, forKey: .id)
             kind = try values.decode(ProjectFactKind.self, forKey: .kind)
             name = try values.decode(Name.self, forKey: .name)
+            visual = try values.decodeIfPresent(Visual.self, forKey: .visual)
             group = try values.decodeIfPresent(String.self, forKey: .group)
             supersedes = try values.decodeIfPresent([String].self, forKey: .supersedes) ?? []
             implies = try values.decodeIfPresent([String].self, forKey: .implies) ?? []
@@ -155,7 +159,8 @@ struct ProjectRecognizer: Sendable {
                 name: InsightLocalizedText(english: fact.name.english, simplifiedChinese: fact.name.simplifiedChinese),
                 score: candidate.score, confidence: confidence,
                 role: demoted.contains(fact.id) ? .supporting : .primary,
-                evidence: candidate.evidence, impliedBy: candidate.impliedBy
+                evidence: candidate.evidence, impliedBy: candidate.impliedBy,
+                iconKey: fact.visual?.icon
             )
         }.sorted {
             if $0.kind != $1.kind { return kindOrder[$0.kind]! < kindOrder[$1.kind]! }
