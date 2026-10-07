@@ -383,8 +383,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 title: NSLocalizedString("tech_stack", comment: "Technology stack summary row"),
                 summary: stack.map { $0.name.value() }.joined(separator: " · "), status: .detected,
                 brandKey: nil, symbolName: "square.stack.3d.up",
-                reasons: stack.flatMap { fact in
-                    fact.evidence.sorted { $0.weight > $1.weight }.prefix(2).map { "\(fact.name.value()) — \($0.explanation.value())" }
+                reasons: stack.flatMap { fact -> [String] in
+                    // Tiered rules can match twice with identical wording; show each reason once.
+                    var seen = Set<String>()
+                    return fact.evidence.sorted { $0.weight > $1.weight }
+                        .map { "\(fact.name.value()) — \($0.explanation.value())" }
+                        .filter { seen.insert($0).inserted }
+                        .prefix(2).map { $0 }
                 }
             )
             shown = true

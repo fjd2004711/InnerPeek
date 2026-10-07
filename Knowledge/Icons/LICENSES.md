@@ -16,37 +16,47 @@ build system or repository host. Only icons for technologies that `project-recog
 
 | Key | Upstream title | File |
 |---|---|---|
-| `brand.swift` | Swift | `brands/swift.svg` |
-| `brand.python` | Python | `brands/python.svg` |
-| `brand.javascript` | JavaScript | `brands/javascript.svg` |
-| `brand.typescript` | TypeScript | `brands/typescript.svg` |
-| `brand.rust` | Rust | `brands/rust.svg` |
-| `brand.go` | Go | `brands/go.svg` |
-| `brand.java` | OpenJDK | `brands/openjdk.svg` |
-| `brand.kotlin` | Kotlin | `brands/kotlin.svg` |
+| `brand.astro` | Astro | `brands/astro.svg` |
+| `brand.bitbucket` | Bitbucket | `brands/bitbucket.svg` |
+| `brand.bun` | Bun | `brands/bun.svg` |
 | `brand.c` | C | `brands/c.svg` |
+| `brand.cmake` | CMake | `brands/cmake.svg` |
 | `brand.cplusplus` | C++ | `brands/cplusplus.svg` |
 | `brand.dart` | Dart | `brands/dart.svg` |
-| `brand.ruby` | Ruby | `brands/ruby.svg` |
-| `brand.php` | PHP | `brands/php.svg` |
-| `brand.react` | React | `brands/react.svg` |
-| `brand.nextjs` | Next.js | `brands/nextdotjs.svg` |
-| `brand.vue` | Vue.js | `brands/vuedotjs.svg` |
-| `brand.nuxt` | Nuxt | `brands/nuxt.svg` |
 | `brand.django` | Django | `brands/django.svg` |
-| `brand.npm` | npm | `brands/npm.svg` |
-| `brand.yarn` | Yarn | `brands/yarn.svg` |
-| `brand.pnpm` | pnpm | `brands/pnpm.svg` |
-| `brand.bun` | Bun | `brands/bun.svg` |
-| `brand.poetry` | Poetry | `brands/poetry.svg` |
-| `brand.uv` | uv | `brands/uv.svg` |
-| `brand.maven` | Apache Maven | `brands/apachemaven.svg` |
-| `brand.gradle` | Gradle | `brands/gradle.svg` |
-| `brand.xcode` | Xcode | `brands/xcode.svg` |
-| `brand.turborepo` | Turborepo | `brands/turborepo.svg` |
-| `brand.nx` | Nx | `brands/nx.svg` |
-| `brand.cmake` | CMake | `brands/cmake.svg` |
+| `brand.docker` | Docker | `brands/docker.svg` |
+| `brand.electron` | Electron | `brands/electron.svg` |
+| `brand.fastapi` | FastAPI | `brands/fastapi.svg` |
+| `brand.flask` | Flask | `brands/flask.svg` |
+| `brand.flutter` | Flutter | `brands/flutter.svg` |
 | `brand.git` | Git | `brands/git.svg` |
 | `brand.github` | GitHub | `brands/github.svg` |
 | `brand.gitlab` | GitLab | `brands/gitlab.svg` |
-| `brand.bitbucket` | Bitbucket | `brands/bitbucket.svg` |
+| `brand.go` | Go | `brands/go.svg` |
+| `brand.gradle` | Gradle | `brands/gradle.svg` |
+| `brand.java` | OpenJDK | `brands/openjdk.svg` |
+| `brand.javascript` | JavaScript | `brands/javascript.svg` |
+| `brand.kotlin` | Kotlin | `brands/kotlin.svg` |
+| `brand.maven` | Apache Maven | `brands/apachemaven.svg` |
+| `brand.nextjs` | Next.js | `brands/nextdotjs.svg` |
+| `brand.npm` | npm | `brands/npm.svg` |
+| `brand.nuxt` | Nuxt | `brands/nuxt.svg` |
+| `brand.nx` | Nx | `brands/nx.svg` |
+| `brand.php` | PHP | `brands/php.svg` |
+| `brand.pnpm` | pnpm | `brands/pnpm.svg` |
+| `brand.poetry` | Poetry | `brands/poetry.svg` |
+| `brand.python` | Python | `brands/python.svg` |
+| `brand.pytorch` | PyTorch | `brands/pytorch.svg` |
+| `brand.react` | React | `brands/react.svg` |
+| `brand.ruby` | Ruby | `brands/ruby.svg` |
+| `brand.rust` | Rust | `brands/rust.svg` |
+| `brand.springboot` | Spring Boot | `brands/springboot.svg` |
+| `brand.svelte` | Svelte | `brands/svelte.svg` |
+| `brand.swift` | Swift | `brands/swift.svg` |
+| `brand.tensorflow` | TensorFlow | `brands/tensorflow.svg` |
+| `brand.turborepo` | Turborepo | `brands/turborepo.svg` |
+| `brand.typescript` | TypeScript | `brands/typescript.svg` |
+| `brand.uv` | uv | `brands/uv.svg` |
+| `brand.vue` | Vue.js | `brands/vuedotjs.svg` |
+| `brand.xcode` | Xcode | `brands/xcode.svg` |
+| `brand.yarn` | Yarn | `brands/yarn.svg` |

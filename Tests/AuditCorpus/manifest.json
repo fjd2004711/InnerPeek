@@ -57,6 +57,21 @@
     {"id":"proj-few-sources","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-few-sources","forbiddenFacts":["language.swift"],"expectNoFacts":true},
     {"id":"proj-diluted-sources","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-diluted-sources","forbiddenFacts":["language.python"],"expectNoFacts":true},
     {"id":"proj-cpp-cmake","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-cpp-cmake","requiredFacts":["language.cpp:primary:medium","buildSystem.cmake:primary"]},
+    {"id":"proj-sveltekit","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-sveltekit","requiredFacts":["framework.sveltekit:primary:high","framework.svelte:supporting","projectKind.web-application:primary"]},
+    {"id":"proj-astro","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-astro","requiredFacts":["framework.astro:primary:high","projectKind.web-application:primary"]},
+    {"id":"proj-flask","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-flask","requiredFacts":["framework.flask:primary","projectKind.web-application:primary"],"forbiddenFacts":["framework.django"]},
+    {"id":"proj-fastapi","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-fastapi","requiredFacts":["framework.fastapi:primary","projectKind.web-api:primary"],"forbiddenFacts":["projectKind.web-application"]},
+    {"id":"proj-springboot-maven","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-springboot-maven","requiredFacts":["framework.springboot:primary:high","packageManager.maven:primary"]},
+    {"id":"proj-springboot-gradle","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-springboot-gradle","requiredFacts":["framework.springboot:primary","language.kotlin:primary","packageManager.gradle:primary"]},
+    {"id":"proj-pytorch-imports","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-pytorch-imports","requiredFacts":["framework.pytorch:primary:medium","language.python:primary"],"forbiddenFacts":["framework.tensorflow"]},
+    {"id":"proj-tensorflow-requirements","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-tensorflow-requirements","requiredFacts":["framework.tensorflow:primary"],"forbiddenFacts":["framework.pytorch"]},
+    {"id":"proj-swiftui-app","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-swiftui-app","requiredFacts":["framework.swiftui:primary","language.swift:primary"],"forbiddenFacts":["framework.appkit","framework.uikit"]},
+    {"id":"proj-appkit-app","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-appkit-app","requiredFacts":["framework.appkit:primary:high"],"forbiddenFacts":["framework.swiftui"]},
+    {"id":"proj-import-negatives","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-import-negatives","forbiddenFacts":["framework.pytorch","framework.tensorflow"]},
+    {"id":"proj-late-import","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-late-import","forbiddenFacts":["framework.swiftui"]},
+    {"id":"proj-flutter","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-flutter","requiredFacts":["framework.flutter:primary:high","language.dart:primary"]},
+    {"id":"proj-electron","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-electron","requiredFacts":["framework.electron:primary"]},
+    {"id":"proj-docker-compose","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/proj-docker-compose","requiredFacts":["buildSystem.docker:primary:high"]},
     {"id":"git-github-transformer","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-transformer","requiredRelationships":["transformer"],"expectedVerdict":"transformerModelPackage","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"},
     {"id":"git-github-node","kind":"synthetic","sourceKind":"filesystem","path":"synthetic/git-github-node","requiredRelationships":["node","docker"],"expectedVerdict":"nodeProject","expectedRepositoryState":"repository","expectedRemoteHost":"github.com"}
     ,{"id":"realworld-hello-world","kind":"real-world","sourceKind":"filesystem","path":"real-world/hello-world"}
@@ -65,5 +80,15 @@
     ,{"id":"realworld-ripgrep","kind":"real-world","sourceKind":"filesystem","path":"real-world/ripgrep"}
     ,{"id":"realworld-pyproject","kind":"real-world","sourceKind":"filesystem","path":"real-world/pyproject"}
     ,{"id":"realworld-markdown","kind":"real-world","sourceKind":"filesystem","path":"real-world/markdown"}
+    ,{"id":"realworld-djangox","kind":"real-world","sourceKind":"filesystem","path":"real-world/djangox","requiredFacts":["framework.django:primary","packageManager.uv:primary"]}
+    ,{"id":"realworld-nextjs-subscription-payments","kind":"real-world","sourceKind":"filesystem","path":"real-world/nextjs-subscription-payments","requiredFacts":["framework.nextjs:primary","framework.react:supporting","packageManager.pnpm:primary"]}
+    ,{"id":"realworld-svelte-realworld","kind":"real-world","sourceKind":"filesystem","path":"real-world/svelte-realworld","requiredFacts":["framework.sveltekit:primary"]}
+    ,{"id":"realworld-spring-petclinic","kind":"real-world","sourceKind":"filesystem","path":"real-world/spring-petclinic","requiredFacts":["framework.springboot:primary","language.java:primary"]}
+    ,{"id":"realworld-nanogpt","kind":"real-world","sourceKind":"filesystem","path":"real-world/nanogpt","requiredFacts":["framework.pytorch:primary"]}
+    ,{"id":"realworld-electron-quick-start","kind":"real-world","sourceKind":"filesystem","path":"real-world/electron-quick-start","requiredFacts":["framework.electron:primary"]}
+    ,{"id":"realworld-swift-argument-parser","kind":"real-world","sourceKind":"filesystem","path":"real-world/swift-argument-parser","requiredFacts":["language.swift:primary","packageManager.swiftpm:primary"],"forbiddenFacts":["framework.swiftui"]}
+    ,{"id":"realworld-swiftui-clean-architecture","kind":"real-world","sourceKind":"filesystem","path":"real-world/swiftui-clean-architecture","requiredFacts":["framework.swiftui:primary"]}
+    ,{"id":"realworld-voting-app","kind":"real-world","sourceKind":"filesystem","path":"real-world/voting-app","requiredFacts":["buildSystem.docker:primary"]}
+    ,{"id":"realworld-flask","kind":"real-world","sourceKind":"filesystem","path":"real-world/flask","requiredFacts":["language.python:primary"]}
   ]
 }

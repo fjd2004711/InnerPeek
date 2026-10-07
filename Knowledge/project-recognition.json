@@ -1022,6 +1022,438 @@
           "weight": 0.5
         }
       ]
+    },
+    {
+      "id": "projectKind.web-api",
+      "kind": "projectKind",
+      "name": {
+        "en": "Web API",
+        "zh-Hans": "Web API"
+      },
+      "evidence": []
+    },
+    {
+      "id": "framework.svelte",
+      "kind": "framework",
+      "name": {
+        "en": "Svelte",
+        "zh-Hans": "Svelte"
+      },
+      "visual": {
+        "icon": "brand.svelte"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "svelte",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "svelte.config.*",
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "id": "framework.sveltekit",
+      "kind": "framework",
+      "name": {
+        "en": "SvelteKit",
+        "zh-Hans": "SvelteKit"
+      },
+      "visual": {
+        "icon": "brand.svelte"
+      },
+      "supersedes": [
+        "framework.svelte"
+      ],
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "@sveltejs/kit",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "framework.astro",
+      "kind": "framework",
+      "name": {
+        "en": "Astro",
+        "zh-Hans": "Astro"
+      },
+      "visual": {
+        "icon": "brand.astro"
+      },
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "astro",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "astro.config.*",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "framework.flask",
+      "kind": "framework",
+      "name": {
+        "en": "Flask",
+        "zh-Hans": "Flask"
+      },
+      "visual": {
+        "icon": "brand.flask"
+      },
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "pyproject.toml",
+          "key": "flask",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "requirements.txt",
+          "key": "flask",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "framework.fastapi",
+      "kind": "framework",
+      "name": {
+        "en": "FastAPI",
+        "zh-Hans": "FastAPI"
+      },
+      "visual": {
+        "icon": "brand.fastapi"
+      },
+      "implies": [
+        "projectKind.web-api"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "pyproject.toml",
+          "key": "fastapi",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "requirements.txt",
+          "key": "fastapi",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "framework.springboot",
+      "kind": "framework",
+      "name": {
+        "en": "Spring Boot",
+        "zh-Hans": "Spring Boot"
+      },
+      "visual": {
+        "icon": "brand.springboot"
+      },
+      "evidence": [
+        {
+          "type": "manifest_text",
+          "file": "pom.xml",
+          "contains": "spring-boot",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_text",
+          "file": "build.gradle",
+          "contains": "org.springframework.boot",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_text",
+          "file": "build.gradle.kts",
+          "contains": "org.springframework.boot",
+          "weight": 0.9
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "java",
+            "kt"
+          ],
+          "module": "org.springframework.boot",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "java",
+            "kt"
+          ],
+          "module": "org.springframework.boot",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.pytorch",
+      "kind": "framework",
+      "name": {
+        "en": "PyTorch",
+        "zh-Hans": "PyTorch"
+      },
+      "visual": {
+        "icon": "brand.pytorch"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "pyproject.toml",
+          "key": "torch",
+          "weight": 0.85
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "requirements.txt",
+          "key": "torch",
+          "weight": 0.85
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "py"
+          ],
+          "module": "torch",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "py"
+          ],
+          "module": "torch",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.tensorflow",
+      "kind": "framework",
+      "name": {
+        "en": "TensorFlow",
+        "zh-Hans": "TensorFlow"
+      },
+      "visual": {
+        "icon": "brand.tensorflow"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "pyproject.toml",
+          "key": "tensorflow",
+          "weight": 0.85
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "requirements.txt",
+          "key": "tensorflow",
+          "weight": 0.85
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "py"
+          ],
+          "module": "tensorflow",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "py"
+          ],
+          "module": "tensorflow",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.swiftui",
+      "kind": "framework",
+      "name": {
+        "en": "SwiftUI",
+        "zh-Hans": "SwiftUI"
+      },
+      "evidence": [
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "SwiftUI",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "SwiftUI",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.appkit",
+      "kind": "framework",
+      "name": {
+        "en": "AppKit",
+        "zh-Hans": "AppKit"
+      },
+      "evidence": [
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "AppKit",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "AppKit",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.uikit",
+      "kind": "framework",
+      "name": {
+        "en": "UIKit",
+        "zh-Hans": "UIKit"
+      },
+      "evidence": [
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "UIKit",
+          "weight": 0.65
+        },
+        {
+          "type": "source_import",
+          "extensions": [
+            "swift"
+          ],
+          "module": "UIKit",
+          "weight": 0.8,
+          "minimumFiles": 3
+        }
+      ]
+    },
+    {
+      "id": "framework.flutter",
+      "kind": "framework",
+      "name": {
+        "en": "Flutter",
+        "zh-Hans": "Flutter"
+      },
+      "visual": {
+        "icon": "brand.flutter"
+      },
+      "evidence": [
+        {
+          "type": "manifest_text",
+          "file": "pubspec.yaml",
+          "contains": "sdk: flutter",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "framework.electron",
+      "kind": "framework",
+      "name": {
+        "en": "Electron",
+        "zh-Hans": "Electron"
+      },
+      "visual": {
+        "icon": "brand.electron"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "electron",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.docker",
+      "kind": "buildSystem",
+      "name": {
+        "en": "Docker",
+        "zh-Hans": "Docker"
+      },
+      "visual": {
+        "icon": "brand.docker"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Dockerfile",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "docker-compose.yml",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "docker-compose.yaml",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "compose.yml",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "compose.yaml",
+          "weight": 0.9
+        }
+      ]
     }
   ]
 }

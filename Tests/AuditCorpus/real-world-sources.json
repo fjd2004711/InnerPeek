@@ -4,5 +4,15 @@
   {"id":"realworld-click","url":"https://github.com/pallets/click/archive/refs/tags/8.1.7.zip","revision":"8.1.7","license":"BSD-3-Clause"},
   {"id":"realworld-ripgrep","url":"https://github.com/BurntSushi/ripgrep/archive/refs/tags/14.1.0.zip","revision":"14.1.0","license":"MIT/Unlicense"},
   {"id":"realworld-pyproject","url":"https://github.com/pypa/sampleproject/archive/refs/heads/main.zip","revision":"main","license":"MIT"},
-  {"id":"realworld-markdown","url":"https://github.com/adam-p/markdown-here/archive/refs/heads/master.zip","revision":"master","license":"MIT"}
+  {"id":"realworld-markdown","url":"https://github.com/adam-p/markdown-here/archive/refs/heads/master.zip","revision":"master","license":"MIT"},
+  {"id":"realworld-flask","url":"https://github.com/pallets/flask/archive/refs/tags/3.0.3.zip","revision":"3.0.3","license":"BSD-3-Clause"},
+  {"id":"realworld-djangox","url":"https://github.com/wsvincent/djangox/archive/HEAD.zip","revision":"HEAD","license":"MIT"},
+  {"id":"realworld-svelte-realworld","url":"https://github.com/sveltejs/realworld/archive/HEAD.zip","revision":"HEAD","license":"MIT"},
+  {"id":"realworld-nextjs-subscription-payments","url":"https://github.com/vercel/nextjs-subscription-payments/archive/HEAD.zip","revision":"HEAD","license":"MIT"},
+  {"id":"realworld-spring-petclinic","url":"https://github.com/spring-projects/spring-petclinic/archive/HEAD.zip","revision":"HEAD","license":"Apache-2.0"},
+  {"id":"realworld-nanogpt","url":"https://github.com/karpathy/nanoGPT/archive/HEAD.zip","revision":"HEAD","license":"MIT"},
+  {"id":"realworld-electron-quick-start","url":"https://github.com/electron/electron-quick-start/archive/HEAD.zip","revision":"HEAD","license":"CC0-1.0"},
+  {"id":"realworld-swift-argument-parser","url":"https://github.com/apple/swift-argument-parser/archive/refs/tags/1.5.0.zip","revision":"1.5.0","license":"Apache-2.0"},
+  {"id":"realworld-swiftui-clean-architecture","url":"https://github.com/nalexn/clean-architecture-swiftui/archive/HEAD.zip","revision":"HEAD","license":"MIT"},
+  {"id":"realworld-voting-app","url":"https://github.com/dockersamples/example-voting-app/archive/HEAD.zip","revision":"HEAD","license":"Apache-2.0"}
 ]

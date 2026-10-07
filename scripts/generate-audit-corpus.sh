@@ -150,6 +150,53 @@ put $p/CMakeLists.txt 'project(x)'
 for f in a b c d; do put $p/src/$f.cpp '//'; done
 put $p/src/a.hpp '//'
 
+# Stage 10C-7: framework knowledge expansion and source-import evidence.
+p=$(proj proj-sveltekit)
+put $p/package.json '{"devDependencies":{"@sveltejs/kit":"2.0.0","svelte":"4.2.0"}}'
+put $p/svelte.config.js 'export default {}'
+p=$(proj proj-astro)
+put $p/package.json '{"dependencies":{"astro":"4.0.0"}}'
+put $p/astro.config.mjs 'export default {}'
+p=$(proj proj-flask)
+put $p/requirements.txt $'Flask==3.0.0\n'
+p=$(proj proj-fastapi)
+put $p/pyproject.toml $'[project]\nname = "api"\ndependencies = [\n  "fastapi[standard]>=0.110",\n]\n'
+p=$(proj proj-springboot-maven)
+put $p/pom.xml '<project><dependencies><dependency><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies></project>'
+p=$(proj proj-springboot-gradle)
+put $p/build.gradle.kts 'plugins { kotlin("jvm") version "1.9.0"; id("org.springframework.boot") version "3.2.0" }'
+p=$(proj proj-pytorch-imports)
+put $p/train.py $'import os\nimport torch\n'
+put $p/model.py $'from torch import nn\n'
+put $p/data.py $'import numpy as np\n'
+p=$(proj proj-tensorflow-requirements)
+put $p/requirements.txt $'tensorflow==2.16.1\n'
+p=$(proj proj-swiftui-app)
+mkdir -p $p/App.xcodeproj
+put $p/App/AppMain.swift $'import SwiftUI\n@main struct A: App {}'
+put $p/App/Views.swift $'@testable import SwiftUI\nimport Foundation'
+put $p/App/Model.swift $'import Foundation'
+p=$(proj proj-appkit-app)
+mkdir -p $p/App.xcodeproj
+for f in A B C; do put $p/App/$f.swift $'import AppKit\nimport struct Foundation.URL'; done
+p=$(proj proj-import-negatives)
+put $p/a.py $'# import torch\nimport torchvision\nfrom .torch import x\nx = "import torch"\n'
+put $p/b.py $'import tensorflow_hub\n'
+put $p/c.py $'print("hello")\n'
+p=$(proj proj-late-import)
+mkdir -p $p/App.xcodeproj
+mkdir -p $p/App
+{ for i in {1..400}; do print -r -- "// padding line to push the import beyond the bounded read window .."; done; print -r -- "import SwiftUI"; } > $p/App/Late.swift
+put $p/App/B.swift 'import Foundation'
+put $p/App/C.swift 'import Foundation'
+p=$(proj proj-flutter)
+put $p/pubspec.yaml $'name: app\ndependencies:\n  flutter:\n    sdk: flutter\n'
+p=$(proj proj-electron)
+put $p/package.json '{"devDependencies":{"electron":"30.0.0"}}'
+p=$(proj proj-docker-compose)
+put $p/Dockerfile 'FROM scratch'
+put $p/docker-compose.yml 'services: {}'
+
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30
 write "$out/semi-realistic/messy-python/uv.lock" 30

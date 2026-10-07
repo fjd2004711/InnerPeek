@@ -1,69 +1,29 @@
 {
   "version": 1,
   "icons": {
-    "brand.swift": {
-      "asset": "swift",
+    "brand.astro": {
+      "asset": "astro",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "Swift",
+      "upstream": "Astro",
       "monochrome": false,
-      "color": "#F05138"
+      "color": "#BC52EE"
     },
-    "brand.python": {
-      "asset": "python",
+    "brand.bitbucket": {
+      "asset": "bitbucket",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "Python",
+      "upstream": "Bitbucket",
       "monochrome": false,
-      "color": "#3776AB"
+      "color": "#0052CC"
     },
-    "brand.javascript": {
-      "asset": "javascript",
+    "brand.bun": {
+      "asset": "bun",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "JavaScript",
-      "monochrome": false,
-      "color": "#F7DF1E"
-    },
-    "brand.typescript": {
-      "asset": "typescript",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "TypeScript",
-      "monochrome": false,
-      "color": "#3178C6"
-    },
-    "brand.rust": {
-      "asset": "rust",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Rust",
+      "upstream": "Bun",
       "monochrome": true,
       "color": "#000000"
-    },
-    "brand.go": {
-      "asset": "go",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Go",
-      "monochrome": false,
-      "color": "#00ADD8"
-    },
-    "brand.java": {
-      "asset": "openjdk",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "OpenJDK",
-      "monochrome": true,
-      "color": "#000000"
-    },
-    "brand.kotlin": {
-      "asset": "kotlin",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Kotlin",
-      "monochrome": false,
-      "color": "#7F52FF"
     },
     "brand.c": {
       "asset": "c",
@@ -72,6 +32,14 @@
       "upstream": "C",
       "monochrome": false,
       "color": "#A8B9CC"
+    },
+    "brand.cmake": {
+      "asset": "cmake",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "CMake",
+      "monochrome": false,
+      "color": "#064F8C"
     },
     "brand.cplusplus": {
       "asset": "cplusplus",
@@ -89,54 +57,6 @@
       "monochrome": false,
       "color": "#0175C2"
     },
-    "brand.ruby": {
-      "asset": "ruby",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Ruby",
-      "monochrome": false,
-      "color": "#CC342D"
-    },
-    "brand.php": {
-      "asset": "php",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "PHP",
-      "monochrome": false,
-      "color": "#777BB4"
-    },
-    "brand.react": {
-      "asset": "react",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "React",
-      "monochrome": false,
-      "color": "#61DAFB"
-    },
-    "brand.nextjs": {
-      "asset": "nextdotjs",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Next.js",
-      "monochrome": true,
-      "color": "#000000"
-    },
-    "brand.vue": {
-      "asset": "vuedotjs",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Vue.js",
-      "monochrome": false,
-      "color": "#4FC08D"
-    },
-    "brand.nuxt": {
-      "asset": "nuxt",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Nuxt",
-      "monochrome": false,
-      "color": "#00DC82"
-    },
     "brand.django": {
       "asset": "django",
       "source": "simple-icons",
@@ -145,101 +65,45 @@
       "monochrome": true,
       "color": "#092E20"
     },
-    "brand.npm": {
-      "asset": "npm",
+    "brand.docker": {
+      "asset": "docker",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "npm",
+      "upstream": "Docker",
       "monochrome": false,
-      "color": "#CB3837"
+      "color": "#2496ED"
     },
-    "brand.yarn": {
-      "asset": "yarn",
+    "brand.electron": {
+      "asset": "electron",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "Yarn",
+      "upstream": "Electron",
       "monochrome": false,
-      "color": "#2C8EBB"
+      "color": "#47848F"
     },
-    "brand.pnpm": {
-      "asset": "pnpm",
+    "brand.fastapi": {
+      "asset": "fastapi",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "pnpm",
+      "upstream": "FastAPI",
       "monochrome": false,
-      "color": "#F69220"
+      "color": "#009688"
     },
-    "brand.bun": {
-      "asset": "bun",
+    "brand.flask": {
+      "asset": "flask",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "Bun",
-      "monochrome": true,
-      "color": "#000000"
-    },
-    "brand.poetry": {
-      "asset": "poetry",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Poetry",
+      "upstream": "Flask",
       "monochrome": false,
-      "color": "#60A5FA"
+      "color": "#3BABC3"
     },
-    "brand.uv": {
-      "asset": "uv",
+    "brand.flutter": {
+      "asset": "flutter",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "uv",
+      "upstream": "Flutter",
       "monochrome": false,
-      "color": "#DE5FE9"
-    },
-    "brand.maven": {
-      "asset": "apachemaven",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Apache Maven",
-      "monochrome": false,
-      "color": "#C71A36"
-    },
-    "brand.gradle": {
-      "asset": "gradle",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Gradle",
-      "monochrome": true,
-      "color": "#02303A"
-    },
-    "brand.xcode": {
-      "asset": "xcode",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Xcode",
-      "monochrome": false,
-      "color": "#147EFB"
-    },
-    "brand.turborepo": {
-      "asset": "turborepo",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Turborepo",
-      "monochrome": false,
-      "color": "#FF1E56"
-    },
-    "brand.nx": {
-      "asset": "nx",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "Nx",
-      "monochrome": true,
-      "color": "#143055"
-    },
-    "brand.cmake": {
-      "asset": "cmake",
-      "source": "simple-icons",
-      "sourceVersion": "16.34.0",
-      "upstream": "CMake",
-      "monochrome": false,
-      "color": "#064F8C"
+      "color": "#02569B"
     },
     "brand.git": {
       "asset": "git",
@@ -265,13 +129,229 @@
       "monochrome": false,
       "color": "#FC6D26"
     },
-    "brand.bitbucket": {
-      "asset": "bitbucket",
+    "brand.go": {
+      "asset": "go",
       "source": "simple-icons",
       "sourceVersion": "16.34.0",
-      "upstream": "Bitbucket",
+      "upstream": "Go",
       "monochrome": false,
-      "color": "#0052CC"
+      "color": "#00ADD8"
+    },
+    "brand.gradle": {
+      "asset": "gradle",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Gradle",
+      "monochrome": true,
+      "color": "#02303A"
+    },
+    "brand.java": {
+      "asset": "openjdk",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "OpenJDK",
+      "monochrome": true,
+      "color": "#000000"
+    },
+    "brand.javascript": {
+      "asset": "javascript",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "JavaScript",
+      "monochrome": false,
+      "color": "#F7DF1E"
+    },
+    "brand.kotlin": {
+      "asset": "kotlin",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Kotlin",
+      "monochrome": false,
+      "color": "#7F52FF"
+    },
+    "brand.maven": {
+      "asset": "apachemaven",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Apache Maven",
+      "monochrome": false,
+      "color": "#C71A36"
+    },
+    "brand.nextjs": {
+      "asset": "nextdotjs",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Next.js",
+      "monochrome": true,
+      "color": "#000000"
+    },
+    "brand.npm": {
+      "asset": "npm",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "npm",
+      "monochrome": false,
+      "color": "#CB3837"
+    },
+    "brand.nuxt": {
+      "asset": "nuxt",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Nuxt",
+      "monochrome": false,
+      "color": "#00DC82"
+    },
+    "brand.nx": {
+      "asset": "nx",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Nx",
+      "monochrome": true,
+      "color": "#143055"
+    },
+    "brand.php": {
+      "asset": "php",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "PHP",
+      "monochrome": false,
+      "color": "#777BB4"
+    },
+    "brand.pnpm": {
+      "asset": "pnpm",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "pnpm",
+      "monochrome": false,
+      "color": "#F69220"
+    },
+    "brand.poetry": {
+      "asset": "poetry",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Poetry",
+      "monochrome": false,
+      "color": "#60A5FA"
+    },
+    "brand.python": {
+      "asset": "python",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Python",
+      "monochrome": false,
+      "color": "#3776AB"
+    },
+    "brand.pytorch": {
+      "asset": "pytorch",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "PyTorch",
+      "monochrome": false,
+      "color": "#EE4C2C"
+    },
+    "brand.react": {
+      "asset": "react",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "React",
+      "monochrome": false,
+      "color": "#61DAFB"
+    },
+    "brand.ruby": {
+      "asset": "ruby",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Ruby",
+      "monochrome": false,
+      "color": "#CC342D"
+    },
+    "brand.rust": {
+      "asset": "rust",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Rust",
+      "monochrome": true,
+      "color": "#000000"
+    },
+    "brand.springboot": {
+      "asset": "springboot",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Spring Boot",
+      "monochrome": false,
+      "color": "#6DB33F"
+    },
+    "brand.svelte": {
+      "asset": "svelte",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Svelte",
+      "monochrome": false,
+      "color": "#FF3E00"
+    },
+    "brand.swift": {
+      "asset": "swift",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Swift",
+      "monochrome": false,
+      "color": "#F05138"
+    },
+    "brand.tensorflow": {
+      "asset": "tensorflow",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "TensorFlow",
+      "monochrome": false,
+      "color": "#FF6F00"
+    },
+    "brand.turborepo": {
+      "asset": "turborepo",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Turborepo",
+      "monochrome": false,
+      "color": "#FF1E56"
+    },
+    "brand.typescript": {
+      "asset": "typescript",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "TypeScript",
+      "monochrome": false,
+      "color": "#3178C6"
+    },
+    "brand.uv": {
+      "asset": "uv",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "uv",
+      "monochrome": false,
+      "color": "#DE5FE9"
+    },
+    "brand.vue": {
+      "asset": "vuedotjs",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Vue.js",
+      "monochrome": false,
+      "color": "#4FC08D"
+    },
+    "brand.xcode": {
+      "asset": "xcode",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Xcode",
+      "monochrome": false,
+      "color": "#147EFB"
+    },
+    "brand.yarn": {
+      "asset": "yarn",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Yarn",
+      "monochrome": false,
+      "color": "#2C8EBB"
     }
   },
   "repositoryProviders": {
