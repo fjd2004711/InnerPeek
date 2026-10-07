@@ -90,6 +90,8 @@ struct FolderAnalysis: Sendable, Hashable {
     /// Repository context is obtained from a fixed set of root metadata paths,
     /// outside the regular visible-file traversal.
     let repositoryContext: GitRepositoryContext?
+    /// Facts from declarative project recognition; empty for sources that cannot read manifests (ZIP).
+    let projectRecognition: ProjectRecognition
 
     init(
         analyzedFileCount: Int,
@@ -102,7 +104,8 @@ struct FolderAnalysis: Sendable, Hashable {
         analyzedEntries: [AnalyzedEntry],
         scanState: FolderAnalysisScanState,
         sourceKind: ContentSourceKind = .filesystem,
-        repositoryContext: GitRepositoryContext? = nil
+        repositoryContext: GitRepositoryContext? = nil,
+        projectRecognition: ProjectRecognition = .empty
     ) {
         self.analyzedFileCount = analyzedFileCount
         self.analyzedDirectoryCount = analyzedDirectoryCount
@@ -115,6 +118,7 @@ struct FolderAnalysis: Sendable, Hashable {
         self.scanState = scanState
         self.sourceKind = sourceKind
         self.repositoryContext = repositoryContext
+        self.projectRecognition = projectRecognition
     }
 
     /// Builds the existing analysis contract from a provider-neutral snapshot.
