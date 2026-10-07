@@ -91,6 +91,9 @@
         "en": "Swift",
         "zh-Hans": "Swift"
       },
+      "visual": {
+        "icon": "brand.swift"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -124,6 +127,9 @@
       "name": {
         "en": "Python",
         "zh-Hans": "Python"
+      },
+      "visual": {
+        "icon": "brand.python"
       },
       "evidence": [
         {
@@ -164,6 +170,9 @@
         "en": "JavaScript",
         "zh-Hans": "JavaScript"
       },
+      "visual": {
+        "icon": "brand.javascript"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -190,6 +199,9 @@
       "name": {
         "en": "TypeScript",
         "zh-Hans": "TypeScript"
+      },
+      "visual": {
+        "icon": "brand.typescript"
       },
       "supersedes": [
         "language.javascript"
@@ -225,6 +237,9 @@
         "en": "Rust",
         "zh-Hans": "Rust"
       },
+      "visual": {
+        "icon": "brand.rust"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -249,6 +264,9 @@
         "en": "Go",
         "zh-Hans": "Go"
       },
+      "visual": {
+        "icon": "brand.go"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -272,6 +290,9 @@
       "name": {
         "en": "Java",
         "zh-Hans": "Java"
+      },
+      "visual": {
+        "icon": "brand.java"
       },
       "evidence": [
         {
@@ -307,6 +328,9 @@
       "name": {
         "en": "Kotlin",
         "zh-Hans": "Kotlin"
+      },
+      "visual": {
+        "icon": "brand.kotlin"
       },
       "supersedes": [
         "language.java"
@@ -354,6 +378,9 @@
         "en": "C",
         "zh-Hans": "C"
       },
+      "visual": {
+        "icon": "brand.c"
+      },
       "evidence": [
         {
           "type": "extension_share",
@@ -373,6 +400,9 @@
       "name": {
         "en": "C++",
         "zh-Hans": "C++"
+      },
+      "visual": {
+        "icon": "brand.cplusplus"
       },
       "evidence": [
         {
@@ -431,6 +461,9 @@
         "en": "Dart",
         "zh-Hans": "Dart"
       },
+      "visual": {
+        "icon": "brand.dart"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -454,6 +487,9 @@
       "name": {
         "en": "Ruby",
         "zh-Hans": "Ruby"
+      },
+      "visual": {
+        "icon": "brand.ruby"
       },
       "evidence": [
         {
@@ -479,6 +515,9 @@
         "en": "PHP",
         "zh-Hans": "PHP"
       },
+      "visual": {
+        "icon": "brand.php"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -503,6 +542,9 @@
         "en": "npm",
         "zh-Hans": "npm"
       },
+      "visual": {
+        "icon": "brand.npm"
+      },
       "group": "packageManager.javascript",
       "evidence": [
         {
@@ -518,6 +560,9 @@
       "name": {
         "en": "Yarn",
         "zh-Hans": "Yarn"
+      },
+      "visual": {
+        "icon": "brand.yarn"
       },
       "group": "packageManager.javascript",
       "evidence": [
@@ -540,6 +585,9 @@
         "en": "pnpm",
         "zh-Hans": "pnpm"
       },
+      "visual": {
+        "icon": "brand.pnpm"
+      },
       "group": "packageManager.javascript",
       "evidence": [
         {
@@ -560,6 +608,9 @@
       "name": {
         "en": "Bun",
         "zh-Hans": "Bun"
+      },
+      "visual": {
+        "icon": "brand.bun"
       },
       "group": "packageManager.javascript",
       "evidence": [
@@ -598,6 +649,9 @@
         "en": "Poetry",
         "zh-Hans": "Poetry"
       },
+      "visual": {
+        "icon": "brand.poetry"
+      },
       "group": "packageManager.python",
       "evidence": [
         {
@@ -619,6 +673,9 @@
       "name": {
         "en": "uv",
         "zh-Hans": "uv"
+      },
+      "visual": {
+        "icon": "brand.uv"
       },
       "group": "packageManager.python",
       "evidence": [
@@ -687,6 +744,9 @@
         "en": "Maven",
         "zh-Hans": "Maven"
       },
+      "visual": {
+        "icon": "brand.maven"
+      },
       "group": "packageManager.jvm",
       "evidence": [
         {
@@ -702,6 +762,9 @@
       "name": {
         "en": "Gradle",
         "zh-Hans": "Gradle"
+      },
+      "visual": {
+        "icon": "brand.gradle"
       },
       "group": "packageManager.jvm",
       "evidence": [
@@ -739,6 +802,9 @@
         "en": "Xcode",
         "zh-Hans": "Xcode"
       },
+      "visual": {
+        "icon": "brand.xcode"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -759,6 +825,9 @@
         "en": "Turborepo",
         "zh-Hans": "Turborepo"
       },
+      "visual": {
+        "icon": "brand.turborepo"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -774,6 +843,9 @@
         "en": "Nx",
         "zh-Hans": "Nx"
       },
+      "visual": {
+        "icon": "brand.nx"
+      },
       "evidence": [
         {
           "type": "path_exists",
@@ -788,6 +860,9 @@
       "name": {
         "en": "CMake",
         "zh-Hans": "CMake"
+      },
+      "visual": {
+        "icon": "brand.cmake"
       },
       "evidence": [
         {
@@ -824,6 +899,9 @@
         "en": "React",
         "zh-Hans": "React"
       },
+      "visual": {
+        "icon": "brand.react"
+      },
       "evidence": [
         {
           "type": "manifest_dependency",
@@ -839,6 +917,9 @@
       "name": {
         "en": "Next.js",
         "zh-Hans": "Next.js"
+      },
+      "visual": {
+        "icon": "brand.nextjs"
       },
       "supersedes": [
         "framework.react"
@@ -867,6 +948,9 @@
         "en": "Vue",
         "zh-Hans": "Vue"
       },
+      "visual": {
+        "icon": "brand.vue"
+      },
       "evidence": [
         {
           "type": "manifest_dependency",
@@ -882,6 +966,9 @@
       "name": {
         "en": "Nuxt",
         "zh-Hans": "Nuxt"
+      },
+      "visual": {
+        "icon": "brand.nuxt"
       },
       "supersedes": [
         "framework.vue"
@@ -909,6 +996,9 @@
       "name": {
         "en": "Django",
         "zh-Hans": "Django"
+      },
+      "visual": {
+        "icon": "brand.django"
       },
       "implies": [
         "projectKind.web-application"

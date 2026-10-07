@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "icons",
+    "repositoryProviders"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "icons": {
+      "type": "object",
+      "patternProperties": {
+        "^brand\\.[a-z0-9-]+$": {
+          "type": "object",
+          "required": [
+            "asset",
+            "source",
+            "sourceVersion",
+            "upstream",
+            "monochrome"
+          ],
+          "properties": {
+            "asset": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$"
+            },
+            "source": {
+              "const": "simple-icons"
+            },
+            "sourceVersion": {
+              "type": "string"
+            },
+            "upstream": {
+              "type": "string",
+              "minLength": 1
+            },
+            "monochrome": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "repositoryProviders": {
+      "type": "object",
+      "required": [
+        "github",
+        "gitlab",
+        "bitbucket",
+        "other"
+      ],
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^brand\\.[a-z0-9-]+$"
+      }
+    }
+  },
+  "additionalProperties": false
+}

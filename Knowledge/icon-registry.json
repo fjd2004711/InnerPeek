@@ -1,0 +1,249 @@
+{
+  "version": 1,
+  "icons": {
+    "brand.swift": {
+      "asset": "swift",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Swift",
+      "monochrome": true
+    },
+    "brand.python": {
+      "asset": "python",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Python",
+      "monochrome": true
+    },
+    "brand.javascript": {
+      "asset": "javascript",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "JavaScript",
+      "monochrome": true
+    },
+    "brand.typescript": {
+      "asset": "typescript",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "TypeScript",
+      "monochrome": true
+    },
+    "brand.rust": {
+      "asset": "rust",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Rust",
+      "monochrome": true
+    },
+    "brand.go": {
+      "asset": "go",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Go",
+      "monochrome": true
+    },
+    "brand.java": {
+      "asset": "openjdk",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "OpenJDK",
+      "monochrome": true
+    },
+    "brand.kotlin": {
+      "asset": "kotlin",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Kotlin",
+      "monochrome": true
+    },
+    "brand.c": {
+      "asset": "c",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "C",
+      "monochrome": true
+    },
+    "brand.cplusplus": {
+      "asset": "cplusplus",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "C++",
+      "monochrome": true
+    },
+    "brand.dart": {
+      "asset": "dart",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Dart",
+      "monochrome": true
+    },
+    "brand.ruby": {
+      "asset": "ruby",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Ruby",
+      "monochrome": true
+    },
+    "brand.php": {
+      "asset": "php",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "PHP",
+      "monochrome": true
+    },
+    "brand.react": {
+      "asset": "react",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "React",
+      "monochrome": true
+    },
+    "brand.nextjs": {
+      "asset": "nextdotjs",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Next.js",
+      "monochrome": true
+    },
+    "brand.vue": {
+      "asset": "vuedotjs",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Vue.js",
+      "monochrome": true
+    },
+    "brand.nuxt": {
+      "asset": "nuxt",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Nuxt",
+      "monochrome": true
+    },
+    "brand.django": {
+      "asset": "django",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Django",
+      "monochrome": true
+    },
+    "brand.npm": {
+      "asset": "npm",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "npm",
+      "monochrome": true
+    },
+    "brand.yarn": {
+      "asset": "yarn",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Yarn",
+      "monochrome": true
+    },
+    "brand.pnpm": {
+      "asset": "pnpm",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "pnpm",
+      "monochrome": true
+    },
+    "brand.bun": {
+      "asset": "bun",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Bun",
+      "monochrome": true
+    },
+    "brand.poetry": {
+      "asset": "poetry",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Poetry",
+      "monochrome": true
+    },
+    "brand.uv": {
+      "asset": "uv",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "uv",
+      "monochrome": true
+    },
+    "brand.maven": {
+      "asset": "apachemaven",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Apache Maven",
+      "monochrome": true
+    },
+    "brand.gradle": {
+      "asset": "gradle",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Gradle",
+      "monochrome": true
+    },
+    "brand.xcode": {
+      "asset": "xcode",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Xcode",
+      "monochrome": true
+    },
+    "brand.turborepo": {
+      "asset": "turborepo",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Turborepo",
+      "monochrome": true
+    },
+    "brand.nx": {
+      "asset": "nx",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Nx",
+      "monochrome": true
+    },
+    "brand.cmake": {
+      "asset": "cmake",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "CMake",
+      "monochrome": true
+    },
+    "brand.git": {
+      "asset": "git",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Git",
+      "monochrome": true
+    },
+    "brand.github": {
+      "asset": "github",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "GitHub",
+      "monochrome": true
+    },
+    "brand.gitlab": {
+      "asset": "gitlab",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "GitLab",
+      "monochrome": true
+    },
+    "brand.bitbucket": {
+      "asset": "bitbucket",
+      "source": "simple-icons",
+      "sourceVersion": "16.34.0",
+      "upstream": "Bitbucket",
+      "monochrome": true
+    }
+  },
+  "repositoryProviders": {
+    "github": "brand.github",
+    "gitlab": "brand.gitlab",
+    "bitbucket": "brand.bitbucket",
+    "other": "brand.git"
+  }
+}

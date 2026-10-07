@@ -9,13 +9,15 @@ relationships="$knowledge_dir/relationships.json"
 insights="$knowledge_dir/insights.json"
 git_recognition="$knowledge_dir/git-recognition.json"
 project_recognition="$knowledge_dir/project-recognition.json"
+icon_registry="$knowledge_dir/icon-registry.json"
+icon_dir="$knowledge_dir/Icons"
 
 fail() { print -u2 "Knowledge validation failed: $1"; exit 1; }
-for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition"; do
+for file in "$file_types" "$roles" "$relationships" "$insights" "$git_recognition" "$project_recognition" "$icon_registry"; do
   [[ -f "$file" ]] || fail "missing $file"
   jq empty "$file" >/dev/null 2>&1 || fail "invalid JSON: $file"
 done
-for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json"; do
+for schema in "$repo_root/Schemas/file-types.schema.json" "$repo_root/Schemas/roles.schema.json" "$repo_root/Schemas/relationships.schema.json" "$repo_root/Schemas/insights.schema.json" "$repo_root/Schemas/git-recognition.schema.json" "$repo_root/Schemas/project-recognition.schema.json" "$repo_root/Schemas/icon-registry.schema.json"; do
   [[ -f "$schema" ]] || fail "missing $schema"
   jq -e '.["$schema"] | type == "string"' "$schema" >/dev/null 2>&1 || fail "invalid schema: $schema"
 done
@@ -83,12 +85,40 @@ cross_kind_supersedes=$(jq -r '.facts as $f | $f[] | .kind as $k | .id as $id | 
 unreachable_facts=$(jq -r '[.facts[].implies[]?] as $implied | .facts[] | select((.evidence | length) == 0 and (.id as $id | $implied | index($id) | not)) | .id' "$project_recognition")
 [[ -z "$unreachable_facts" ]] || fail "project fact has no evidence and is never implied: $unreachable_facts"
 
+# Visual identity: every referenced icon key resolves to a bundled, safe SVG; unreferenced icons are reported.
+jq -e '(.version == 1) and (.icons | type == "object" and length > 0)
+  and all(.icons | to_entries[]; (.key | test("^brand\\.[a-z0-9-]+$")) and (.value.asset | type == "string" and test("^[a-z0-9-]+$"))
+      and (.value.source == "simple-icons") and (.value.sourceVersion | type == "string") and (.value.upstream | type == "string" and length > 0) and (.value.monochrome | type == "boolean"))
+  and (.repositoryProviders | type == "object" and has("github") and has("gitlab") and has("bitbucket") and has("other"))' "$icon_registry" >/dev/null \
+  || fail "icon registry is malformed"
+registry_keys=$(mktemp); used_keys=$(mktemp);
+jq -r '.icons | keys[]' "$icon_registry" | sort -u > "$registry_keys"
+{ jq -r '.facts[].visual.icon? // empty' "$project_recognition"; jq -r '.repositoryProviders[]' "$icon_registry"; } | sort -u > "$used_keys"
+unknown_icons=$(comm -13 "$registry_keys" "$used_keys")
+[[ -z "$unknown_icons" ]] || fail "icon key is not in the icon registry: $unknown_icons"
+for asset in $(jq -r '.icons[].asset' "$icon_registry" | sort -u); do
+  svg="$icon_dir/brands/$asset.svg"
+  [[ -f "$svg" ]] || fail "icon asset missing: $svg"
+  [[ "$(head -c 4 "$svg")" == "<svg" ]] || fail "icon asset is not an SVG: $svg"
+  (( $(wc -c < "$svg") <= 8192 )) || fail "icon asset too large: $svg"
+  if grep -qiE '<script|<image|foreignObject|href=|xlink:|onload=|@import|url\(' "$svg"; then fail "icon asset contains active or external content: $svg"; fi
+done
+duplicate_assets=$(jq -r '.icons[].asset' "$icon_registry" | sort | uniq -d)
+[[ -z "$duplicate_assets" ]] || fail "two icon keys share an asset: $duplicate_assets"
+orphan_svgs=$(comm -13 <(jq -r '.icons[].asset' "$icon_registry" | sort -u) <(ls "$icon_dir/brands" | sed 's/\.svg$//' | sort -u))
+[[ -z "$orphan_svgs" ]] || fail "bundled SVG not in the registry: $orphan_svgs"
+unreferenced_icons=$(comm -23 "$registry_keys" "$used_keys")
+[[ -z "$unreferenced_icons" ]] || print -u2 "warning: icon is bundled but no fact references it: $unreferenced_icons"
+for asset in $(jq -r '.icons[].asset' "$icon_registry" | sort -u); do
+  grep -q "brands/$asset.svg" "$icon_dir/LICENSES.md" || fail "icon not listed in Icons/LICENSES.md: $asset"
+done
+
 role_ids=$(mktemp)
 type_roles=$(mktemp)
 relationship_roles=$(mktemp)
 insight_roles=$(mktemp)
 relationship_ids=$(mktemp)
-trap 'rm -f "$role_ids" "$type_roles" "$relationship_roles" "$insight_roles" "$relationship_ids"' EXIT
+trap 'rm -f "$role_ids" "$type_roles" "$relationship_roles" "$insight_roles" "$relationship_ids" "$registry_keys" "$used_keys"' EXIT
 jq -r '.[].id' "$roles" | sort -u > "$role_ids"
 jq -r '.[].roles[]?' "$file_types" | sort -u > "$type_roles"
 jq -r '.[] | (.optionalRoles[]?, .requiredRoles[]?)' "$relationships" | sort -u > "$relationship_roles"
