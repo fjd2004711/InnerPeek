@@ -10,7 +10,7 @@ enum PreviewVisuals {
     static let analysisTitleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
 
     static let headerInset: CGFloat = 18
-    static let headerIconSize: CGFloat = 24
+    static let headerIconSize: CGFloat = 32
     static let headerTextSpacing: CGFloat = 2
     static let contentInset: CGFloat = 12
     static let contentPanelCornerRadius: CGFloat = 12

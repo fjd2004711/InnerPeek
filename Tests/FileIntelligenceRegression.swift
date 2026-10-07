@@ -681,10 +681,11 @@ enum FileIntelligenceRegression {
         let registry = IconRegistry(catalog: catalog, bundle: knowledgeBundle)
         try expect(catalog.entries.count >= 30, "icon catalog is populated")
         for key in catalog.entries.keys.sorted() {
-            guard let image = registry.brandImage(for: key), image.size.width > 0, image.isTemplate else {
+            guard let image = registry.brandImage(for: key), image.size.width > 0, image.isTemplate == catalog.entries[key]?.monochrome else {
                 throw RegressionFailure.failed("brand image decodes: \(key)")
             }
         }
+        try expect(catalog.entries.values.contains { !$0.monochrome } && catalog.entries.values.contains { $0.monochrome }, "catalog has coloured and template icons")
         try expect(registry.brandImage(for: "brand.does-not-exist") == nil, "unknown brand key yields no image")
         for fallback in [VisualFallback.kind(.framework), .kind(.language), .kind(.buildSystem), .kind(.packageManager), .kind(.projectKind), .repository, .generic] {
             let visual = VisualIdentity(primaryIconKey: "brand.missing", fallback: fallback, secondaryIconKeys: [])

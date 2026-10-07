@@ -8,6 +8,7 @@ struct IconCatalog: Sendable {
         let asset: String
         let upstream: String
         let monochrome: Bool
+        let color: String
     }
 
     private struct Document: Decodable {

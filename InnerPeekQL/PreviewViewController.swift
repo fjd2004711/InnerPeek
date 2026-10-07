@@ -21,6 +21,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     private var headerIconView: NSImageView!
     private var titleLabel: NSTextField!
     private var countLabel: NSTextField!
+    private var badgeStack: NSStackView!
+    private let iconRegistry = IconRegistry()
     private var spinner: NSProgressIndicator!
     private var whatsInsideSection: NSView!
     private var semanticColumns: NSView!
@@ -268,7 +270,39 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         }
     }
 
+    /// Renders the resolved visual identity: the main logo in the header and
+    /// small badges for the other technologies. Archives and unrecognised
+    /// folders keep their existing glyph.
+    private func presentVisualIdentity(for analysis: FolderAnalysis) {
+        guard analysis.sourceKind == .filesystem else { return }
+        let identity = ProjectIdentityResolver().resolve(
+            folderName: titleLabel.stringValue,
+            repositoryContext: analysis.repositoryContext,
+            recognition: analysis.projectRecognition
+        )
+        let visual = VisualIdentityResolver().resolve(identity)
+        guard visual.primaryIconKey != nil || visual.fallback != .generic else { return }
+        let mainImage = iconRegistry.image(for: visual)
+        headerIconView.image = mainImage
+        headerIconView.contentTintColor = mainImage.isTemplate ? .labelColor : nil
+        for key in visual.secondaryIconKeys {
+            guard let image = iconRegistry.brandImage(for: key) else { continue }
+            let badge = NSImageView(image: image)
+            badge.imageScaling = .scaleProportionallyUpOrDown
+            badge.contentTintColor = image.isTemplate ? .secondaryLabelColor : nil
+            badge.translatesAutoresizingMaskIntoConstraints = false
+            badge.toolTip = IconCatalog().entry(for: key)?.upstream
+            NSLayoutConstraint.activate([
+                badge.widthAnchor.constraint(equalToConstant: 16),
+                badge.heightAnchor.constraint(equalToConstant: 16)
+            ])
+            badgeStack.addArrangedSubview(badge)
+        }
+        badgeStack.isHidden = badgeStack.arrangedSubviews.isEmpty
+    }
+
     private func presentFolderAnalysis(_ analysis: FolderAnalysis) {
+        presentVisualIdentity(for: analysis)
         let statistics = displayedCategoryStatistics(from: analysis)
         let importantFiles = ImportantFileDetector().detect(in: analysis)
         let relationships = RelationshipEngine().detect(in: analysis)
@@ -718,6 +752,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private func resetAnalysisPresentation() {
+        badgeStack?.arrangedSubviews.forEach {
+            badgeStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        badgeStack?.isHidden = true
         verdictRows?.arrangedSubviews.forEach {
             verdictRows.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -813,7 +852,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         countLabel.lineBreakMode = .byTruncatingTail
         countLabel.maximumNumberOfLines = 1
 
-        let titleStack = NSStackView(views: [titleLabel, countLabel])
+        badgeStack = NSStackView()
+        badgeStack.orientation = .horizontal
+        badgeStack.spacing = 6
+        badgeStack.isHidden = true
+
+        let titleStack = NSStackView(views: [titleLabel, countLabel, badgeStack])
         titleStack.orientation = .vertical
         titleStack.alignment = .leading
         titleStack.spacing = PreviewVisuals.headerTextSpacing

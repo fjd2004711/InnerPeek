@@ -4,13 +4,13 @@ InnerPeek shows a technology logo when it recognises a framework, language, pack
 build system or repository host. Only icons for technologies that `project-recognition.json`
 (or the repository-provider table) can actually report are bundled.
 
-- **Source:** [Simple Icons](https://github.com/simple-icons/simple-icons) **16.34.0**, files copied unmodified from the published package.
+- **Source:** [Simple Icons](https://github.com/simple-icons/simple-icons) **16.34.0**, files copied from the published package. The only change is a `fill` attribute on the root element carrying the brand colour published in the same package's `data/simple-icons.json`; paths are untouched.
 - **Package license:** CC0 1.0 (`SIMPLE-ICONS-LICENSE.md`).
 - **Trademarks:** The package license does not transfer any right in the logos themselves. Every logo is a
   trademark or brand asset of its respective owner and is used here only, nominatively, to identify the
   technology that was detected in a folder. InnerPeek is not affiliated with or endorsed by any of them.
   See `SIMPLE-ICONS-DISCLAIMER.md` and each owner's brand guidelines before using these marks for anything else.
-- **Rendering:** icons are monochrome templates tinted by the system; colours and shapes are never altered.
+- **Rendering:** icons are shown in their official brand colour. Brand colours that are nearly black (`monochrome: true` in the registry) carry no `fill` and are drawn as template images, so they stay legible in Dark Mode. Shapes are never altered.
 - **Adding or removing an icon:** edit `Knowledge/icon-registry.json` and add or delete the SVG in `brands/`.
   `scripts/validate-knowledge.sh` fails on missing assets, unreferenced registry keys and unsafe SVG content.
 

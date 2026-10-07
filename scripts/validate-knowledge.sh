@@ -88,7 +88,7 @@ unreachable_facts=$(jq -r '[.facts[].implies[]?] as $implied | .facts[] | select
 # Visual identity: every referenced icon key resolves to a bundled, safe SVG; unreferenced icons are reported.
 jq -e '(.version == 1) and (.icons | type == "object" and length > 0)
   and all(.icons | to_entries[]; (.key | test("^brand\\.[a-z0-9-]+$")) and (.value.asset | type == "string" and test("^[a-z0-9-]+$"))
-      and (.value.source == "simple-icons") and (.value.sourceVersion | type == "string") and (.value.upstream | type == "string" and length > 0) and (.value.monochrome | type == "boolean"))
+      and (.value.source == "simple-icons") and (.value.sourceVersion | type == "string") and (.value.upstream | type == "string" and length > 0) and (.value.monochrome | type == "boolean") and (.value.color | type == "string" and test("^#[0-9A-F]{6}$")))
   and (.repositoryProviders | type == "object" and has("github") and has("gitlab") and has("bitbucket") and has("other"))' "$icon_registry" >/dev/null \
   || fail "icon registry is malformed"
 registry_keys=$(mktemp); used_keys=$(mktemp);
@@ -102,6 +102,15 @@ for asset in $(jq -r '.icons[].asset' "$icon_registry" | sort -u); do
   [[ "$(head -c 4 "$svg")" == "<svg" ]] || fail "icon asset is not an SVG: $svg"
   (( $(wc -c < "$svg") <= 8192 )) || fail "icon asset too large: $svg"
   if grep -qiE '<script|<image|foreignObject|href=|xlink:|onload=|@import|url\(' "$svg"; then fail "icon asset contains active or external content: $svg"; fi
+done
+for key in $(jq -r '.icons | keys[]' "$icon_registry"); do
+  asset=$(jq -r --arg k "$key" '.icons[$k].asset' "$icon_registry"); color=$(jq -r --arg k "$key" '.icons[$k].color' "$icon_registry")
+  mono=$(jq -r --arg k "$key" '.icons[$k].monochrome' "$icon_registry"); root_tag=$(head -c 400 "$icon_dir/brands/$asset.svg" | tr -d '\n' | sed 's/>.*//')
+  if [[ "$mono" == "true" ]]; then
+    [[ "$root_tag" != *' fill='* ]] || fail "template icon must not carry a fill: $key"
+  else
+    [[ "$root_tag" == *"fill=\"$color\""* ]] || fail "coloured icon lacks its brand fill $color: $key"
+  fi
 done
 duplicate_assets=$(jq -r '.icons[].asset' "$icon_registry" | sort | uniq -d)
 [[ -z "$duplicate_assets" ]] || fail "two icon keys share an asset: $duplicate_assets"

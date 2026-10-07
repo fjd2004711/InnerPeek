@@ -20,7 +20,8 @@
             "source",
             "sourceVersion",
             "upstream",
-            "monochrome"
+            "monochrome",
+            "color"
           ],
           "properties": {
             "asset": {
@@ -39,6 +40,10 @@
             },
             "monochrome": {
               "type": "boolean"
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9A-F]{6}$"
             }
           },
           "additionalProperties": false

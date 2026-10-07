@@ -19,6 +19,7 @@ final class IconRegistry {
               let url = bundle.url(forResource: entry.asset, withExtension: "svg", subdirectory: "Icons/brands")
                 ?? bundle.url(forResource: entry.asset, withExtension: "svg"),
               let image = NSImage(contentsOf: url), image.isValid else { return nil }
+        // Coloured logos keep their brand colour; near-black ones are templates so Dark Mode can tint them.
         image.isTemplate = entry.monochrome
         cache[key] = image
         return image
