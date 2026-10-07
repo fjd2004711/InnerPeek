@@ -27,20 +27,15 @@ InnerPeek is a macOS Quick Look extension. Select a folder or a ZIP, press Space
 
 The images below are rendered by the real preview component from fictional demo projects.
 
-| Next.js project: tech stack and repository health | Python service: risks and gaps |
+<p align="center">
+  <img src="docs/screenshots/en/web-project.png" width="780" alt="Preview of a Next.js project: Next.js, TypeScript, npm and Docker recognised, project basics in place">
+</p>
+
+| Python service: risks and gaps | ZIP: warnings without extracting |
 | :---: | :---: |
-| <img src="docs/screenshots/en/web-project.png" width="420" alt="Preview of a Next.js project: Next.js, TypeScript, npm and Docker recognised, project basics in place"> | <img src="docs/screenshots/en/python-service.png" width="420" alt="Preview of a Python service: .env not covered by .gitignore, no licence or tests"> |
-
-| Model package: structural completeness | ZIP: warnings without extracting |
-| :---: | :---: |
-| <img src="docs/screenshots/en/model-package.png" width="420" alt="Preview of a Transformer model package: weights, configuration and tokenizer present"> | <img src="docs/screenshots/en/zip-archive.png" width="420" alt="Preview of a ZIP: warning that the archive contains .env"> |
-
-<details>
-<summary>Dark mode</summary>
-
-<img src="docs/screenshots/en/web-project-dark.png" width="640" alt="Next.js project preview in dark mode">
-
-</details>
+| <img src="docs/screenshots/en/python-service.png" width="420" alt="Preview of a Python service: .env not covered by .gitignore, no licence or tests"> | <img src="docs/screenshots/en/zip-archive.png" width="420" alt="Preview of a ZIP: warning that the archive contains .env"> |
+| **Model package: structural completeness** | **Dark mode** |
+| <img src="docs/screenshots/en/model-package.png" width="420" alt="Preview of a Transformer model package: weights, configuration and tokenizer present"> | <img src="docs/screenshots/en/web-project-dark.png" width="420" alt="Next.js project preview in dark mode"> |
 
 ## What it tells you
 
@@ -54,6 +49,8 @@ The images below are rendered by the real preview component from fictional demo 
 - **English and Chinese**: the preview follows the system language or a language you fix in Settings.
 
 At most three insights are shown, most important first. If there is nothing worth saying, nothing is said.
+
+The full recognition scope is listed in [Supported file types and technologies](docs/supported-file-types.md): 95 file types, 663 extensions, and 60+ languages, frameworks and tools.
 
 ## Privacy and safety
 

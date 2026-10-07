@@ -39,10 +39,10 @@ render() { "$app/Contents/MacOS/RenderPreview" "$1" "$2" "${@:3}"; }
 for language in en zh-Hans; do
   defaults write "$domain" appearance.language "$language"
   dir="$out/$language"; mkdir -p "$dir"
-  render "$work/demo/acme-dashboard"   "$dir/web-project.png"   900 640 light
-  render "$work/demo/acme-dashboard"   "$dir/web-project-dark.png" 900 640 dark
-  render "$work/demo/weather-bot"      "$dir/python-service.png" 900 520 light
-  render "$work/demo/tiny-llama-chat"  "$dir/model-package.png"  900 520 light
-  render "$work/demo/acme-site-release.zip" "$dir/zip-archive.png" 900 560 light
+  render "$work/demo/acme-dashboard"   "$dir/web-project.png"   900 620 light
+  render "$work/demo/acme-dashboard"   "$dir/web-project-dark.png" 900 620 dark
+  render "$work/demo/weather-bot"      "$dir/python-service.png" 900 440 light
+  render "$work/demo/tiny-llama-chat"  "$dir/model-package.png"  900 420 light
+  render "$work/demo/acme-site-release.zip" "$dir/zip-archive.png" 900 380 light
 done
 print "Screenshots written to $out"

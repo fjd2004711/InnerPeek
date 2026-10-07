@@ -27,20 +27,15 @@ InnerPeek 是一个 macOS Quick Look 扩展。选中文件夹或 ZIP，按下空
 
 下面的图片由真实的预览组件渲染，内容是虚构的演示项目。
 
-| Next.js 项目：技术栈与仓库健康度 | Python 服务：发现隐患与缺项 |
+<p align="center">
+  <img src="docs/screenshots/zh-Hans/web-project.png" width="780" alt="Next.js 项目的预览：识别出 Next.js、TypeScript、npm、Docker，仓库基础设施齐全">
+</p>
+
+| Python 服务：发现隐患与缺项 | ZIP：不解压就能提醒 |
 | :---: | :---: |
-| <img src="docs/screenshots/zh-Hans/web-project.png" width="420" alt="Next.js 项目的预览：识别出 Next.js、TypeScript、npm、Docker，仓库基础设施齐全"> | <img src="docs/screenshots/zh-Hans/python-service.png" width="420" alt="Python 服务的预览：提示 .env 未被忽略、缺少许可证和测试"> |
-
-| 模型包：结构完整性 | ZIP：不解压就能提醒 |
-| :---: | :---: |
-| <img src="docs/screenshots/zh-Hans/model-package.png" width="420" alt="Transformer 模型包的预览：权重、配置与 tokenizer 均存在"> | <img src="docs/screenshots/zh-Hans/zip-archive.png" width="420" alt="ZIP 的预览：提示压缩包中包含 .env"> |
-
-<details>
-<summary>深色模式</summary>
-
-<img src="docs/screenshots/zh-Hans/web-project-dark.png" width="640" alt="深色模式下的 Next.js 项目预览">
-
-</details>
+| <img src="docs/screenshots/zh-Hans/python-service.png" width="420" alt="Python 服务的预览：提示 .env 未被忽略、缺少许可证和测试"> | <img src="docs/screenshots/zh-Hans/zip-archive.png" width="420" alt="ZIP 的预览：提示压缩包中包含 .env"> |
+| **模型包：结构完整性** | **深色模式** |
+| <img src="docs/screenshots/zh-Hans/model-package.png" width="420" alt="Transformer 模型包的预览：权重、配置与 tokenizer 均存在"> | <img src="docs/screenshots/zh-Hans/web-project-dark.png" width="420" alt="深色模式下的 Next.js 项目预览"> |
 
 ## 它能告诉你什么
 
@@ -54,6 +49,8 @@ InnerPeek 是一个 macOS Quick Look 扩展。选中文件夹或 ZIP，按下空
 - **中文和英文**：预览语言可跟随系统，也可以在设置里固定。
 
 洞察最多显示三条，按严重程度排序；没有值得说的就不说。
+
+完整的识别范围见 [支持识别的文件类型与技术栈](docs/supported-file-types.zh-Hans.md)（95 种文件类型、663 个扩展名，以及 60 多项语言、框架和工具）。
 
 ## 隐私与安全
 

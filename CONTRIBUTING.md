@@ -31,6 +31,7 @@ Principles that keep the project trustworthy:
 
 ```sh
 scripts/validate-knowledge.sh                 # needs jq
+scripts/generate-supported-types.sh           # refresh docs/supported-file-types*.md after editing Knowledge/
 Tests/run-file-intelligence-regression.sh     # unit-style regression tests
 scripts/run-audit-corpus.sh                   # synthetic and real-world audit cases
 ```
@@ -86,6 +87,7 @@ InnerPeek 大部分知识都是 [`Knowledge/`](Knowledge) 里的 JSON，由
 
 ```sh
 scripts/validate-knowledge.sh                 # 需要 jq
+scripts/generate-supported-types.sh           # 修改 Knowledge/ 后刷新 docs/supported-file-types*.md
 Tests/run-file-intelligence-regression.sh     # 回归测试
 scripts/run-audit-corpus.sh                   # 合成与真实仓库的审计用例
 ```

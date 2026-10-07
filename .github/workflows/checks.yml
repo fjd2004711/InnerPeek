@@ -25,6 +25,9 @@ jobs:
       - name: Validate knowledge files
         run: scripts/validate-knowledge.sh
 
+      - name: Supported-types pages are up to date
+        run: scripts/generate-supported-types.sh --check
+
       - name: Regression tests
         run: Tests/run-file-intelligence-regression.sh
 
