@@ -6,6 +6,8 @@
     <key>CFBundleIdentifier</key><string>com.innerpeek.InnerPeek.Generator</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>CFBundleName</key><string>InnerPeek</string>
+    <key>CFBundlePackageType</key><string>BNDL</string>
+    <key>CFBundleSupportedPlatforms</key><array><string>MacOSX</string></array>
     <key>CFBundleShortVersionString</key><string>1.0.6</string>
     <key>CFBundleVersion</key><string>7</string>
     <key>CFPlugInDynamicRegistration</key><string>NO</string>
@@ -13,7 +15,7 @@
         <key>7C1D3F52-6B0E-4D0A-9B8A-1F4E2A5C9D31</key><string>InnerPeekGeneratorFactory</string>
     </dict>
     <key>CFPlugInTypes</key><dict>
-        <key>5E2D9680-5022-40FA-B806-43349C1B6A0E</key><array>
+        <key>5E2D9680-5022-40FA-B806-43349622E5B9</key><array>
             <string>7C1D3F52-6B0E-4D0A-9B8A-1F4E2A5C9D31</string>
         </array>
     </dict>

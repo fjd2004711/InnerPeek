@@ -6,6 +6,7 @@
 // (HTMLPreview.swift) behind `ip_render_preview`.
 #include <stdlib.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFPlugInCOM.h>
 #include <CoreServices/CoreServices.h>
 #include <QuickLook/QuickLook.h>
 
