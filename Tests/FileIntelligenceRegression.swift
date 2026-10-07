@@ -83,6 +83,7 @@ enum FileIntelligenceRegression {
         try runInsightRegression(using: recognizer)
         try runGitRepositoryRegression()
         try runProjectIdentityRegression()
+        try runProjectRecognitionRegression()
         try await runZIPRegression(using: registry)
         try await runMetadataRegression(using: recognizer)
 
@@ -502,6 +503,103 @@ enum FileIntelligenceRegression {
         try makeDirectory(metadataOnly.appendingPathComponent(".github/workflows", isDirectory: true))
         let metadataIdentity = resolver.resolve(folderName: "metadata-only", repositoryContext: inspector.inspect(folderURL: metadataOnly))
         try expect(metadataIdentity.repository == nil && metadataIdentity.confidence == .low, "identity from GitHub metadata only")
+    }
+
+    /// Parser edge cases plus the extensibility promise: a new framework is a
+    /// knowledge entry, not Swift code.
+    private static func runProjectRecognitionRegression() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InnerPeek-Recognition-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        func folder(_ name: String, _ files: [String: String]) throws -> URL {
+            let url = root.appendingPathComponent(name, isDirectory: true)
+            try makeDirectory(url)
+            for (file, text) in files { try text.write(to: url.appendingPathComponent(file), atomically: true, encoding: .utf8) }
+            return url
+        }
+        func rule(_ id: String, _ file: String, _ key: String) -> String {
+            let kind = id.split(separator: ".")[0]
+            return #"{"id":"\#(id)","kind":"\#(kind)","name":{"en":"X","zh-Hans":"X"},"evidence":[{"type":"manifest_dependency","file":"\#(file)","key":"\#(key)","weight":0.9}]}"#
+        }
+        func detected(_ knowledge: [String], in url: URL) -> Set<String> {
+            let json = #"{"version":1,"detectionThreshold":0.5,"conflictMargin":0.05,"facts":[\#(knowledge.joined(separator: ","))]}"#
+            return Set(ProjectRecognizer(data: Data(json.utf8)).recognize(folderURL: url).facts.map(\.id))
+        }
+
+        let requirements = try folder("requirements", ["requirements.txt": """
+            # comment
+            Django[argon2]>=4.2 ; python_version > '3.9'
+            -r base.txt
+            git+https://example.test/x/y.git#egg=y
+            Flask_Login==1.0   # trailing comment
+            """])
+        let found = detected([rule("framework.django", "requirements.txt", "django"), rule("framework.flasklogin", "requirements.txt", "flask-login"),
+                              rule("framework.base", "requirements.txt", "base"), rule("framework.y", "requirements.txt", "y")], in: requirements)
+        try expect(found == ["framework.django", "framework.flasklogin"], "requirements.txt parsing: extras, markers, comments, name normalization")
+
+        let pyproject = try folder("pyproject", ["pyproject.toml": """
+            [project]
+            name = "demo"  # not a dependency
+            dependencies = [
+              "FastAPI>=0.100",   # api
+              'uvicorn[standard]',
+            ]
+
+            [project.optional-dependencies]
+            dev = ["pytest"]
+
+            [tool.poetry.dependencies]
+            python = "^3.12"
+            "Rich" = "^13"
+            """])
+        let pyFound = detected([rule("framework.fastapi", "pyproject.toml", "fastapi"), rule("framework.uvicorn", "pyproject.toml", "uvicorn"),
+                                rule("framework.pytest", "pyproject.toml", "pytest"), rule("framework.rich", "pyproject.toml", "rich"),
+                                rule("framework.python", "pyproject.toml", "python"), rule("framework.demo", "pyproject.toml", "demo")], in: pyproject)
+        try expect(pyFound == ["framework.fastapi", "framework.uvicorn", "framework.pytest", "framework.rich"], "pyproject.toml parsing: multi-line arrays, extras, quoted keys, python excluded")
+
+        let cargo = try folder("cargo", ["Cargo.toml": """
+            [package]
+            name = "demo"
+            [dependencies]
+            serde = { version = "1", features = ["derive"] }
+            tokio.workspace = true
+            [dependencies.clap]
+            version = "4"
+            [target.'cfg(unix)'.dependencies]
+            libc = "0.2"
+            """])
+        let cargoFound = detected([rule("framework.serde", "Cargo.toml", "serde"), rule("framework.tokio", "Cargo.toml", "tokio"),
+                                   rule("framework.clap", "Cargo.toml", "clap"), rule("framework.libc", "Cargo.toml", "libc"),
+                                   rule("framework.demo", "Cargo.toml", "demo")], in: cargo)
+        try expect(cargoFound == ["framework.serde", "framework.tokio", "framework.clap", "framework.libc"], "Cargo.toml parsing: inline tables, dotted keys, dependency tables, target tables")
+
+        let goMod = try folder("gomod", ["go.mod": "module example.test/m\nrequire github.com/a/single v1.0.0 // indirect\nrequire (\n\tgithub.com/b/block v1.0.0\n)\n"])
+        let goFound = detected([rule("framework.single", "go.mod", "github.com/a/single"), rule("framework.block", "go.mod", "github.com/b/block"),
+                                rule("framework.module", "go.mod", "example.test/m")], in: goMod)
+        try expect(goFound == ["framework.single", "framework.block"], "go.mod parsing: single-line and block requires")
+
+        // Extensibility: nothing but a data-declared rule distinguishes this ecosystem.
+        let extra = try folder("extra", ["package.json": #"{"devDependencies":{"@acme/widget-kit":"1"}}"#])
+        try expect(detected([rule("framework.widgetkit", "package.json", "@acme/widget-kit")], in: extra) == ["framework.widgetkit"], "new framework from knowledge data alone")
+
+        // Broken knowledge must never crash or invent facts.
+        let any = try folder("any", ["package.json": "{}"])
+        try expect(ProjectRecognizer(data: Data("not json".utf8)).recognize(folderURL: any) == .empty, "malformed knowledge yields no facts")
+        try expect(ProjectRecognizer(data: Data("{}".utf8)).recognize(folderURL: any) == .empty, "incomplete knowledge yields no facts")
+        try expect(ProjectRecognizer().recognize(folderURL: root.appendingPathComponent("does-not-exist")) == .empty
+                   || ProjectRecognizer().recognize(folderURL: root.appendingPathComponent("does-not-exist")).facts.isEmpty, "missing folder yields no facts")
+
+        // Identity aggregation: confidence is the stronger of repository and best primary fact.
+        let identityFolder = try folder("identity", ["package.json": #"{"dependencies":{"next":"1","react":"1"}}"#, "tsconfig.json": "{}", "pnpm-lock.yaml": "x"])
+        let recognition = ProjectRecognizer().recognize(folderURL: identityFolder)
+        let identity = ProjectIdentityResolver().resolve(folderName: "identity", repositoryContext: nil, recognition: recognition)
+        try expect(identity.primaryFramework?.id == "framework.nextjs", "identity primary framework")
+        try expect(identity.frameworks.map(\.id) == ["framework.nextjs", "framework.react"], "identity frameworks list primary first")
+        try expect(identity.primaryLanguage?.id == "language.typescript" && identity.languages.last?.role == .supporting, "identity language roles")
+        try expect(identity.primaryPackageManager?.id == "packageManager.pnpm", "identity package manager")
+        try expect(identity.confidence == .high && identity.repository == nil, "identity confidence from facts without a repository")
+        let bare = ProjectIdentityResolver().resolve(folderName: "bare", repositoryContext: nil)
+        try expect(bare.facts.isEmpty && bare.confidence == .low, "identity without recognition stays low")
     }
 
     private static func runZIPRegression(using registry: FileTypeRegistry) async throws {

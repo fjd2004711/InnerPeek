@@ -82,6 +82,58 @@ write "$out/synthetic/git-github-node/pnpm-lock.yaml" 20
 write "$out/synthetic/git-github-node/Dockerfile" 20
 write "$out/synthetic/git-github-node/compose.yml" 20
 
+# Stage 10C: declarative project recognition fixtures. Manifests are tiny but real
+# enough for the bounded readers; none contains a usable credential.
+put() { local filepath="$1"; shift; mkdir -p "${filepath:h}"; print -r -- "$*" > "$filepath"; }
+proj() { print -r -- "$out/synthetic/$1"; }
+p=$(proj proj-nextjs-pnpm-monorepo)
+put $p/package.json '{"name":"web","workspaces":["apps/*"],"dependencies":{"next":"14.0.0","react":"18.2.0"},"devDependencies":{"typescript":"5.4.0"}}'
+put $p/pnpm-lock.yaml 'lockfileVersion: 9'
+put $p/pnpm-workspace.yaml $'packages:\n  - apps/*'
+put $p/turbo.json '{"tasks":{}}'
+put $p/tsconfig.json '{}'
+put $p/next.config.ts 'export default {}'
+p=$(proj proj-django-poetry)
+put $p/pyproject.toml $'[tool.poetry]\nname = "site"\n\n[tool.poetry.dependencies]\npython = "^3.12"\nDjango = "^5.0"\n'
+put $p/poetry.lock '# lock'
+put $p/manage.py 'import django'
+p=$(proj proj-python-uv-pip)
+put $p/pyproject.toml $'[project]\nname = "svc"\ndependencies = [\n  "Django>=5.0",  # web\n  "requests",\n]\n\n[tool.uv]\ndev-dependencies = []\n'
+put $p/uv.lock 'version = 1'
+put $p/requirements.txt $'# exported\nDjango==5.0\n'
+p=$(proj proj-swift-package-xcode)
+put $p/Package.swift '// swift-tools-version:5.9'
+mkdir -p $p/App.xcodeproj
+p=$(proj proj-rust-workspace)
+put $p/Cargo.toml $'[workspace]\nmembers = ["crates/*"]\n\n[workspace.dependencies]\nserde = "1"\n'
+put $p/Cargo.lock '# lock'
+p=$(proj proj-go-module)
+put $p/go.mod $'module example.com/svc\n\ngo 1.22\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.9.1\n)\n'
+put $p/go.sum 'sum'
+p=$(proj proj-kotlin-gradle)
+put $p/build.gradle.kts 'plugins { kotlin("jvm") version "1.9.0"; java }'
+put $p/settings.gradle.kts 'rootProject.name = "app"'
+put $p/gradlew '#!/bin/sh'
+p=$(proj proj-maven-java)
+put $p/pom.xml '<project><artifactId>demo</artifactId></project>'
+p=$(proj proj-conflicting-lockfiles)
+put $p/package.json '{"name":"both","dependencies":{}}'
+put $p/package-lock.json '{}'
+put $p/pnpm-lock.yaml 'lockfileVersion: 9'
+p=$(proj proj-malformed-manifests)
+put $p/package.json '{ this is not json'
+put $p/pyproject.toml $'[[[ nonsense\n= = =\ndependencies = [ "unterminated'
+put $p/Cargo.toml '[[['
+put $p/go.mod $'require (\n\tunterminated'
+p=$(proj proj-credential-manifest)
+put $p/package.json '{"name":"leaky","dependencies":{"next":"14.0.0"},"publishConfig":{"_authToken":"npm_FAKEsecretTOKEN0123"},"//":"ghp_FAKEsecretGITHUB"}'
+p=$(proj proj-oversize-manifest)
+mkdir -p $p; { printf '{"dependencies":{"next":"1"},"pad":"'; head -c 300000 /dev/zero | tr '\0' 'a'; printf '"}'; } > $p/package.json
+p=$(proj proj-symlink-manifest)
+mkdir -p $p $out/synthetic/proj-symlink-target
+put $out/synthetic/proj-symlink-target/real.json '{"dependencies":{"next":"1","react":"1"}}'
+ln -s ../proj-symlink-target/real.json $p/package.json
+
 # Semi-realistic corpus deliberately includes noise and generated artifacts.
 write "$out/semi-realistic/messy-python/pyproject.toml" 30
 write "$out/semi-realistic/messy-python/uv.lock" 30

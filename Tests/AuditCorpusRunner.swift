@@ -25,11 +25,16 @@ struct AuditCase: Decodable {
     let expectedRemoteIdentity: String?
     let expectedBranch: String?
     let forbiddenText: [String]
+    let requiredFacts: [String]
+    let forbiddenFacts: [String]
+    let expectedConflicts: [String]?
+    let expectNoFacts: Bool
 
     enum CodingKeys: String, CodingKey {
         case id, kind, sourceKind, path, requiredRelationships, forbiddenRelationships
         case requiredInsights, forbiddenInsights, maxInsights, expectedVerdict, expectedVerdictStatus
         case forbiddenVerdicts, requiredEvidence, parityWith, expectedRepositoryState, expectedRemoteHost, expectedRemoteIdentity, expectedBranch, forbiddenText
+        case requiredFacts, forbiddenFacts, expectedConflicts, expectNoFacts
     }
 
     init(from decoder: Decoder) throws {
@@ -53,6 +58,10 @@ struct AuditCase: Decodable {
         expectedRemoteIdentity = try c.decodeIfPresent(String.self, forKey: .expectedRemoteIdentity)
         expectedBranch = try c.decodeIfPresent(String.self, forKey: .expectedBranch)
         forbiddenText = try c.decodeIfPresent([String].self, forKey: .forbiddenText) ?? []
+        requiredFacts = try c.decodeIfPresent([String].self, forKey: .requiredFacts) ?? []
+        forbiddenFacts = try c.decodeIfPresent([String].self, forKey: .forbiddenFacts) ?? []
+        expectedConflicts = try c.decodeIfPresent([String].self, forKey: .expectedConflicts)
+        expectNoFacts = try c.decodeIfPresent(Bool.self, forKey: .expectNoFacts) ?? false
     }
 }
 
@@ -106,6 +115,33 @@ enum AuditCorpusRunner {
     struct SlowestCase: Encodable {
         let id: String
         let durationMilliseconds: Int
+    }
+
+    /// Fact expectations use `id[:role[:confidence]]`. Every fact in every folder
+    /// case must also be traceable: it carries evidence whose paths exist on disk.
+    private static func factFailures(for item: AuditCase, recognition: ProjectRecognition, root: URL) -> [String] {
+        var failures: [String] = []
+        for requirement in item.requiredFacts {
+            let parts = requirement.split(separator: ":").map(String.init)
+            guard let fact = recognition.facts.first(where: { $0.id == parts[0] }) else {
+                failures.append("missing fact \(requirement)"); continue
+            }
+            if parts.count > 1, fact.role.rawValue != parts[1] { failures.append("fact \(parts[0]) role \(fact.role.rawValue) != \(parts[1])") }
+            if parts.count > 2, fact.confidence.rawValue != parts[2] { failures.append("fact \(parts[0]) confidence \(fact.confidence.rawValue) != \(parts[2])") }
+        }
+        failures += item.forbiddenFacts.filter { id in recognition.facts.contains { $0.id == id } }.map { "forbidden fact \($0)" }
+        if item.expectNoFacts, !recognition.facts.isEmpty { failures.append("unexpected facts \(recognition.facts.map(\.id))") }
+        if let expected = item.expectedConflicts, Set(expected) != Set(recognition.conflicts.map(\.group)) {
+            failures.append("conflicts \(recognition.conflicts.map(\.group)) != \(expected)")
+        }
+        for fact in recognition.facts {
+            if fact.evidence.isEmpty { failures.append("fact \(fact.id) has no evidence") }
+            for evidence in fact.evidence where evidence.relativePath.hasPrefix("/") || evidence.relativePath.contains("..")
+                || !FileManager.default.fileExists(atPath: root.appendingPathComponent(evidence.relativePath).path) {
+                failures.append("fact \(fact.id) evidence not on disk: \(evidence.relativePath)")
+            }
+        }
+        return failures
     }
 
     static func main() async throws {
@@ -176,8 +212,10 @@ enum AuditCorpusRunner {
                 // Everything the engines produced (verdict, insights, evidence, repository
                 // context) must be free of text that only a credential could contribute.
                 let producedText = String(reflecting: decision) + String(reflecting: context as Any)
+                    + String(reflecting: analysis.projectRecognition)
                 let leakedText = item.forbiddenText.filter { producedText.contains($0) }
-                let failures = missingRelationships.map { "missing relationship \($0)" }
+                let factFailures = factFailures(for: item, recognition: analysis.projectRecognition, root: url)
+                let failures = factFailures + missingRelationships.map { "missing relationship \($0)" }
                     + forbiddenRelationships.map { "forbidden relationship \($0)" }
                     + missingInsights.map { "missing insight \($0)" }
                     + forbiddenInsights.map { "forbidden insight \($0)" }
