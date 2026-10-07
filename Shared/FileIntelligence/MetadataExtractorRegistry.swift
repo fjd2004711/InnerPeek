@@ -2,6 +2,8 @@ import Foundation
 import ImageIO
 import AVFoundation
 import PDFKit
+import Security
+import CoreText
 
 /// Dispatches bounded, read-only file metadata extraction. Extractors are
 /// ordered only as a deterministic fallback; a file is handled by one format
@@ -12,6 +14,7 @@ struct MetadataExtractorRegistry: Sendable {
     init(extractors: [any MetadataExtracting] = [
         NativeMediaMetadataExtractor(),
         StructuredTextMetadataExtractor(),
+        DocumentFormatMetadataExtractor(),
         SpecializedHeaderMetadataExtractor()
     ]) {
         self.extractors = extractors
@@ -198,6 +201,262 @@ private struct SpecializedHeaderMetadataExtractor: MetadataExtracting {
 
     private static func readPrefix(_ url: URL, maximum: Int) throws -> Data { let h = try FileHandle(forReadingFrom: url); defer { try? h.close() }; return try h.read(upToCount: maximum) ?? Data() }
     private static func capture(_ pattern: String, in text: String) -> String? { guard let regex = try? NSRegularExpression(pattern: pattern), let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)), let range = Range(match.range(at: 1), in: text) else { return nil }; return String(text[range]) }
+}
+
+/// Subtitles, mail, calendar and contact files, JSON Lines, certificates and fonts.
+/// Reads at most 256 KB, never displays key material, and reports only what the
+/// file itself states (counts, header fields, certificate subject and expiry).
+private struct DocumentFormatMetadataExtractor: MetadataExtracting {
+    static let maximumReadBytes = 256 * 1024
+    private static let handled: Set<String> = [
+        "srt", "vtt", "ass", "ssa", "eml", "emlx", "ics", "vcf", "jsonl", "ndjson",
+        "pem", "crt", "cer", "der", "ttf", "otf", "ttc"
+    ]
+
+    func supports(_ intelligence: FileIntelligence) -> Bool { Self.handled.contains(intelligence.fileExtension ?? "") }
+
+    func extract(from url: URL, intelligence: FileIntelligence) async throws -> [MetadataItem] {
+        try Task.checkCancellation()
+        let ext = intelligence.fileExtension ?? ""
+        if ["ttf", "otf", "ttc"].contains(ext) { return Self.font(url) }
+        let (data, truncated) = try Self.readPrefix(url)
+        try Task.checkCancellation()
+        switch ext {
+        case "srt", "vtt", "ass", "ssa": return Self.subtitles(data, fileExtension: ext, truncated: truncated)
+        case "eml", "emlx": return Self.email(data)
+        case "ics", "vcf": return Self.calendarOrContacts(data, fileExtension: ext, truncated: truncated)
+        case "jsonl", "ndjson": return Self.jsonLines(data, truncated: truncated)
+        default: return Self.certificate(data)
+        }
+    }
+
+    // MARK: Subtitles
+
+    static func subtitles(_ data: Data, fileExtension: String, truncated: Bool) -> [MetadataItem] {
+        guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else { return [] }
+        var cues = 0
+        var lastEnd: TimeInterval?
+        for line in text.split(whereSeparator: \.isNewline) {
+            if fileExtension == "ass" || fileExtension == "ssa" {
+                guard line.hasPrefix("Dialogue:") else { continue }
+                cues += 1
+                let fields = line.dropFirst(9).split(separator: ",", maxSplits: 9, omittingEmptySubsequences: false)
+                if fields.count > 2 { lastEnd = clock(String(fields[2])) ?? lastEnd }
+            } else if let arrow = line.range(of: "-->") {
+                cues += 1
+                let end = line[arrow.upperBound...].split(whereSeparator: { $0 == " " || $0 == "\t" }).first.map(String.init) ?? ""
+                lastEnd = clock(end) ?? lastEnd
+            }
+        }
+        guard cues > 0 else { return [] }
+        var items = [MetadataItem(key: .cues, value: (truncated ? "≥ " : "") + "\(cues)", priority: 100)]
+        if let lastEnd, !truncated, let formatted = durationFormatter.string(from: lastEnd) {
+            items.append(MetadataItem(key: .duration, value: formatted, priority: 90))
+        }
+        return items
+    }
+
+    /// "01:02:03,500", "02:03.500" or "0:02:03.50" to seconds.
+    static func clock(_ value: String) -> TimeInterval? {
+        let parts = value.replacingOccurrences(of: ",", with: ".").split(separator: ":").map(String.init)
+        guard (2...3).contains(parts.count) else { return nil }
+        var seconds = 0.0
+        for part in parts { guard let number = Double(part) else { return nil }; seconds = seconds * 60 + number }
+        return seconds
+    }
+
+    private static let durationFormatter: DateComponentsFormatter = {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.unitsStyle = .full
+        formatter.zeroFormattingBehavior = .dropAll
+        return formatter
+    }()
+
+    // MARK: Email
+
+    static func email(_ data: Data) -> [MetadataItem] {
+        var text = String(decoding: data, as: UTF8.self)
+        // Apple Mail's .emlx starts with the message length on its own line.
+        if let firstBreak = text.firstIndex(where: \.isNewline), text[..<firstBreak].allSatisfy(\.isNumber), !text[..<firstBreak].isEmpty {
+            text = String(text[text.index(after: firstBreak)...])
+        }
+        let headerEnd = text.range(of: "\r\n\r\n")?.lowerBound ?? text.range(of: "\n\n")?.lowerBound ?? text.endIndex
+        var headers: [String: String] = [:]
+        var current: String?
+        for rawLine in text[..<headerEnd].split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).prefix(200) {
+            let line = String(rawLine)
+            if line.first == " " || line.first == "\t", let key = current {
+                headers[key, default: ""] += " " + line.trimmingCharacters(in: .whitespaces)
+            } else if let colon = line.firstIndex(of: ":") {
+                let key = line[..<colon].lowercased()
+                current = key
+                if headers[key] == nil { headers[key] = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces) }
+            }
+        }
+        var items: [MetadataItem] = []
+        if let subject = headers["subject"], !subject.isEmpty { items.append(MetadataItem(key: .subject, value: decodeWords(subject), priority: 100)) }
+        if let from = headers["from"], !from.isEmpty { items.append(MetadataItem(key: .sender, value: decodeWords(from), priority: 90)) }
+        if let date = headers["date"], !date.isEmpty { items.append(MetadataItem(key: .sentDate, value: formatMailDate(date), priority: 80)) }
+        return items
+    }
+
+    /// RFC 2047 encoded words (`=?UTF-8?B?...?=` and `=?...?Q?...?=`).
+    static func decodeWords(_ value: String) -> String {
+        guard value.contains("=?"), let regex = try? NSRegularExpression(pattern: "=\\?([^?]+)\\?([bBqQ])\\?([^?]*)\\?=") else { return value }
+        var result = ""
+        var cursor = value.startIndex
+        for match in regex.matches(in: value, range: NSRange(value.startIndex..., in: value)) {
+            guard let whole = Range(match.range, in: value), let charset = Range(match.range(at: 1), in: value),
+                  let method = Range(match.range(at: 2), in: value), let payload = Range(match.range(at: 3), in: value) else { continue }
+            let between = value[cursor..<whole.lowerBound]
+            if !between.allSatisfy(\.isWhitespace) || result.isEmpty { result += between }
+            let cfEncoding = CFStringConvertIANACharSetNameToEncoding(String(value[charset]) as CFString)
+            let encoding = cfEncoding == kCFStringEncodingInvalidId ? String.Encoding.utf8 : String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(cfEncoding))
+            var bytes = Data()
+            if value[method].lowercased() == "b" {
+                bytes = Data(base64Encoded: String(value[payload])) ?? Data()
+            } else {
+                let q = Array(value[payload].utf8)
+                var index = 0
+                while index < q.count {
+                    if q[index] == 0x5F { bytes.append(0x20); index += 1 }
+                    else if q[index] == 0x3D, index + 2 < q.count + 0, let byte = UInt8(String(decoding: q[(index + 1)...min(index + 2, q.count - 1)], as: UTF8.self), radix: 16) { bytes.append(byte); index += 3 }
+                    else { bytes.append(q[index]); index += 1 }
+                }
+            }
+            result += String(data: bytes, encoding: encoding) ?? String(value[whole])
+            cursor = whole.upperBound
+        }
+        return result + value[cursor...]
+    }
+
+    private static func formatMailDate(_ raw: String) -> String {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        let cleaned = raw.replacingOccurrences(of: #"\s*\([^)]*\)\s*$"#, with: "", options: .regularExpression)
+        for format in ["EEE, d MMM yyyy HH:mm:ss Z", "d MMM yyyy HH:mm:ss Z", "EEE, d MMM yyyy HH:mm Z"] {
+            parser.dateFormat = format
+            if let date = parser.date(from: cleaned) {
+                let display = DateFormatter()
+                display.dateStyle = .medium
+                display.timeStyle = .short
+                return display.string(from: date)
+            }
+        }
+        return String(raw.prefix(48))
+    }
+
+    // MARK: Calendar and contacts
+
+    static func calendarOrContacts(_ data: Data, fileExtension: String, truncated: Bool) -> [MetadataItem] {
+        let text = String(decoding: data, as: UTF8.self)
+        // Unfold continuation lines (RFC 5545 / 6350).
+        let unfolded = text.replacingOccurrences(of: "\r\n ", with: "").replacingOccurrences(of: "\n ", with: "")
+        let lines = unfolded.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
+        let bound = truncated ? "≥ " : ""
+        if fileExtension == "vcf" {
+            let count = lines.filter { $0.uppercased() == "BEGIN:VCARD" }.count
+            guard count > 0 else { return [] }
+            var items = [MetadataItem(key: .contacts, value: bound + "\(count)", priority: 100)]
+            if let name = lines.first(where: { $0.uppercased().hasPrefix("FN") && $0.contains(":") }).flatMap({ $0.split(separator: ":", maxSplits: 1).last.map(String.init) }), !name.isEmpty {
+                items.append(MetadataItem(key: .title, value: name, priority: 90))
+            }
+            return items
+        }
+        let count = lines.filter { $0.uppercased() == "BEGIN:VEVENT" }.count
+        guard count > 0 else { return [] }
+        var items = [MetadataItem(key: .events, value: bound + "\(count)", priority: 100)]
+        if let summary = lines.first(where: { $0.uppercased().hasPrefix("SUMMARY") && $0.contains(":") }).flatMap({ $0.split(separator: ":", maxSplits: 1).last.map(String.init) }), !summary.isEmpty {
+            items.append(MetadataItem(key: .title, value: summary, priority: 90))
+        }
+        return items
+    }
+
+    // MARK: JSON Lines
+
+    static func jsonLines(_ data: Data, truncated: Bool) -> [MetadataItem] {
+        let count = data.split(separator: 0x0A).filter { !$0.allSatisfy { $0 == 0x20 || $0 == 0x0D || $0 == 0x09 } }.count
+        guard count > 0 else { return [] }
+        // A cut-off last line is not a record, so a truncated read reports a lower bound.
+        return [MetadataItem(key: .records, value: truncated ? "≥ \(max(count - 1, 1))" : "\(count)", priority: 100)]
+    }
+
+    // MARK: Certificates
+
+    /// Names block types only. The encoded body of a key is never decoded or shown.
+    static func certificate(_ data: Data) -> [MetadataItem] {
+        let text = String(decoding: data, as: UTF8.self)
+        var items: [MetadataItem] = []
+        var firstCertificate: Data?
+        if text.contains("-----BEGIN"), let regex = try? NSRegularExpression(pattern: "-----BEGIN ([A-Z0-9 ]+)-----") {
+            var counts: [(label: String, count: Int)] = []
+            for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                guard let range = Range(match.range(at: 1), in: text) else { continue }
+                let label = describe(blockType: String(text[range]))
+                if let index = counts.firstIndex(where: { $0.label == label }) { counts[index].count += 1 } else { counts.append((label, 1)) }
+                if firstCertificate == nil, text[range] == "CERTIFICATE", let whole = Range(match.range, in: text),
+                   let end = text.range(of: "-----END CERTIFICATE-----", range: whole.upperBound..<text.endIndex) {
+                    let body = text[whole.upperBound..<end.lowerBound].filter { !$0.isWhitespace }
+                    firstCertificate = Data(base64Encoded: String(body))
+                }
+            }
+            if !counts.isEmpty {
+                items.append(MetadataItem(key: .contains, value: counts.map { $0.count > 1 ? "\($0.label) × \($0.count)" : $0.label }.joined(separator: ", "), priority: 100))
+            }
+        } else if data.first == 0x30 {
+            firstCertificate = data
+        }
+        if let der = firstCertificate, let certificate = SecCertificateCreateWithData(nil, der as CFData) {
+            if let subject = SecCertificateCopySubjectSummary(certificate) as String? { items.append(MetadataItem(key: .certificateSubject, value: subject, priority: 95)) }
+            if let expiry = notAfter(of: certificate) {
+                let formatter = DateFormatter(); formatter.dateStyle = .medium; formatter.timeStyle = .none
+                let label = formatter.string(from: expiry)
+                items.append(MetadataItem(key: .expires, value: expiry < Date() ? label + (isChinese ? "（已过期）" : " (expired)") : label, priority: 90))
+            }
+        }
+        return items
+    }
+
+    private static var isChinese: Bool { Locale.current.language.languageCode?.identifier == "zh" }
+
+    private static func describe(blockType: String) -> String {
+        let zh = isChinese
+        switch blockType {
+        case "CERTIFICATE", "TRUSTED CERTIFICATE": return zh ? "证书" : "Certificate"
+        case "CERTIFICATE REQUEST", "NEW CERTIFICATE REQUEST": return zh ? "证书请求" : "Certificate request"
+        case "PUBLIC KEY", "RSA PUBLIC KEY": return zh ? "公钥" : "Public key"
+        case "PRIVATE KEY", "RSA PRIVATE KEY", "EC PRIVATE KEY", "ENCRYPTED PRIVATE KEY", "DSA PRIVATE KEY", "OPENSSH PRIVATE KEY":
+            return zh ? "私钥（不显示）" : "Private key (not shown)"
+        default: return blockType.capitalized
+        }
+    }
+
+    private static func notAfter(of certificate: SecCertificate) -> Date? {
+        let keys = [kSecOIDX509V1ValidityNotAfter] as CFArray
+        guard let values = SecCertificateCopyValues(certificate, keys, nil) as? [CFString: Any],
+              let entry = values[kSecOIDX509V1ValidityNotAfter] as? [CFString: Any],
+              let number = entry[kSecPropertyKeyValue] as? NSNumber else { return nil }
+        return Date(timeIntervalSinceReferenceDate: number.doubleValue)
+    }
+
+    // MARK: Fonts
+
+    static func font(_ url: URL) -> [MetadataItem] {
+        guard let descriptors = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor],
+              let first = descriptors.first,
+              let family = CTFontDescriptorCopyAttribute(first, kCTFontFamilyNameAttribute) as? String else { return [] }
+        let style = CTFontDescriptorCopyAttribute(first, kCTFontStyleNameAttribute) as? String
+        let styles = descriptors.count > 1 ? " · \(descriptors.count)" : (style.map { " · \($0)" } ?? "")
+        return [MetadataItem(key: .fontFamily, value: family + styles, priority: 100)]
+    }
+
+    private static func readPrefix(_ url: URL) throws -> (Data, Bool) {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let data = try handle.read(upToCount: maximumReadBytes) ?? Data()
+        return (data, data.count >= maximumReadBytes)
+    }
 }
 
 private extension UInt8 { var isASCIIWhitespace: Bool { self == 9 || self == 10 || self == 13 || self == 32 } }

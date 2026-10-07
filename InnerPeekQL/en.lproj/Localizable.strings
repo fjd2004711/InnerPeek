@@ -72,3 +72,15 @@
 "header_modified" = "Modified %@";
 "evidence_more" = "+ %ld more";
 "why_this_conclusion" = "Why InnerPeek concluded this";
+"metadata_cues" = "Cues";
+"metadata_subject" = "Subject";
+"metadata_sender" = "From";
+"metadata_sentDate" = "Sent";
+"metadata_events" = "Events";
+"metadata_contacts" = "Contacts";
+"metadata_title" = "Title";
+"metadata_records" = "Records";
+"metadata_contains" = "Contains";
+"metadata_certificateSubject" = "Issued To";
+"metadata_expires" = "Expires";
+"metadata_fontFamily" = "Font";

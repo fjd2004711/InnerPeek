@@ -7,6 +7,8 @@ struct MetadataItem: Sendable, Hashable {
         case dimensions, duration, pages, columns, delimiter, jsonShape
         case notebookCells, codeCells, markdownCells, kernel, language
         case references, shape, dataType, arrays, tensors, metadataKeys
+        case cues, subject, sender, sentDate, events, contacts, title, records
+        case contains, certificateSubject, expires, fontFamily
 
         var localizationKey: String { "metadata_\(rawValue)" }
     }

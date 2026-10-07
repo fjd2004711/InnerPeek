@@ -92,7 +92,9 @@ enum FileIntelligenceRegression {
             ("cert.pem", .configuration, .configuration), ("keys.p12", .configuration, .configuration),
             ("app.dmg", .archive, .archive), ("mod.pyc", .executable, .generated), ("lib.wasm", .executable, .generated),
             ("deploy.tf", .sourceCode, .configuration), ("api.proto", .sourceCode, .configuration), ("kernel.metal", .sourceCode, .sourceCode),
-            ("model.keras", .aiModel, .modelWeights), ("data.pkl", .scientificData, .dataset), ("reads.fastq", .scientificData, .dataset),
+            ("model.keras", .aiModel, .modelWeights),
+            ("pytorch_model.bin", .aiModel, .modelWeights), ("pytorch_model-00001-of-00002.bin", .aiModel, .modelWeights), ("ggml-base.bin", .aiModel, .modelWeights),
+            ("saved_model.pb", .aiModel, .modelWeights), ("tokenizer.model", .aiModel, .tokenizer), ("my_tokenizer.model", .aiModel, .tokenizer), ("data.pkl", .scientificData, .dataset), ("reads.fastq", .scientificData, .dataset),
             ("Main.storyboard", .project, .configuration), ("App.entitlements", .project, .configuration), ("song.mid", .audio, nil)
         ]
         for (fileName, category, role) in roleCases {
@@ -100,6 +102,10 @@ enum FileIntelligenceRegression {
             try expect(found.category == category, "category of \(fileName): \(found.category)")
             if let role { try expect(found.roles.contains(role), "role of \(fileName)") }
             try expect(found.confidence == 1.0, "\(fileName) is registered, not a system guess")
+        }
+        for generic in ["data.bin", "firmware.bin", "message.pb", "notes.model"] {
+            let found = recognizer.intelligence(for: URL(fileURLWithPath: "/tmp/\(generic)"))
+            try expect(found.category != .aiModel && !found.roles.contains(.modelWeights), "\(generic) is not claimed as a model")
         }
         // Every registered extension and filename must resolve to exactly one definition.
         var claimed: [String: String] = [:]
@@ -372,6 +378,78 @@ enum FileIntelligenceRegression {
         context.beginPDFPage(nil); context.endPDFPage(); context.beginPDFPage(nil); context.endPDFPage(); context.closePDF()
         values = await metadata(extractor, recognizer, root, "two-pages.pdf")
         try expect(values[.pages] == "2", "PDF page count")
+
+        // Subtitles
+        try writeData(root, "movie.srt", Data("1\n00:00:01,000 --> 00:00:03,000\nHi\n\n2\n00:00:04,000 --> 00:00:06,500\nThere\n\n3\n00:00:07,000 --> 00:00:09,500\nBye\n".utf8))
+        values = await metadata(extractor, recognizer, root, "movie.srt")
+        try expect(values[.cues] == "3" && !(values[.duration] ?? "").isEmpty, "SRT cue count and duration")
+        try writeData(root, "movie.vtt", Data("WEBVTT\n\n00:01.000 --> 00:04.000\nHello\n\n01:00:00.000 --> 01:00:02.000\nLate\n".utf8))
+        values = await metadata(extractor, recognizer, root, "movie.vtt")
+        try expect(values[.cues] == "2", "VTT cue count")
+        try writeData(root, "movie.ass", Data("[Events]\nFormat: Layer, Start, End, Text\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,One\nDialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Two\n".utf8))
+        values = await metadata(extractor, recognizer, root, "movie.ass")
+        try expect(values[.cues] == "2", "ASS dialogue count")
+
+        // Email: folded and RFC 2047 headers; the body must never override a header.
+        let mail = "From: =?UTF-8?B?5byg5LiJ?= <zhang@example.test>\r\nSubject: Quarterly\r\n  report =?UTF-8?Q?caf=C3=A9_menu?=\r\nDate: Tue, 7 Oct 2026 10:30:00 +0800\r\n\r\nSubject: forged\r\nbody\r\n"
+        try writeData(root, "note.eml", Data(mail.utf8))
+        values = await metadata(extractor, recognizer, root, "note.eml")
+        try expect(values[.subject] == "Quarterly report café menu", "email subject: unfolded and decoded, body ignored")
+        try expect(values[.sender] == "张三 <zhang@example.test>", "email sender decoded")
+        try expect(!(values[.sentDate] ?? "").isEmpty && values[.sentDate] != "Tue, 7 Oct 2026 10:30:00 +0800", "email date formatted")
+        try writeData(root, "apple.emlx", Data("120\nSubject: Apple Mail\nFrom: a@b.test\n\nbody".utf8))
+        values = await metadata(extractor, recognizer, root, "apple.emlx")
+        try expect(values[.subject] == "Apple Mail", "emlx length line skipped")
+
+        // Calendar, contacts, JSON Lines
+        try writeData(root, "plan.ics", Data("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nSUMMARY:Team\r\n  sync\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Second\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n".utf8))
+        values = await metadata(extractor, recognizer, root, "plan.ics")
+        try expect(values[.events] == "2" && values[.title] == "Team sync", "ICS events and unfolded title")
+        try writeData(root, "people.vcf", Data("BEGIN:VCARD\nFN:Ada Lovelace\nEND:VCARD\nBEGIN:VCARD\nFN:Alan Turing\nEND:VCARD\n".utf8))
+        values = await metadata(extractor, recognizer, root, "people.vcf")
+        try expect(values[.contacts] == "2" && values[.title] == "Ada Lovelace", "VCF contacts")
+        try writeData(root, "log.jsonl", Data("{\"a\":1}\n\n{\"a\":2}\n  \n{\"a\":3}\n".utf8))
+        values = await metadata(extractor, recognizer, root, "log.jsonl")
+        try expect(values[.records] == "3", "JSON Lines ignores blank lines")
+
+        // Certificates and keys (generated with the system's openssl; skipped where unavailable)
+        if FileManager.default.isExecutableFile(atPath: "/usr/bin/openssl") {
+            func openssl(_ arguments: [String]) -> Bool {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/openssl")
+                process.arguments = arguments
+                process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
+                guard (try? process.run()) != nil else { return false }
+                process.waitUntilExit()
+                return process.terminationStatus == 0
+            }
+            let key = root.appendingPathComponent("key.pem").path, cert = root.appendingPathComponent("cert.pem").path
+            if openssl(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", cert, "-days", "30", "-subj", "/CN=InnerPeek Test"]) {
+                values = await metadata(extractor, recognizer, root, "cert.pem")
+                try expect(values[.certificateSubject] == "InnerPeek Test", "certificate subject")
+                try expect(!(values[.expires] ?? "").isEmpty && !(values[.expires] ?? "").contains("expired") && !(values[.expires] ?? "").contains("已过期"), "certificate expiry in the future")
+                try expect((values[.contains] ?? "").contains("Certificate") || (values[.contains] ?? "").contains("证书"), "certificate block named")
+
+                let keyText = try String(contentsOfFile: key, encoding: .utf8)
+                let keyBody = keyText.split(whereSeparator: \.isNewline).dropFirst().first.map(String.init) ?? ""
+                try expect(keyBody.count > 20, "fixture key body present")
+                values = await metadata(extractor, recognizer, root, "key.pem")
+                try expect(values.values.allSatisfy { !$0.contains(keyBody.prefix(20)) }, "private key material is never shown")
+                try expect((values[.contains] ?? "").lowercased().contains("private key") || (values[.contains] ?? "").contains("私钥"), "private key block named, not decoded")
+                try expect(values[.certificateSubject] == nil, "a key-only file has no certificate details")
+
+                let der = root.appendingPathComponent("cert.der").path
+                if openssl(["x509", "-in", cert, "-outform", "der", "-out", der]) {
+                    values = await metadata(extractor, recognizer, root, "cert.der")
+                    try expect(values[.certificateSubject] == "InnerPeek Test", "DER certificate subject")
+                }
+            }
+        }
+        // Fonts (uses a system font when present)
+        if FileManager.default.fileExists(atPath: "/System/Library/Fonts/Helvetica.ttc") {
+            let fontValues = await metadataAtPath(extractor, recognizer, "/System/Library/Fonts/Helvetica.ttc")
+            try expect((fontValues[.fontFamily] ?? "").contains("Helvetica"), "font family")
+        }
 
         try writeData(root, "unhandled.xyzunknown", Data([0x00, 0x01]))
         values = await metadata(extractor, recognizer, root, "unhandled.xyzunknown")
@@ -888,6 +966,12 @@ enum FileIntelligenceRegression {
 
     private static func metadata(_ extractor: MetadataExtractorRegistry, _ recognizer: FileIntelligenceRecognizer, _ root: URL, _ name: String) async -> [MetadataItem.Key: String] {
         let url = root.appendingPathComponent(name)
+        let values = (try? await extractor.extract(from: url, intelligence: recognizer.intelligence(for: url))) ?? []
+        return Dictionary(uniqueKeysWithValues: values.map { ($0.key, $0.value) })
+    }
+
+    private static func metadataAtPath(_ extractor: MetadataExtractorRegistry, _ recognizer: FileIntelligenceRecognizer, _ path: String) async -> [MetadataItem.Key: String] {
+        let url = URL(fileURLWithPath: path)
         let values = (try? await extractor.extract(from: url, intelligence: recognizer.intelligence(for: url))) ?? []
         return Dictionary(uniqueKeysWithValues: values.map { ($0.key, $0.value) })
     }

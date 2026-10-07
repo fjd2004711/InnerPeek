@@ -72,3 +72,15 @@
 "header_modified" = "最近修改 %@";
 "evidence_more" = "另有 %ld 项";
 "why_this_conclusion" = "识别依据";
+"metadata_cues" = "字幕条数";
+"metadata_subject" = "主题";
+"metadata_sender" = "发件人";
+"metadata_sentDate" = "发送时间";
+"metadata_events" = "日程数";
+"metadata_contacts" = "联系人数";
+"metadata_title" = "标题";
+"metadata_records" = "记录数";
+"metadata_contains" = "包含";
+"metadata_certificateSubject" = "颁发给";
+"metadata_expires" = "到期";
+"metadata_fontFamily" = "字体";
