@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://github.com/fjd2004711/InnerPeek/releases/latest"><img src="https://img.shields.io/github/v/release/fjd2004711/InnerPeek?display_name=tag&sort=semver" alt="最新版本"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14 及以上">
+  <img src="https://img.shields.io/badge/tested%20on-macOS%2027-000000?logo=apple&logoColor=white" alt="在 macOS 27 上验证">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/fjd2004711/InnerPeek" alt="MIT 许可"></a>
 </p>
 
@@ -63,9 +63,10 @@ InnerPeek 是一个 macOS Quick Look 扩展。选中文件夹或 ZIP，按下空
 
 ## 系统要求
 
-- macOS 14 或更高版本（Quick Look 预览扩展）。
-- Apple Silicon 或 Intel Mac。
-- 开发和验证主要在 macOS 27 上进行，较早的系统还没有逐一验证。如果你在其他版本上遇到问题，欢迎提 Issue 并附上[诊断信息](docs/troubleshooting.md#提交-issue-时附上诊断信息)。
+- **已验证：macOS 27**（Apple Silicon）。
+- 工程的最低部署目标是 macOS 14，可以针对它编译，但**没有在 macOS 14–26 上实际运行验证过**，不保证可用。
+- Intel Mac 没有测试过。
+- 如果你在其他版本上试过，无论成功还是失败，都欢迎开 Issue 告诉我，并附上[诊断信息](docs/troubleshooting.md#提交-issue-时附上诊断信息)，我会据此更新这里的说明。
 
 ## 安装
 

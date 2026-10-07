@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://github.com/fjd2004711/InnerPeek/releases/latest"><img src="https://img.shields.io/github/v/release/fjd2004711/InnerPeek?display_name=tag&sort=semver" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/macOS-14%2B-000000?logo=apple&logoColor=white" alt="macOS 14 or later">
+  <img src="https://img.shields.io/badge/tested%20on-macOS%2027-000000?logo=apple&logoColor=white" alt="Tested on macOS 27">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/fjd2004711/InnerPeek" alt="MIT license"></a>
 </p>
 
@@ -63,9 +63,10 @@ The full recognition scope is listed in [Supported file types and technologies](
 
 ## Requirements
 
-- macOS 14 or later (Quick Look preview extensions).
-- Apple Silicon or Intel Mac.
-- Development and verification happen mainly on macOS 27; earlier systems have not been checked one by one. If something misbehaves on your version, please open an issue and attach the [diagnostics](docs/troubleshooting.md#attach-diagnostics-to-an-issue).
+- **Verified: macOS 27** (Apple Silicon).
+- The project's minimum deployment target is macOS 14 and it compiles against it, but it has **not been run on macOS 14–26**, so it is not guaranteed to work there.
+- Intel Macs have not been tested.
+- If you try another version, success or failure, please open an issue and attach the [diagnostics](docs/troubleshooting.md#attach-diagnostics-to-an-issue) so this section can be updated.
 
 ## Install
 
