@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "detectionThreshold", "conflictMargin", "facts"],
+  "properties": {
+    "version": {"const": 1},
+    "detectionThreshold": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+    "conflictMargin": {"type": "number", "minimum": 0, "maximum": 1},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^(projectKind|language|framework|buildSystem|packageManager)\\.[a-z0-9][a-z0-9.-]*$"},
+          "kind": {"enum": ["projectKind", "language", "framework", "buildSystem", "packageManager"]},
+          "name": {
+            "type": "object",
+            "required": ["en", "zh-Hans"],
+            "properties": {"en": {"type": "string", "minLength": 1}, "zh-Hans": {"type": "string", "minLength": 1}},
+            "additionalProperties": false
+          },
+          "group": {"type": "string", "pattern": "^[A-Za-z0-9.-]+$"},
+          "supersedes": {"type": "array", "items": {"type": "string"}},
+          "implies": {"type": "array", "items": {"type": "string"}},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["type", "path", "weight"],
+                  "properties": {
+                    "type": {"const": "path_exists"},
+                    "path": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.)[^\\u0000]+$"},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "file", "key", "weight"],
+                  "properties": {
+                    "type": {"enum": ["manifest_dependency", "manifest_key"]},
+                    "file": {"enum": ["package.json", "requirements.txt", "pyproject.toml", "Cargo.toml", "go.mod"]},
+                    "key": {"type": "string", "minLength": 1},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": ["type", "file", "contains", "weight"],
+                  "properties": {
+                    "type": {"const": "manifest_text"},
+                    "file": {"type": "string", "pattern": "^[^/\\u0000]+$"},
+                    "contains": {"type": "string", "minLength": 1},
+                    "weight": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

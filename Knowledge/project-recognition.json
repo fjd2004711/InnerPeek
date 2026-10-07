@@ -1,0 +1,711 @@
+{
+  "version": 1,
+  "detectionThreshold": 0.5,
+  "conflictMargin": 0.05,
+  "facts": [
+    {
+      "id": "projectKind.xcode-project",
+      "kind": "projectKind",
+      "name": {
+        "en": "Xcode Project",
+        "zh-Hans": "Xcode 项目"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "*.xcodeproj",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "projectKind.xcode-workspace",
+      "kind": "projectKind",
+      "name": {
+        "en": "Xcode Workspace",
+        "zh-Hans": "Xcode 工作区"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "*.xcworkspace",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "projectKind.monorepo",
+      "kind": "projectKind",
+      "name": {
+        "en": "Monorepo",
+        "zh-Hans": "Monorepo 多项目仓库"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pnpm-workspace.yaml",
+          "weight": 0.8
+        },
+        {
+          "type": "manifest_key",
+          "file": "package.json",
+          "key": "workspaces",
+          "weight": 0.8
+        },
+        {
+          "type": "manifest_key",
+          "file": "Cargo.toml",
+          "key": "workspace",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "lerna.json",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "turbo.json",
+          "weight": 0.6
+        },
+        {
+          "type": "path_exists",
+          "path": "nx.json",
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "id": "projectKind.web-application",
+      "kind": "projectKind",
+      "name": {
+        "en": "Web Application",
+        "zh-Hans": "Web 应用"
+      },
+      "evidence": []
+    },
+    {
+      "id": "language.swift",
+      "kind": "language",
+      "name": {
+        "en": "Swift",
+        "zh-Hans": "Swift"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Package.swift",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "*.xcodeproj",
+          "weight": 0.4
+        },
+        {
+          "type": "path_exists",
+          "path": ".swiftlint.yml",
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "id": "language.python",
+      "kind": "language",
+      "name": {
+        "en": "Python",
+        "zh-Hans": "Python"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pyproject.toml",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "requirements.txt",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "setup.py",
+          "weight": 0.85
+        },
+        {
+          "type": "path_exists",
+          "path": "Pipfile",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "language.javascript",
+      "kind": "language",
+      "name": {
+        "en": "JavaScript",
+        "zh-Hans": "JavaScript"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "package.json",
+          "weight": 0.7
+        }
+      ]
+    },
+    {
+      "id": "language.typescript",
+      "kind": "language",
+      "name": {
+        "en": "TypeScript",
+        "zh-Hans": "TypeScript"
+      },
+      "supersedes": [
+        "language.javascript"
+      ],
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "tsconfig.json",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "typescript",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "id": "language.rust",
+      "kind": "language",
+      "name": {
+        "en": "Rust",
+        "zh-Hans": "Rust"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Cargo.toml",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "language.go",
+      "kind": "language",
+      "name": {
+        "en": "Go",
+        "zh-Hans": "Go"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "go.mod",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "language.java",
+      "kind": "language",
+      "name": {
+        "en": "Java",
+        "zh-Hans": "Java"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pom.xml",
+          "weight": 0.75
+        },
+        {
+          "type": "path_exists",
+          "path": "build.gradle",
+          "weight": 0.5
+        },
+        {
+          "type": "manifest_text",
+          "file": "build.gradle",
+          "contains": "java",
+          "weight": 0.4
+        }
+      ]
+    },
+    {
+      "id": "language.kotlin",
+      "kind": "language",
+      "name": {
+        "en": "Kotlin",
+        "zh-Hans": "Kotlin"
+      },
+      "supersedes": [
+        "language.java"
+      ],
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "build.gradle.kts",
+          "weight": 0.5
+        },
+        {
+          "type": "manifest_text",
+          "file": "build.gradle.kts",
+          "contains": "kotlin",
+          "weight": 0.7
+        },
+        {
+          "type": "manifest_text",
+          "file": "build.gradle",
+          "contains": "kotlin",
+          "weight": 0.7
+        },
+        {
+          "type": "manifest_text",
+          "file": "pom.xml",
+          "contains": "kotlin-maven-plugin",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "id": "packageManager.npm",
+      "kind": "packageManager",
+      "name": {
+        "en": "npm",
+        "zh-Hans": "npm"
+      },
+      "group": "packageManager.javascript",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "package-lock.json",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.yarn",
+      "kind": "packageManager",
+      "name": {
+        "en": "Yarn",
+        "zh-Hans": "Yarn"
+      },
+      "group": "packageManager.javascript",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "yarn.lock",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": ".yarnrc.yml",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "packageManager.pnpm",
+      "kind": "packageManager",
+      "name": {
+        "en": "pnpm",
+        "zh-Hans": "pnpm"
+      },
+      "group": "packageManager.javascript",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pnpm-lock.yaml",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "pnpm-workspace.yaml",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "packageManager.bun",
+      "kind": "packageManager",
+      "name": {
+        "en": "Bun",
+        "zh-Hans": "Bun"
+      },
+      "group": "packageManager.javascript",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "bun.lock",
+          "weight": 0.95
+        },
+        {
+          "type": "path_exists",
+          "path": "bun.lockb",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.pip",
+      "kind": "packageManager",
+      "name": {
+        "en": "pip",
+        "zh-Hans": "pip"
+      },
+      "group": "packageManager.python",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "requirements.txt",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "id": "packageManager.poetry",
+      "kind": "packageManager",
+      "name": {
+        "en": "Poetry",
+        "zh-Hans": "Poetry"
+      },
+      "group": "packageManager.python",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "poetry.lock",
+          "weight": 0.95
+        },
+        {
+          "type": "manifest_key",
+          "file": "pyproject.toml",
+          "key": "tool.poetry",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "packageManager.uv",
+      "kind": "packageManager",
+      "name": {
+        "en": "uv",
+        "zh-Hans": "uv"
+      },
+      "group": "packageManager.python",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "uv.lock",
+          "weight": 0.95
+        },
+        {
+          "type": "manifest_key",
+          "file": "pyproject.toml",
+          "key": "tool.uv",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "packageManager.swiftpm",
+      "kind": "packageManager",
+      "name": {
+        "en": "Swift Package Manager",
+        "zh-Hans": "Swift Package Manager"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Package.swift",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.cargo",
+      "kind": "packageManager",
+      "name": {
+        "en": "Cargo",
+        "zh-Hans": "Cargo"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Cargo.toml",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.go-modules",
+      "kind": "packageManager",
+      "name": {
+        "en": "Go Modules",
+        "zh-Hans": "Go Modules"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "go.mod",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.maven",
+      "kind": "packageManager",
+      "name": {
+        "en": "Maven",
+        "zh-Hans": "Maven"
+      },
+      "group": "packageManager.jvm",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "pom.xml",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "packageManager.gradle",
+      "kind": "packageManager",
+      "name": {
+        "en": "Gradle",
+        "zh-Hans": "Gradle"
+      },
+      "group": "packageManager.jvm",
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "build.gradle",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "build.gradle.kts",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "settings.gradle",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "settings.gradle.kts",
+          "weight": 0.7
+        },
+        {
+          "type": "path_exists",
+          "path": "gradlew",
+          "weight": 0.7
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.xcode",
+      "kind": "buildSystem",
+      "name": {
+        "en": "Xcode",
+        "zh-Hans": "Xcode"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "*.xcodeproj",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "*.xcworkspace",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.turborepo",
+      "kind": "buildSystem",
+      "name": {
+        "en": "Turborepo",
+        "zh-Hans": "Turborepo"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "turbo.json",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.nx",
+      "kind": "buildSystem",
+      "name": {
+        "en": "Nx",
+        "zh-Hans": "Nx"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "nx.json",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.cmake",
+      "kind": "buildSystem",
+      "name": {
+        "en": "CMake",
+        "zh-Hans": "CMake"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "CMakeLists.txt",
+          "weight": 0.95
+        }
+      ]
+    },
+    {
+      "id": "buildSystem.make",
+      "kind": "buildSystem",
+      "name": {
+        "en": "Make",
+        "zh-Hans": "Make"
+      },
+      "evidence": [
+        {
+          "type": "path_exists",
+          "path": "Makefile",
+          "weight": 0.8
+        },
+        {
+          "type": "path_exists",
+          "path": "GNUmakefile",
+          "weight": 0.8
+        }
+      ]
+    },
+    {
+      "id": "framework.react",
+      "kind": "framework",
+      "name": {
+        "en": "React",
+        "zh-Hans": "React"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "react",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "framework.nextjs",
+      "kind": "framework",
+      "name": {
+        "en": "Next.js",
+        "zh-Hans": "Next.js"
+      },
+      "supersedes": [
+        "framework.react"
+      ],
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "next",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "next.config.*",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "framework.vue",
+      "kind": "framework",
+      "name": {
+        "en": "Vue",
+        "zh-Hans": "Vue"
+      },
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "vue",
+          "weight": 0.9
+        }
+      ]
+    },
+    {
+      "id": "framework.nuxt",
+      "kind": "framework",
+      "name": {
+        "en": "Nuxt",
+        "zh-Hans": "Nuxt"
+      },
+      "supersedes": [
+        "framework.vue"
+      ],
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "package.json",
+          "key": "nuxt",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "nuxt.config.*",
+          "weight": 0.85
+        }
+      ]
+    },
+    {
+      "id": "framework.django",
+      "kind": "framework",
+      "name": {
+        "en": "Django",
+        "zh-Hans": "Django"
+      },
+      "implies": [
+        "projectKind.web-application"
+      ],
+      "evidence": [
+        {
+          "type": "manifest_dependency",
+          "file": "pyproject.toml",
+          "key": "django",
+          "weight": 0.9
+        },
+        {
+          "type": "manifest_dependency",
+          "file": "requirements.txt",
+          "key": "django",
+          "weight": 0.9
+        },
+        {
+          "type": "path_exists",
+          "path": "manage.py",
+          "weight": 0.5
+        }
+      ]
+    }
+  ]
+}
