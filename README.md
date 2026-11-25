@@ -50,7 +50,7 @@ InnerPeek 是一个 macOS Quick Look 扩展。选中文件夹或 ZIP，按下空
 
 洞察最多显示三条，按严重程度排序；没有值得说的就不说。
 
-完整的识别范围见 [支持识别的文件类型与技术栈](docs/supported-file-types.zh-Hans.md)（95 种文件类型、663 个扩展名，以及 60 多项语言、框架和工具）。
+完整的识别范围见 [支持识别的文件类型与技术栈](docs/supported-file-types.zh-Hans.md)（95 种文件类型、663 个扩展名，以及 50 项语言、框架、包管理器和构建系统）。
 
 ## 隐私与安全
 
@@ -135,6 +135,7 @@ InnerPeek 只在有足够依据时才下结论。普通文件夹、照片目录�
 2. 选择 `InnerPeek` scheme 和 `My Mac`。
 3. 在两个 target 的 Signing 中选择你自己的开发团队（没有的话可使用 ad-hoc 签名）。
 4. 构建并运行一次，然后在 Finder 中测试 Quick Look。
+5. 如果按空格后仍是系统自带的文件夹卡片，打开 InnerPeek → 设置 → 诊断 → 「修复 Quick Look」。从 DerivedData 运行的构建与已安装的副本注册的是不同路径，旧记录可能抢先；详见 [故障排查](docs/troubleshooting.md)。
 
 | 路径 | 作用 |
 | --- | --- |
@@ -154,7 +155,7 @@ scripts/run-audit-corpus.sh                   # 审计语料
 scripts/render-screenshots.sh                 # 重新生成 README 截图
 ```
 
-推送 `v*` 标签后，GitHub Actions 会构建 DMG、生成 `SHA256SUMS` 并发布 Release。
+推送 `v*` 标签后，GitHub Actions 会构建 DMG、生成 `SHA256SUMS` 并发布 Release。标签名必须与 `InnerPeek/InnerPeek-Info.plist` 里的 `CFBundleShortVersionString` 一致，否则构建任务会在打包前中止。
 
 ## 参与贡献
 

@@ -11,7 +11,7 @@ changing Swift code**. English is the source language and the fallback for every
 | `Knowledge/messages.json` | Sentences the analysis engine writes (insights, verdicts, repository messages, metadata labels) | Keyed by the **English text**; add your language tag under it |
 | Texts inside `Knowledge/*.json` | File type names and descriptions, roles, project technologies, health checks | Each text is an object like `{"en": "Fonts", "fr": "Polices"}` |
 
-Currently 602 texts are translatable. Run the report to see exactly what a language still needs:
+Currently 642 texts are translatable. Run the report to see exactly what a language still needs:
 
 ```sh
 scripts/i18n-report.sh fr             # coverage per file
