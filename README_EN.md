@@ -50,7 +50,7 @@ The images below are rendered by the real preview component from fictional demo 
 
 At most three insights are shown, most important first. If there is nothing worth saying, nothing is said.
 
-The full recognition scope is listed in [Supported file types and technologies](docs/supported-file-types.md): 95 file types, 663 extensions, and 60+ languages, frameworks and tools.
+The full recognition scope is listed in [Supported file types and technologies](docs/supported-file-types.md): 95 file types, 663 extensions, and 50 languages, frameworks, package managers and build systems.
 
 ## Privacy and safety
 
@@ -135,6 +135,7 @@ There are no third-party runtime dependencies.
 2. Select the `InnerPeek` scheme and `My Mac`.
 3. Choose your own team under Signing for both targets (ad-hoc signing works if you have none).
 4. Build and run once, then test Quick Look in Finder.
+5. If Space still shows Finder's generic folder card, open InnerPeek → Settings → Diagnostics → Repair Quick Look. A build that runs from DerivedData registers a different path from an installed copy, and the older record can win; see [Troubleshooting](docs/troubleshooting.md).
 
 | Path | Purpose |
 | --- | --- |
@@ -154,7 +155,7 @@ scripts/run-audit-corpus.sh                   # audit corpus
 scripts/render-screenshots.sh                 # regenerate the README screenshots
 ```
 
-Pushing a `v*` tag makes GitHub Actions build the DMG, create `SHA256SUMS` and publish a release.
+Pushing a `v*` tag makes GitHub Actions build the DMG, create `SHA256SUMS` and publish a release. The tag must equal `CFBundleShortVersionString` in `InnerPeek/InnerPeek-Info.plist`, otherwise the build job stops before it packages anything.
 
 ## Contributing
 
